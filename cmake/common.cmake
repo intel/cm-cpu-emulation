@@ -1,12 +1,31 @@
 # These headers are the accumulated set of those
 # interused between libcm, libcmrt and shim-layer.
 set(COMMON_HEADERS
+
+  ${COMMON_HEADERS_PATH}/kernel_utils.h
+  ${COMMON_HEADERS_PATH}/os_utils.h
+
+  ${COMMON_HEADERS_PATH}/emu_dbgsymb_types.h
+  ${COMMON_HEADERS_PATH}/emu_kernel_support.h
+  ${COMMON_HEADERS_PATH}/emu_kernel_support_types.h
+
+  ${COMMON_HEADERS_PATH}/emu_log_flags.h
+  ${COMMON_HEADERS_PATH}/emu_log.h
+
+  ${COMMON_HEADERS_PATH}/emu_platform.h
+
+
+  ${COMMON_HEADERS_PATH}/emu_cfg.h
+
+  ${COMMON_HEADERS_PATH}/emu_api_export.h
+
   ${COMMON_HEADERS_PATH}/cm_version_defs.h
   ${COMMON_HEADERS_PATH}/cm_index_types.h
 
-  ${COMMON_HEADERS_PATH}/cm_utils.h
+  ${COMMON_HEADERS_PATH}/emu_utils.h
   ${COMMON_HEADERS_PATH}/cm_rt.h
 
+  ${COMMON_HEADERS_PATH}/emu_kernel_arg.h
   ${COMMON_HEADERS_PATH}/type_frame.h
   ${COMMON_HEADERS_PATH}/type_gpu_gt_platform.h
   ${COMMON_HEADERS_PATH}/type_gpu_platform.h
@@ -63,6 +82,7 @@ set(COMMON_HEADERS
 
   ${COMMON_HEADERS_PATH}/cm_version_defs.h
 
+  ${COMMON_HEADERS_PATH}/cm_rt_xe_hp_sdv.h
   ${COMMON_OS_HEADERS_PATH}/cm_include.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_def_os.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_api_os.h)

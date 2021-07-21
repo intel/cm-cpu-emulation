@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,5 +35,7 @@ enum GPU_PLATFORM
     PLATFORM_INTEL_ICLLP       = 13, //Icelake LP
     PLATFORM_INTEL_TGLLP       = 15, //TigerLakeLP
 };
+
+#define PLATFORM_INTEL_XEHP_SDV 14
 
 #endif // GUARD_common_type_gpu_platform_h

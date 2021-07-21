@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 
 find_package(LibFFI REQUIRED)
 
+
   if (DEFINED LIBVA_INSTALL_PATH)
     set(LIBVA_INCLUDE_DIRS ${LIBVA_INSTALL_PATH}/include)
   else()
@@ -11,9 +12,19 @@ find_package(LibFFI REQUIRED)
   endif()
 
 set(LIBCM_SOURCE
+  # NB: this shall go to a separate emu_common dll.
+  ${COMMON_SRC_PATH}/emu_cfg.cpp
+  ${COMMON_SRC_PATH}/emu_utils.cpp
+  ${COMMON_SRC_PATH}/emu_log.cpp
+  ${COMMON_SRC_PATH}/emu_kernel_support.cpp
+  ${COMMON_SRC_PATH}/emu_kernel_support_types.cpp
+
+  ${COMMON_SRC_PATH}/os_utils.cpp
+  ${COMMON_SRC_PATH}/kernel_utils.cpp
+
   cm_internal.cpp
   cm_intrin.cpp
-  esimdcpu_runtime.cpp
+  esimdcpu_support.cpp
   genx_dataport_emu.cpp
   genx_threading.cpp
   rt.cpp)
@@ -36,8 +47,7 @@ set(LIBCM_HEADERS
   cm_traits.h
   cm_vm.h
   cmtl/cmtl.h
-  esimdcpu_runtime.h
-  esimdcpu_dataport.h
+  esimdcpu_support.h
   dataport_common.h
   genx_dataport.h
   genx_simdcontrolflow.h
@@ -50,9 +60,13 @@ set(LIBCM_HEADERS
 add_library(libcm SHARED ${LIBCM_SOURCE})
 set_target_properties(libcm PROPERTIES
   CXX_STANDARD 17
+  LINK_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:/SAFESEH:NO>"
   CXX_STANDARD_REQUIRED YES
   PUBLIC_HEADER "${LIBCM_HEADERS}"
   PREFIX "")
+
+#set(CMAKE_EXE_LINKER_FLAGS_DEBUG  "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /SAFESEH:NO")
+#set(CMAKE_SHARED_LINKER_FLAGS_DEBUG  "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /SAFESEH:NO")
 
 target_compile_definitions(libcm PUBLIC CMRT_EMU)
 target_compile_definitions(libcm PRIVATE NEW_LIBCM_RT LIBCM_TEST_EXPORTS)
@@ -64,14 +78,26 @@ target_include_directories(libcm BEFORE PRIVATE private)
 target_include_directories(libcm PRIVATE
   ${COMMON_HEADERS_PATH}
   ${COMMON_OS_HEADERS_PATH})
+  
 
-target_include_directories(libcm SYSTEM PRIVATE ${LibFFI_INCLUDE_DIRS})
+if(UNIX AND 
+    CMAKE_COMPILER_IS_GNUCC AND
+        "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "9.0.0")
+    target_link_libraries(libcm PRIVATE
+            stdc++fs 
+        )
+endif()
 
 
   target_include_directories(libcm SYSTEM PUBLIC ${LIBVA_INCLUDE_DIRS})
   target_link_libraries(libcm PRIVATE dl pthread)
 
 target_link_libraries(libcm PRIVATE LibFFI::LibFFI)
+
+
+if(DBGSYMB_PROVIDER_LIB_FOUND)
+  target_link_libraries(libcm PRIVATE DbgSymb::Provider)
+endif ()
 
 install(TARGETS libcm
   ARCHIVE DESTINATION lib

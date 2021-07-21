@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,7 +79,7 @@ void check_dimention(uint dim)
 {
     if (dim > 2)
     {
-        fprintf(stderr, "Error in SLM Emulation: Bad dimension!\n");
+        GFX_EMU_ERROR_MESSAGE("Error in SLM Emulation: Bad dimension!\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -127,7 +127,7 @@ CM_API void  cm_fsetround(CmRoundingMode val)
         xval = FE_TOWARDZERO;
         break;
     default:
-        fprintf(stderr, "Unexpected rounding mode: %d\n", val);
+        GFX_EMU_ERROR_MESSAGE("Unexpected rounding mode: %d\n", val);
         exit(EXIT_FAILURE);
     }
     fesetround(xval);
@@ -161,7 +161,7 @@ CM_API CmRoundingMode cm_fgetround(void)
         val = CM_RTZ;
         break;
     default:
-        fprintf(stderr, "Retrieved unexpected rounding mode from control work: %04x\n", xval);
+        GFX_EMU_ERROR_MESSAGE("Retrieved unexpected rounding mode from control work: %04x\n", xval);
         exit(EXIT_FAILURE);
     }
 
@@ -176,7 +176,7 @@ CM_API void cm_fsetmode(CmFPMode val)
         case CM_ALT: break;
         case CM_IEEE: break;
         default:
-            fprintf(stderr, "Unexpected fp mode %dn", val);
+            GFX_EMU_ERROR_MESSAGE("Unexpected fp mode %dn", val);
             exit(EXIT_FAILURE);
     }
 }

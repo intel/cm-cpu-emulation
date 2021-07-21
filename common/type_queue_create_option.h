@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,10 @@ struct CM_QUEUE_CREATE_OPTION
     bool                          UserGPUContext          : 1; // Is the user-provided GPU Context already created externally
     unsigned int                  GPUContext              : 8; // user-provided GPU Context ordinal
     CM_QUEUE_SSEU_USAGE_HINT_TYPE SseuUsageHint           : 3;
+
+      unsigned int                reserved                : 1;
+
+    unsigned int                  TileMask                : 8; // for XEHP_SDV, tile count is <= 4
 
 };
 

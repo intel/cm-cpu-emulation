@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@ int32_t CmTask_RT::Create( uint32_t max_kernel_count, CmTask_RT* &pKernelArray)
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -76,7 +76,7 @@ int32_t CmTask_RT::Initialize( )
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_OUT_OF_HOST_MEMORY;
     }
 }
@@ -91,7 +91,7 @@ CM_RT_API int32_t CmTask_RT::AddKernel( CmKernel *pKernel )
     // passed in nullptr pointer
     if(pKernel == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -117,7 +117,7 @@ CM_RT_API int32_t CmTask_RT::Reset( void )
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
 }
@@ -136,7 +136,7 @@ CmKernel* CmTask_RT::GetKernelPointer(uint32_t index)
 {
     if(index >= m_KernelCount)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return nullptr;
     }
     return m_pKernelArray[index];

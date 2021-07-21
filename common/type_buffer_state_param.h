@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,18 +25,12 @@
 #ifndef GUARD_common_type_buffer_state_param_h
 #define GUARD_common_type_buffer_state_param_h
 
-struct CM_BUFFER_STATE_PARAM {
-    CM_RT_API CM_BUFFER_STATE_PARAM();
-    CM_RT_API CM_BUFFER_STATE_PARAM(const CM_BUFFER_STATE_PARAM &another);
-    const CM_BUFFER_STATE_PARAM& operator=(
-        const CM_BUFFER_STATE_PARAM &another);
-
-    uint32_t size;  //! Designated size of the buffer, if it is 0, set it as the original width.
-
-    uint32_t base_address_offset;  //! Offset should be 16-aligned.
-
-    CM_SURFACE_MEM_OBJ_CTRL mocs;  //! Memory object control settings for surfaces.
-                                   //! If not set (all zeros), then the aliases mocs setting is the
-                                   //! same as the original one.
+// Parameters used to set the surface state of the buffer
+struct CM_BUFFER_STATE_PARAM
+{
+    uint32_t uiSize;
+    uint32_t uiBaseAddressOffset;
+    CM_SURFACE_MEM_OBJ_CTRL mocs;
 };
+
 #endif // GUARD_common_type_buffer_state_param_h

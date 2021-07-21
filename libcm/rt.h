@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,40 +45,46 @@
 #include <string>
 
 #include "cm_vm.h"
+#include "emu_kernel_arg.h"
+#include "emu_kernel_support.h"
+
+namespace cmrt
+{
 
 class CmEmu_KernelLauncher
 {
 public:
-    struct ArgInfo
-    {
-        void *pValue;
-        int   size;
-        ArgInfo(void *pValue, int size) : pValue(pValue), size(size) {}
-        ArgInfo() = default;
-    };
-
+    friend class CmEmuMt_Thread;
     using VoidFuncPtr = void(*)();
+    static constexpr size_t kThreadIdUnset = -1;
 
 private:
 
+    const GfxEmu::KernelSupport::ProgramModule& m_programModule;
     VoidFuncPtr m_kernel_func_ptr = nullptr;
-    const std::vector<struct CmEmuArg>& m_argsVecRef;
+    std::string m_kernelName;
+    std::vector<GfxEmu::KernelArg> m_args;
 
-    static constexpr size_t kThreadIdUnset = -1;
     size_t m_thread_linear_id;
 
 public:
-    //CM_API CmEmu_KernelLauncher() {};
     CM_API CmEmu_KernelLauncher(
         VoidFuncPtr,
-        const std::vector<CmEmuArg>&,
+        const std::vector<GfxEmu::KernelArg>&,
         size_t threadId = kThreadIdUnset);
+
+    CM_API CmEmu_KernelLauncher(
+        const char *kernelName,
+        const GfxEmu::KernelSupport::ProgramModule& programModule,
+        const std::vector<GfxEmu::KernelArg>&,
+        size_t threadId = kThreadIdUnset,
+        VoidFuncPtr = nullptr);
+
     CM_API ~CmEmu_KernelLauncher();
+
+protected:
     CM_API void launch();
 };
-
-namespace cmrt
-{
 
 using CmEmuThreadBroadcastEl = uint32_t;
 
@@ -191,6 +197,7 @@ class CmEmuMt_Thread
 public:
     enum class State
     {
+        UNSPAWNED,
         RUNNING,
         SUSPENDED,
         COMPLETED
@@ -204,10 +211,13 @@ private:
     CmEmu_KernelLauncher   m_kernel_launcher;
     CmEmuMt_Kernel*        m_kernel;
     CmEmuMt_ThreadBell     m_bell;
-    std::thread            m_os_thread;
+    std::unique_ptr<std::thread>  m_os_thread_ptr;
     std::atomic<State>     m_state {State::RUNNING};
 
 public:
+    CmEmuMt_Thread(
+        CmEmu_KernelLauncher launcher,
+        CmEmuMt_Kernel* kernel);
     CmEmuMt_Thread(
         uint32_t local_idx,
         uint32_t group_idx,
@@ -218,10 +228,12 @@ public:
     ~CmEmuMt_Thread();
 
     void        wrapper();
+    void        wrapper_debug();
     void        suspend();
     void        resume();
     void        complete();
 
+    bool                unspawned() const { return m_state.load() == State::UNSPAWNED; }
     bool                suspended() const { return m_state.load() == State::SUSPENDED; }
     bool                running() const { return m_state.load() == State::RUNNING; }
     bool                completed();
@@ -246,6 +258,8 @@ public:
 
 class CmEmuMt_Kernel
 {
+public:
+    static thread_local void* m_sched_ctx;
 private:
     CmEmu_KernelLauncher m_kernel_launcher;
 
@@ -253,7 +267,7 @@ private:
     //            resident number of groups, that are alive at the same time,
     //            size of a group and the number of parallel workers.
     // we spawn m_group_size*m_number_resident_groups of threads
-    // so some OSes may have limits, e.g. MacOS limtits to 4096 threads
+    // so some OSes may have limits
     std::vector<uint32_t> m_grid_dims, m_grid_strides;
     std::vector<uint32_t> m_group_dims, m_group_strides;
     uint32_t              m_group_count{0},
@@ -274,6 +288,7 @@ public:
 
     CM_API ~CmEmuMt_Kernel();
     CM_API bool run(double timeout = 0);
+    CM_API bool run_debug();
     void     suspend_thread(CmEmuMt_Thread *);
     void     resume_thread(CmEmuMt_Thread *);
     void     complete_thread(CmEmuMt_Thread *);

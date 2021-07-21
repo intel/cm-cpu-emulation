@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,7 +50,9 @@ struct WarnMe{ \
 
 #ifndef AUTO_CM_MODE_SET
     /// Defined these macros for MSVC and GCC.
+#if !defined(CM_GENX)
     #define CM_GENX
+#endif // !defined(CM_GENX)
     #define CM_EMU
     #define _GENX_MAIN_
     #define _GENX_
@@ -95,9 +97,8 @@ struct WarnMe{ \
 do {                                                            \
     int result = cm_call;                                       \
     if (result != CM_SUCCESS) {                                 \
-        fprintf(stderr, "Invalid CM call at %s:%d. Error %d: ", \
+        GFX_EMU_ERROR_MESSAGE("Invalid CM call at %s:%d. Error %d: \n", \
         __FILE__, __LINE__, result);                            \
-        fprintf(stderr, ".\n");                                 \
         exit(EXIT_FAILURE);                                     \
     }                                                           \
 } while(false)

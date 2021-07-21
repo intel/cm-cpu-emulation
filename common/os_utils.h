@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,27 +22,23 @@
  OTHER DEALINGS IN THE SOFTWARE.
 ======================= end_copyright_notice ==================================*/
 
-#include "cm_surface_alias_table.h"
+#pragma once
 
-CM_BUFFER_STATE_PARAM::CM_BUFFER_STATE_PARAM()
-    : size(0),
-      base_address_offset(0) {}
-//-----------------------------
+#include <string>
 
-CM_BUFFER_STATE_PARAM::CM_BUFFER_STATE_PARAM(
-    const CM_BUFFER_STATE_PARAM &another)
-    : size(another.size),
-    base_address_offset(another.base_address_offset),
-    mocs(another.mocs) {}
-//-----------------------
+// os-dependent functionality
+namespace os
+{
 
-const CM_BUFFER_STATE_PARAM&
-CM_BUFFER_STATE_PARAM::operator=(
-    const CM_BUFFER_STATE_PARAM &another) {
-  if (this == &another)  return *this;
-  size = another.size;
-  base_address_offset = another.base_address_offset;
-  mocs = another.mocs;
-  return *this;
-}//-----------
+using SharedLibHandle = void*;
 
+bool IsLibHandleValid(SharedLibHandle h);
+SharedLibHandle LoadSharedLib(const std::string& name);
+bool FreeSharedLib(SharedLibHandle h);
+void *GetSharedSymbolAddress(SharedLibHandle h, const std::string& name);
+std::string GetSharedLibLocation(SharedLibHandle h);
+/// Create a temporary file and write "bytes" to it. Return filename.
+std::string CreateTempFile(const unsigned char* const bytes, size_t num_bytes);
+bool DeleteFile(const std::string& name);
+std::string GetEnvVarValue(const std::string& name);
+}

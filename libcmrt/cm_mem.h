@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 
 #include <cstring>
 #include <new>
-#include "cm_debug.h"
+#include "emu_log.h"
 
 #define CmSafeDeleteArray(_ptr) {if(_ptr) {delete[] (_ptr); (_ptr)=0;}}
 #define CmSafeRelease(_ptr)     {if(_ptr) {delete (_ptr); (_ptr)=0;}}
@@ -41,17 +41,17 @@ Description:
 \*****************************************************************************/
 inline void CmSafeMemCopy( void* dst, const void* src, const size_t bytes )
 {
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     __try
 #endif
     {
         memcpy( dst, src, bytes );
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     // catch exceptions here so they are easily debugged
     __except(EXCEPTION_EXECUTE_HANDLER)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
     }
 #endif
 }
@@ -65,17 +65,17 @@ Description:
 \*****************************************************************************/
 inline void CmSafeMemSet( void* dst, const int data, const size_t bytes )
 {
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     __try
 #endif
     {
         ::memset( dst, data, bytes );
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     // catch exceptions here so they are easily debugged
     __except(EXCEPTION_EXECUTE_HANDLER)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
     }
 #endif
 }
@@ -98,17 +98,17 @@ Exception Handler Memory Compare function
 \*****************************************************************************/
 inline int CmSafeMemCompare(const void* dst, const void* src, const size_t bytes)
 {
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     __try
 #endif
     {
         return ::memcmp(dst, src, bytes);
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     // catch exceptions here so they are easily debugged
     __except (EXCEPTION_EXECUTE_HANDLER)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return 0x7FFFFFFF;  //  An unreasonably large value indicating errors.
     }
 #endif

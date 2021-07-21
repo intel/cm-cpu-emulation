@@ -1,5 +1,16 @@
-# CM Emulation project.
-## Prerequisites
+# CM Emulation project 
+
+ Table of contents
+
+- [CM Emulation project](#cm-emulation-project)
+  - [Prerequisites](#prerequisites)
+  - [Build instructions](#build-instructions)
+  - [Installation](#installation)
+  - [Usage resources:](#usage-resources)
+  - [Development resources:](#development-resources)
+  - [License](#license)
+
+## Prerequisites 
 
 - [CMake](https://cmake.org/), version >= 3.10
 - [pkg-config](https://github.com/freedesktop/pkg-config), latest version.
@@ -7,6 +18,9 @@
 - [OpenCL headers](https://github.com/KhronosGroup/OpenCL-Headers), latest version.
 - [Level Zero development package](https://github.com/intel/compute-runtime/releases), latest version.
 - [LibVA development package](https://github.com/intel/libva) with API version >= 1.6.0 (see va_version.h for **VA_VERSION**)
+
+
+
 
 ## Build instructions
 ### Linux
@@ -16,6 +30,9 @@
 
 > By default **system-installed** headers and libraries shall be used. 
 > To override some locations the following **cmake options** can be used
+>
+> - ### OpenCL headers path:
+> cmake -D**OPENCL_HEADERS_PATH**=\<PATH TO OPENCL HEADERS>
 >
 > - ### LibVA installation prefix:
 >
@@ -43,6 +60,15 @@
 ### Linux
 
 1. **make** install
+
+## Usage resources: 
+
+- [Runtime configuration readme](README_CONFIG.md)
+
+
+## Development resources:
+
+- [Logging API readme](README_LOGGING.md)
 
 ## License
 

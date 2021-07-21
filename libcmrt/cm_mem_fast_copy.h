@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -240,7 +240,7 @@ inline void CmFastMemCopyFromWC(void* dst, const void* src, const size_t bytes, 
                 count -= doubleHexWordAlignBytes;
             }
 
-            CmAssert(IsAligned(p_src, sizeof(DHWORD)) == true);
+            GFX_EMU_ASSERT(IsAligned(p_src, sizeof(DHWORD)) == true);
 
             // Get the number of bytes to be copied (rounded down to nearets DHWORD)
             const size_t DoubleHexWordsToCopy = count / sizeof(DHWORD);
@@ -374,7 +374,7 @@ given alignment size
 \*****************************************************************************/
 inline size_t GetAlignmentOffset(void* const ptr, const size_t alignSize)
 {
-    CmAssert(alignSize);
+    GFX_EMU_ASSERT(alignSize);
 
     uint32_t offset = 0;
 
@@ -404,7 +404,7 @@ Type-safe (power-2) alignment of a pointer.
 \*****************************************************************************/
 inline void* Align(void* const ptr, const size_t alignment)
 {
-    CmAssert(IsPowerOfTwo(alignment));
+    GFX_EMU_ASSERT(IsPowerOfTwo(alignment));
 
     return (void*)((((size_t)ptr) + alignment - 1) & ~(alignment - 1));
 }
@@ -426,8 +426,8 @@ inline void FastMemCopy_SSE2_movntdq_movdqa(
     void* src,
     const size_t doubleQuadWords)
 {
-    CmAssert(IsAligned(dst, sizeof(DQWORD)));
-    CmAssert(IsAligned(src, sizeof(DQWORD)));
+    GFX_EMU_ASSERT(IsAligned(dst, sizeof(DQWORD)));
+    GFX_EMU_ASSERT(IsAligned(src, sizeof(DQWORD)));
 
     const size_t DoubleQuadWordsPerPrefetch = sizeof(PREFETCH) / sizeof(DQWORD);
 
@@ -481,7 +481,7 @@ inline void FastMemCopy_SSE2_movdqu_movdqa(
     void* src,
     const size_t doubleQuadWords)
 {
-    CmAssert(IsAligned(src, sizeof(DQWORD)));
+    GFX_EMU_ASSERT(IsAligned(src, sizeof(DQWORD)));
 
     const size_t DoubleQuadWordsPerPrefetch = sizeof(PREFETCH) / sizeof(DQWORD);
 
@@ -535,7 +535,7 @@ inline void FastMemCopy_SSE2_movntdq_movdqu(
     const void* src,
     const size_t doubleQuadWords)
 {
-    CmAssert(IsAligned(dst, sizeof(DQWORD)));
+    GFX_EMU_ASSERT(IsAligned(dst, sizeof(DQWORD)));
 
     const size_t DoubleQuadWordsPerPrefetch = sizeof(PREFETCH) / sizeof(DQWORD);
 

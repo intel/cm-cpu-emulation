@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,4 +24,46 @@
 
 #pragma once
 
-#define SHIM_API_EXPORT
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+
+namespace GfxEmu {
+namespace DbgSymb {
+struct SymbDesc {
+    std::string name {};
+    std::string typeName {};
+    void* addr {nullptr};
+    bool isFloat {false};
+    bool isClass {false};
+    bool isPointer {false};
+    size_t size {0};
+    bool isType() { return !size; }
+};
+
+using ArgDesc = SymbDesc;
+
+struct FunctionDesc : SymbDesc {
+    std::vector<ArgDesc> args;
+    std::string linkageName;
+
+    FunctionDesc () = default;
+    FunctionDesc (const FunctionDesc& o) : SymbDesc (o) {
+        std::copy(o.args.begin(), o.args.end(), std::back_inserter(args));
+        linkageName = o.linkageName;
+
+    }
+};
+
+struct ArgVisitorParams {
+    DbgSymb::FunctionDesc *kernelDescPtr {nullptr};
+    std::string funcName {};
+    void* funcAddr {nullptr};
+    bool isFound {false};
+    bool setNameOnly {false};
+    int curParamIdx {0};
+};
+
+}; // namespace DbgSymb
+}; // namespace GfxEmu

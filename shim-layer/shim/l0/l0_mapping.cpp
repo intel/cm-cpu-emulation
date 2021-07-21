@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,10 @@
 #include "shim.h"
 #include "kernel_utils.h"
 
+#include "emu_log.h"
+#include "emu_cfg.h"
+#include "emu_utils.h"
+
 #define SHIM_CALL(x) x
 #undef ZE_APIEXPORT
 #define ZE_APIEXPORT extern "C"
@@ -63,7 +67,7 @@ ze_context_handle_t CM_CONTEXT_HANDLE = &CM_CONTEXT;
 
 struct _ze_event_handle_t
 {
-    bool signaled = false;
+    static const bool signaled = true;
 };
 
 enum class ZeCmdId
@@ -84,10 +88,17 @@ struct ZeBarrierArgs : public ZeCmdArgs
 
 struct ZeLaunchKernelArgs: public ZeCmdArgs
 {
-    ZeLaunchKernelArgs(ze_kernel_handle_t k, const ze_group_count_t* a, ze_event_handle_t e, uint32_t n, ze_event_handle_t* pe):
-        hKernel(k), pLaunchFuncArgs(a), hSignalEvent(e), numWaitEvents(n), phWaitEvents(pe) {}
+    ZeLaunchKernelArgs(
+        ze_kernel_handle_t k,
+        const ze_group_count_t* a,
+        ze_event_handle_t e,
+        uint32_t n,
+        ze_event_handle_t* pe):
+            hKernel(k), groupCount(*a),
+            hSignalEvent(e), numWaitEvents(n), phWaitEvents(pe)
+        {}
     ze_kernel_handle_t hKernel;
-    const ze_group_count_t* pLaunchFuncArgs;
+    const ze_group_count_t groupCount;
     ze_event_handle_t hSignalEvent;
     uint32_t numWaitEvents;
     ze_event_handle_t* phWaitEvents;
@@ -186,35 +197,27 @@ typedef struct _ze_device_mem_alloc
         CmSurface2D *cm_surf2d;
         CmSurface3D *cm_surf3d;
     } v;
-    template<AllocType T, class C>
+
+    template<AllocType TypeV, class C>
     static _ze_device_mem_alloc* Create(C* cm_ptr, ze_device_handle_t dev, void *storage = nullptr)
     {
-        _ze_device_mem_alloc* result = new _ze_device_mem_alloc;
-        result->type = T;
-        if constexpr (T == Buffer)
-        {
-            result->v.cm_buf = cm_ptr;
-        }
-        else if constexpr (T == SharedBuffer)
-        {
-            result->v.cm_bufup = cm_ptr;
-        }
-        else if constexpr (T == Image2d)
-        {
-            result->v.cm_surf2d = cm_ptr;
-        }
-        else if constexpr (T == Image3d)
-        {
-            result->v.cm_surf3d = cm_ptr;
-        }
+        auto result = new _ze_device_mem_alloc;
+
         result->device = dev;
+        result->type = TypeV;
+
+        if constexpr (TypeV == Buffer)            result->v.cm_buf = cm_ptr;
+        else if constexpr (TypeV == SharedBuffer) result->v.cm_bufup = cm_ptr;
+        else if constexpr (TypeV == Image2d)      result->v.cm_surf2d = cm_ptr;
+        else if constexpr (TypeV == Image3d)      result->v.cm_surf3d = cm_ptr;
+
         _ze_device_mem_alloc::Allocations.insert(result);
         if (storage)
-        {
             _ze_device_mem_alloc::SharedAllocations.emplace(storage, result);
-        }
+
         return result;
     }
+
     int GetIndex(SurfaceIndex *&idx)
     {
         switch (type)
@@ -250,14 +253,14 @@ typedef struct _ze_device_mem_alloc
     ze_device_handle_t device = nullptr;
 
     using AllocSet = std::unordered_set<const void*>;
-    static AllocSet Allocations;
+    static inline AllocSet Allocations;
 
     using Storage2AllocMap = std::unordered_map<const void*, _ze_device_mem_alloc*>;
-    static Storage2AllocMap SharedAllocations;
+    static inline Storage2AllocMap SharedAllocations;
+
 } *ze_device_mem_alloc;
+
 struct _ze_image_handle_t : public _ze_device_mem_alloc {};
-_ze_device_mem_alloc::AllocSet _ze_device_mem_alloc::Allocations;
-_ze_device_mem_alloc::Storage2AllocMap _ze_device_mem_alloc::SharedAllocations;
 
 /// functions
 bool ExecuteCommand(ze_command_queue_handle_t hCommandQueue, const ZeCommand& command);
@@ -369,7 +372,7 @@ SHIM_CALL(zeDeviceGetProperties)(
     pDeviceProperties->timerResolution = 1000;
     pDeviceProperties->timestampValidBits = 60;
     pDeviceProperties->kernelTimestampValidBits = 60;
-    strcpy(pDeviceProperties->name, "SKL");
+    strcpy(pDeviceProperties->name, GfxEmu::Utils::toUpper(GfxEmu::Cfg ().Platform.getStr ()).c_str());
     return ZE_RESULT_SUCCESS;
 }
 
@@ -404,16 +407,40 @@ SHIM_CALL(zeCommandListCreate)(
     )
 {
     // let's ignore flags for now
-    ze_command_list_handle_t list = new _ze_command_list_handle_t;
     if (phCommandList)
     {
-        *phCommandList = list;
+        *phCommandList = new _ze_command_list_handle_t;
         return ZE_RESULT_SUCCESS;
     }
     else
     {
         return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
     }
+}
+
+void* allocSharedMem(ze_device_handle_t hDevice, size_t size)
+{
+    CmBufferUP *buf = nullptr;
+    void *storage = malloc(size);
+    int status = hDevice->cm_device->CreateBufferUP(static_cast<unsigned int>(size), storage, buf);
+    if (status != CM_SUCCESS)
+    {
+        return nullptr;
+    }
+    ze_device_mem_alloc a = _ze_device_mem_alloc::Create<_ze_device_mem_alloc::SharedBuffer>(buf, hDevice, storage);
+    return storage;
+}
+
+void *allocDeviceMem(ze_device_handle_t hDevice, size_t size)
+{
+    CmBuffer *buf = nullptr;
+    int status = hDevice->cm_device->CreateBuffer(static_cast<unsigned int>(size), buf);
+    if (status != CM_SUCCESS)
+    {
+        return nullptr;
+    }
+    ze_device_mem_alloc a = _ze_device_mem_alloc::Create<_ze_device_mem_alloc::Buffer>(buf, hDevice);
+    return a;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL
@@ -426,15 +453,16 @@ SHIM_CALL(zeMemAllocDevice)(
     void** pptr                                     ///< [out] pointer to device allocation
     )
 {
-    CmBuffer *buf = nullptr;
-    int status = hDevice->cm_device->CreateBuffer(static_cast<unsigned int>(size), buf);
-    if (status != CM_SUCCESS)
+    // Looks like some pieces of host code and kernels do want to use both
+    // raw pointers and SurfaceIndex even for device allocations.
+    // Let's allocate all memory as "shared" for now.
+    //void* allocation = allocDeviceMem(hDevice, size);
+    void* allocation = allocSharedMem(hDevice, size);
+    if (!allocation)
     {
         return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
     }
-
-    ze_device_mem_alloc a = _ze_device_mem_alloc::Create<_ze_device_mem_alloc::Buffer>(buf, hDevice);
-    *pptr = a;
+    *pptr = allocation;
     return ZE_RESULT_SUCCESS;
 }
 
@@ -465,8 +493,9 @@ SHIM_CALL(zeMemFree)(
         if (storage2alloc != _ze_device_mem_alloc::SharedAllocations.end())
         {
             storage2alloc->second->Release();
-            _ze_device_mem_alloc::Allocations.erase(storage2alloc->second);
             delete storage2alloc->second;
+            _ze_device_mem_alloc::Allocations.erase(storage2alloc->second);
+            _ze_device_mem_alloc::SharedAllocations.erase(storage2alloc);
         }
         free(ptr);
     }
@@ -531,6 +560,18 @@ SHIM_CALL(zeModuleBuildLogDestroy)(
     ze_module_build_log_handle_t hModuleBuildLog    ///< [in][release] handle of the module build log object.
     )
 {
+    return ZE_RESULT_SUCCESS;
+}
+
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeModuleBuildLogGetString)(
+    ze_module_build_log_handle_t hModuleBuildLog,
+    size_t* pSize,
+    char* pBuildLog
+    )
+{
+    *pSize = 0;
+    if (pBuildLog) std::strcpy(pBuildLog,"");
     return ZE_RESULT_SUCCESS;
 }
 
@@ -697,16 +738,18 @@ bool ExecuteLaunchKernel(ze_command_queue_handle_t hCommandQueue, ZeLaunchKernel
     {
         return false;
     }
-    if ((args->hKernel->sizeZ > 1) || (args->pLaunchFuncArgs->groupCountZ > 1))
+    if ((args->hKernel->sizeZ > 1) || (args->groupCount.groupCountZ > 1))
     {
         // do not support 3-dimensional enqueue yet
+        GfxEmu::ErrorMessage("SHIM layer doesn't yet support 3-dimentional enqueue, "
+            "while was asked for z == %u", args->groupCount.groupCountZ);
         return false;
     }
     CmThreadGroupSpace *tgs = nullptr;
     unsigned int t_w = args->hKernel->sizeX;
     unsigned int t_h = args->hKernel->sizeY;
-    unsigned int tg_w = args->pLaunchFuncArgs->groupCountX;
-    unsigned int tg_h = args->pLaunchFuncArgs->groupCountY;
+    unsigned int tg_w = args->groupCount.groupCountX;
+    unsigned int tg_h = args->groupCount.groupCountY;
     status = hCommandQueue->device->cm_device->CreateThreadGroupSpace(t_w, t_h, tg_w, tg_h, tgs);
     if (status != CM_SUCCESS)
     {
@@ -746,6 +789,12 @@ bool ExecuteMemoryCopy(ze_command_queue_handle_t hCommandQueue, ZeMemoryCopyArgs
         ze_device_mem_alloc deviceDstMem = reinterpret_cast<ze_device_mem_alloc>(args->dstptr);
         status = deviceDstMem->v.cm_buf->WriteSurface(buffer, nullptr, args->size);
         delete[] buffer;
+    }
+    else if (!srcIsDevice && !dstIsDevice)
+    {
+        // host -> host and shared -> shared
+        // src and dest may overlap.
+        status = std::memmove(args->dstptr, args->srcptr, args->size) != nullptr;
     }
     else
     {
@@ -1112,7 +1161,7 @@ SHIM_CALL(zeEventHostReset)(
 {
     if (hEvent)
     {
-        hEvent->signaled = false;
+        //hEvent->signaled = false;
         return ZE_RESULT_SUCCESS;
     }
     else
@@ -1180,18 +1229,18 @@ SHIM_CALL(zeCommandListCreateImmediate)(
     ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
     )
 {
+    if (!phCommandList)
+    {
+        return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    }
      // let's ignore flags for now
     ze_command_list_handle_t list = new _ze_command_list_handle_t;
     list->is_immediate = true;
     ze_command_queue_handle_t pq = nullptr;
     SHIM_CALL(zeCommandQueueCreate)(hContext, hDevice, altdesc, &pq);
     list->queue = pq;
-    if (phCommandList)
-    {
-        *phCommandList = list;
-        return ZE_RESULT_SUCCESS;
-    }
-    return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    *phCommandList = list;
+    return ZE_RESULT_SUCCESS;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL
@@ -1218,19 +1267,13 @@ SHIM_CALL(zeMemAllocShared)(
     void** pptr                                     ///< [out] pointer to shared allocation
     )
 {
-    CmBufferUP *buf = nullptr;
-    void *storage = malloc(size);
-    int status = hDevice->cm_device->CreateBufferUP(static_cast<unsigned int>(size), storage, buf);
-    if (status != CM_SUCCESS)
+    void* allocation = allocSharedMem(hDevice, size);
+    if (!allocation)
     {
         return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
     }
-
-    ze_device_mem_alloc a = _ze_device_mem_alloc::Create<_ze_device_mem_alloc::SharedBuffer>(buf, hDevice, storage);
-    //*pptr = a;
-    *pptr = storage;
+    *pptr = allocation;
     return ZE_RESULT_SUCCESS;
-
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL
@@ -1377,5 +1420,45 @@ SHIM_CALL(zeKernelSuggestGroupSize)(
     {
         *groupSizeZ = 1;
     }
+    return ZE_RESULT_SUCCESS;
+}
+
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetCommandQueueGroupProperties)(
+    ze_device_handle_t hDevice,                     ///< [in] handle of the device
+    uint32_t* pCount,                               ///< [in,out] pointer to the number of command queue group properties.
+                                                    ///< if count is zero, then the driver will update the value with the total
+                                                    ///< number of command queue group properties available.
+                                                    ///< if count is non-zero, then driver will only retrieve that number of
+                                                    ///< command queue group properties.
+                                                    ///< if count is larger than the number of command queue group properties
+                                                    ///< available, then the driver will update the value with the correct
+                                                    ///< number of command queue group properties available.
+    ze_command_queue_group_properties_t* pCommandQueueGroupProperties   ///< [in,out][optional][range(0, *pCount)] array of query results for
+                                                    ///< command queue group properties
+    )
+{
+    if (!pCount)
+    {
+        return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
+    }
+
+    if (pCommandQueueGroupProperties)
+    {
+        constexpr int numQueues = 2;
+        for (int i = 0; i < numQueues; i++) {
+            pCommandQueueGroupProperties[i].stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_GROUP_PROPERTIES;
+            pCommandQueueGroupProperties[i].flags =
+                ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COPY |
+                ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE;
+            pCommandQueueGroupProperties[i].numQueues = numQueues;
+        }
+    }
+
+    if (*pCount == 0 || *pCount > 2)
+    {
+        *pCount = 2;
+    }
+
     return ZE_RESULT_SUCCESS;
 }

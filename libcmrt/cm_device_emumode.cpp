@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,6 @@
 
 #include "cm_queue_base.h"
 #include "cm_include.h"
-#include "cm_debug.h"
 #include "cm_device_emumode.h"
 #include "cm_kernel_emumode.h"
 #include "cm_surface_manager_emumode.h"
@@ -35,15 +34,16 @@
 #include "cm_program_emumode.h"
 #include "cm_thread_space_emumode.h"
 #include "cm_group_space_emumode.h"
-#include "cm_utils.h"
-
 #include "cm.h"
-
 #include "cm_task_emumode.h"
 
-#define CM_ZERO_TILEMASK (-1)
+#include "emu_utils.h"
+#include "emu_kernel_support.h"
+#include "emu_log.h"
+#include "emu_cfg.h"
+#include "emu_platform.h"
 
-CmEmuPlatformUse CmDeviceEmu::CurrentPlatform = CmEmuPlatformUse::UNDEFINED;
+#define CM_ZERO_TILEMASK (-1)
 
 int32_t CmDeviceEmu::Create( CmDeviceEmu* &pDevice)
 {
@@ -60,7 +60,7 @@ int32_t CmDeviceEmu::Create( CmDeviceEmu* &pDevice)
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     // leave critical section
@@ -93,51 +93,25 @@ int32_t CmDeviceEmu::Initialize()
     result = CmSurfaceManagerEmu::Create(m_pSurfaceMgr,
         m_HalMaxValues, m_HalMaxValuesEx);
 
-    auto envPlatformStr = CmUtils::String::toLower(
-        CmUtils::String::getEnvStrNoSynch (CM_RT_PLATFORM));
-    if (envPlatformStr == "icl") envPlatformStr = "icllp";
+    const auto& cfgPlatform = GfxEmu::Cfg ().Platform;
+    const auto& cfgSku = GfxEmu::Cfg ().Sku;
 
-    char* envSku         = nullptr;
-    char* envMaxThreads  = nullptr;
+    if(GfxEmu::Cfg ().Platform.getInt () == GfxEmu::Platform::UNDEFINED){
+        GFX_EMU_ERROR_MESSAGE("unknown platform supplied: %s\n", cfgPlatform.getStr ().c_str());
+        return CM_FAILURE;
+    }
 
-    CM_GETENV(envSku, CM_RT_SKU);
-    CM_GETENV(envMaxThreads, CM_RT_MAX_THREADS);
-
-    CmDeviceEmu::CurrentPlatform = CmEmuPlatformUse::UNDEFINED;
-    auto subPlatform = CM_SUB_PLATFORM_USE_SKU::CM_SKU_UNDEFINED;
-
-    if(envPlatformStr != "")
-    {
-        bool platformSet = false;
-
-#define SET_CurrentPlatform(c) \
-        if(envPlatformStr == CmUtils::String::toLower(#c)) { \
-            CmDeviceEmu::CurrentPlatform = CmEmuPlatformUse:: c; platformSet = true; }
-        SET_CurrentPlatform(BDW);
-        SET_CurrentPlatform(SKL);
-        SET_CurrentPlatform(BXT);
-        SET_CurrentPlatform(KBL);
-        SET_CurrentPlatform(ICLLP);
-        SET_CurrentPlatform(TGLLP);
-#undef SET_CurrentPlatform
-
-        if (!platformSet)
-        {
-            CmAssertMessage(false, "Unknown platform supplied: %s", envPlatformStr.c_str());
-            return CM_FAILURE;
+    auto subPlatform = cfgSku.getInt<GfxEmu::Platform::Sku::Id> ();
+    if(subPlatform == GfxEmu::Platform::Sku::UNDEFINED) {
+        if(!cfgSku.isUserDefined ()) {
+            GFX_EMU_MESSAGE(fCfg,
+                    "subplatform was not explicitly supplied, will use platform-specific default.\n");
         }
     }
 
-    if (envSku)
-    {
-        auto skuNumber = 0;
-        sscanf(envSku, "gt%d", &skuNumber);
-        subPlatform = static_cast<CM_SUB_PLATFORM_USE_SKU>(skuNumber);
-    }
-
-    size_t threadsPerEU = 0,
-           euPerSubslice = 0,
-           maxThreadsNum = 0;
+    uint32_t threadsPerEU  = 0,
+             euPerSubslice = 0,
+             maxThreadsNum = 0;
 
     // -----
     auto initSubPlatformCfg = [&] (
@@ -145,7 +119,7 @@ int32_t CmDeviceEmu::Initialize()
             auto& threadsPerEuDataRef,
             auto& euPerSubsliceDataRef,
             const std::vector<int>& validSubplatforms,
-            CM_SUB_PLATFORM_USE_SKU defaultSubplatform = CM_SUB_PLATFORM_USE_SKU::CM_SKU_UNDEFINED
+            GfxEmu::Platform::Sku::Id defaultSubplatform = GfxEmu::Platform::Sku::UNDEFINED
         )
         {
             if (!std::any_of(
@@ -153,15 +127,15 @@ int32_t CmDeviceEmu::Initialize()
                     validSubplatforms.end (),
                     [=] (auto a) { return a == subPlatform; })
             ) {
-                CmPrintMessage("Supplied subplatform %s is not defined for currently"
-                    " selected platform %s, using default.\n", envSku, envPlatformStr.c_str());
+                GfxEmu::PrintMessage("Supplied subplatform %s is not defined for currently"
+                    " selected platform %s, using default.\n",
+                        cfgSku.getStr ().c_str (), cfgPlatform.getStr ().c_str());
 
-                if (defaultSubplatform == CM_SUB_PLATFORM_USE_SKU::CM_SKU_UNDEFINED)
-                {
-                    CmFailWithMessage("Supported suplatform must be supplied.");
-                }
-                else
+                if (defaultSubplatform == GfxEmu::Platform::Sku::UNDEFINED) {
+                    GFX_EMU_FAIL_WITH_MESSAGE("Supported suplatform must be supplied.");
+                } else {
                     subPlatform = defaultSubplatform;
+                }
             }
 
             threadsPerEU   = threadsPerEuDataRef[subPlatform];
@@ -170,86 +144,121 @@ int32_t CmDeviceEmu::Initialize()
 
             if (!threadsPerEU || !euPerSubslice || !maxThreadsNum) {
                 if(!threadsPerEU)
-                    CmErrorMessage("Threads per EU can't be zero, check config.");
+                    GfxEmu::ErrorMessage("Threads per EU can't be zero, check config.");
                 if(!euPerSubslice)
-                    CmErrorMessage("EU per subslice can't be zero, check config.");
+                    GfxEmu::ErrorMessage("EU per subslice can't be zero, check config.");
                 if(!maxThreadsNum)
-                    CmErrorMessage("Max threads number can't be zero, check config.");
+                    GfxEmu::ErrorMessage("Max threads number can't be zero, check config.");
 
-                CmErrorMessage("Supplied subplatform %s for platform %s", envSku, envPlatformStr.c_str());
+                GfxEmu::ErrorMessage("Supplied subplatform %s for platform %s",
+                    cfgSku.getStr ().c_str (), cfgPlatform.getStr ().c_str());
                 exit(EXIT_FAILURE);
             }
         };
 
-    switch(CmDeviceEmu::CurrentPlatform)
+    using namespace GfxEmu::Platform::Sku;
+    switch(GfxEmu::Cfg ().Platform.getInt ())
     {
-        case CmEmuPlatformUse::SKL:
+        case GfxEmu::Platform::SKL:
             initSubPlatformCfg (
                 skl_max_threads,
                 skl_threads_per_eu,
                 skl_eu_per_subslice,
                 {GT1,GT2,GT3,GT4},GT2);
              break;
-        case CmEmuPlatformUse::BXT:
+        case GfxEmu::Platform::BXT:
             initSubPlatformCfg (
                 bxt_max_threads,
                 bxt_threads_per_eu,
                 bxt_eu_per_subslice,
                 {GTA,GTC,GTX},GTX);
             break;
-        case CmEmuPlatformUse::KBL:
+        case GfxEmu::Platform::KBL:
             initSubPlatformCfg (
                 kbl_max_threads,
                 kbl_threads_per_eu,
                 kbl_eu_per_subslice,
                 {GT1,GT2,GT3,GT4},GT2);
             break;
-        case CmEmuPlatformUse::ICLLP:
+        case GfxEmu::Platform::ICLLP:
             initSubPlatformCfg (
                 icllp_max_threads,
                 icllp_threads_per_eu,
                 icllp_eu_per_subslice,
                 {GT1,GT2},GT2);
             break;
-        case CmEmuPlatformUse::TGLLP:
+        case GfxEmu::Platform::TGLLP:
             initSubPlatformCfg (
                 tgllp_max_threads,
                 tgllp_threads_per_eu,
                 tgllp_eu_per_subslice,
                 {GT1,GT2},GT2);
             break;
+        case GfxEmu::Platform::XEHP_SDV:
+            initSubPlatformCfg (
+                xehp_sdv_max_threads,
+                xehp_sdv_threads_per_eu,
+                xehp_sdv_eu_per_subslice,
+                {GT1,GT2,GT3},GT2);
+            break;
         default:
         {
-            CmAssertMessage(false, "Platform %s is not supported.", envPlatformStr.c_str ());
+            GFX_EMU_ERROR_MESSAGE("platform %s is not supported.\n", cfgPlatform.getStr ().c_str ());
             return CM_FAILURE;
         }
     }
 
-    CmAssert(maxThreadsNum * threadsPerEU * euPerSubslice);
+    GFX_EMU_ASSERT(maxThreadsNum * threadsPerEU * euPerSubslice);
+
+    char* envMaxThreads  = nullptr;
+    CM_GETENV(envMaxThreads, CM_RT_MAX_THREADS);
 
     {
-        int user_defined_max_threads_number = envMaxThreads ? atoi(envMaxThreads) : 0;
+        uint32_t user_defined_max_threads_number = envMaxThreads ? atoi(envMaxThreads) : 0;
         if (user_defined_max_threads_number &&
             user_defined_max_threads_number < maxThreadsNum)
                 maxThreadsNum = user_defined_max_threads_number;
     }
+
     m_HalMaxValues.maxHwThreads = maxThreadsNum;
 
     m_HalMaxValuesEx.maxUserThreadsPerMediaWalker =
-        CmDeviceEmu::CurrentPlatform < CmEmuPlatformUse::SKL ?
+        GfxEmu::Cfg ().Platform.getInt () < GfxEmu::Platform::SKL ?
             CM_MAX_USER_THREADS_PER_MEDIA_WALKER_PRE_SKL :
-        CmDeviceEmu::CurrentPlatform >= CmEmuPlatformUse::SKL &&
-        (CmDeviceEmu::CurrentPlatform <= CmEmuPlatformUse::KBL
+        GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::SKL &&
+        (GfxEmu::Cfg ().Platform.getInt () <= GfxEmu::Platform::KBL
         )?
             CM_MAX_USER_THREADS_PER_MEDIA_WALKER_SKL_PLUS :
             CM_MAX_USER_THREADS_PER_MEDIA_WALKER_GEN11_PLUS;
 
     m_HalMaxValuesEx.maxUserThreadsPerThreadGroup = threadsPerEU*euPerSubslice;
 
-    CM_GETENV_FREE(envSku);
     CM_GETENV_FREE(envMaxThreads);
 
     return result;
+}
+
+CM_RT_API int32_t CmDeviceEmu::CreateKernel(
+    CmProgram* pProgram,
+    const char* kernelName,
+    CmKernel* & pKernel,
+    const char* options )
+{
+#ifdef GFX_EMU_KERNEL_SUPPORT_ENABLED
+    return CreateKernel(
+        pProgram,
+        kernelName,
+        GfxEmu::KernelSupport::getKernelDesc (
+                        kernelName,
+                        static_cast<CmProgramEmu*>(pProgram)->GetProgramModule ()
+                    ).addr,
+        pKernel,
+        options);
+#else
+    GFX_EMU_FAIL_WITH_MESSAGE("This CM EMU runtime build doesn't support kernel data reflection,"
+        " use EMU-specific interface and pass kernel function pointer explicitly.");
+#endif
+    return CM_SUCCESS;
 }
 
 CM_RT_API int32_t CmDeviceEmu::CreateKernel( CmProgram* pProgram,
@@ -259,12 +268,21 @@ CM_RT_API int32_t CmDeviceEmu::CreateKernel( CmProgram* pProgram,
                                              const char* options )
 {
 
+    // Fallback for direct users of this legacy EMU-specific interface passing nullptr as kernel address to it.
+    if(!fncPnt)
+        fncPnt = GfxEmu::KernelSupport::getKernelDesc (
+                        kernelName,
+                        static_cast<CmProgramEmu*>(pProgram)->GetProgramModule ()
+                    ).addr;
+
     if( !pProgram ||
         !kernelName ||
         !strcmp(kernelName, "") ||
         !fncPnt)
     {
-        CmAssert(0);
+        GFX_EMU_ERROR_MESSAGE("Using legacy EMU-specific CreateKernel interface while either "
+            "kernel name (%s) or kernel address (%p) are not passed or kernel address couldn't be determined.\n",
+                kernelName, fncPnt);
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -298,7 +316,7 @@ CM_RT_API int32_t CmDeviceEmu::CreateBuffer(uint32_t width, CmBuffer* & pSurface
     CmBufferEmu * ptemp = nullptr;
     if( ( width < CM_MIN_SURF_WIDTH ) || ( width > CM_MAX_1D_SURF_WIDTH ) )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
     }
 
@@ -318,7 +336,7 @@ CM_RT_API int32_t CmDeviceEmu::CreateBufferEx(uint32_t width, CmBuffer* & pSurfa
 
     if ((tileID >= genTileCount))
     {
-        CmFailWithMessage("TileID more than supported. Failed to create a buffer!");
+        GFX_EMU_FAIL_WITH_MESSAGE("TileID more than supported. Failed to create a buffer!");
     }
 
     int32_t status = CreateBuffer(width, pSurface );
@@ -340,40 +358,40 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2D(uint32_t width,
 
     if( ( width < CM_MIN_SURF_WIDTH ) || ( width > CM_MAX_2D_SURF_WIDTH ) )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
     }
 
     if( height < CM_MIN_SURF_HEIGHT )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_HEIGHT;
     }
 
     if ( height > CM_MAX_2D_SURF_HEIGHT )
     {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_INVALID_HEIGHT;
     }
 
     if( ( format == CM_SURFACE_FORMAT_NV12 ) &&
         ( height & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_HEIGHT;
     }
 
     if( ( format == CM_SURFACE_FORMAT_NV12 ) &&
         ( width & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_WIDTH;
     }
 
     if( ( format == CM_SURFACE_FORMAT_YUY2 ) &&
         ( width & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_WIDTH;
     }
 
@@ -400,7 +418,7 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2D( VASurfaceID* iVASurface,
 {
     if (pDevice == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
@@ -456,8 +474,8 @@ CM_RT_API int32_t CmDeviceEmu::CreateQueue( CmQueue* & pQueue )
     }
     else
     {
-        CmErrorMessage("Failed to create queue!");
-        CmAssert( 0 )
+        GfxEmu::ErrorMessage("Failed to create queue!");
+        GFX_EMU_ASSERT( 0 );
     }
 
     return result;
@@ -469,7 +487,7 @@ CM_RT_API int32_t CmDeviceEmu::LoadProgram( void* pCommonISACode,
                                             const char* options )
 {
     CmProgramEmu* pTmpProgramEmu = nullptr;
-    int32_t result = CmProgramEmu::Create( this, pTmpProgramEmu );
+    int32_t result = CmProgramEmu::Create(this, pTmpProgramEmu, pCommonISACode, size);
     if( result == CM_SUCCESS )
     {
         m_ProgramArray.SetElement( m_ProgramCount, pTmpProgramEmu );
@@ -627,18 +645,18 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface3D(uint32_t width,
 
     if( ( width < CM_MIN_SURF_WIDTH ) || ( width > CM_MAX_3D_SURF_WIDTH ) )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
 
     }
     if( ( height < CM_MIN_SURF_HEIGHT ) || ( height > CM_MAX_3D_SURF_HEIGHT ) )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_HEIGHT;
     }
     if( ( depth < CM_MIN_SURF_DEPTH ) || ( depth > CM_MAX_3D_SURF_DEPTH ) )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_DEPTH;
     }
     CLock locker(m_CriticalSection_Surface);
@@ -668,9 +686,9 @@ CM_RT_API int32_t CmDeviceEmu::CreateThreadSpace( uint32_t width, uint32_t heigh
     CmThreadSpaceEmu *pTSSim = nullptr;
     int32_t result = CmThreadSpaceEmu::Create( this, width, height, pTSSim );
     pTS = static_cast<CmThreadSpace *>(pTSSim);
-    if (result == CM_SUCCESS && (
-        CmDeviceEmu::CurrentPlatform == CmEmuPlatformUse::TGLLP
-    ))
+    if (result == CM_SUCCESS &&
+        GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV
+    )
     {
         CmThreadGroupSpace *pTGSSim = pTSSim->GetThreadGroupSpace();
 
@@ -687,7 +705,7 @@ CM_RT_API int32_t CmDeviceEmu::DestroyThreadSpace( CmThreadSpace* & pTS )
     CmThreadSpaceEmu *pTSSim = dynamic_cast<CmThreadSpaceEmu *> (pTS);
     if(pTSSim == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
     int32_t result = CmThreadSpaceEmu::Destroy(pTSSim);
@@ -735,7 +753,7 @@ CM_RT_API int32_t CmDeviceEmu::DestroyThreadGroupSpace(CmThreadGroupSpace*& pTGS
 {
     if(pTGS == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
     int32_t result = CmThreadGroupSpace::Destroy(pTGS);
@@ -1013,27 +1031,30 @@ CM_RT_API int32_t CmDeviceEmu::GetCaps(CM_DEVICE_CAP_NAME capName, size_t& capVa
         {
             uint32_t platform = PLATFORM_INTEL_UNKNOWN;
 
-            auto genPlatform = CmEmuPlatformUse::UNDEFINED;
+            auto genPlatform = GfxEmu::Platform::UNDEFINED;
             GetGenPlatform(genPlatform);
 
             capValueSize = sizeof( uint32_t );
 
             switch (genPlatform)
             {
-                case CmEmuPlatformUse::BDW:
+                case GfxEmu::Platform::BDW:
                     platform = PLATFORM_INTEL_BDW;
                     break;
-                case CmEmuPlatformUse::SKL:
+                case GfxEmu::Platform::SKL:
                     platform = PLATFORM_INTEL_SKL;
                     break;
-                case CmEmuPlatformUse::BXT:
+                case GfxEmu::Platform::BXT:
                     platform = PLATFORM_INTEL_BXT;
                     break;
-                case CmEmuPlatformUse::ICLLP:
+                case GfxEmu::Platform::ICLLP:
                     platform = PLATFORM_INTEL_ICLLP;
                     break;
-                case CmEmuPlatformUse::TGLLP:
+                case GfxEmu::Platform::TGLLP:
                     platform = PLATFORM_INTEL_TGLLP;
+                    break;
+                case GfxEmu::Platform::XEHP_SDV:
+                    platform = PLATFORM_INTEL_XEHP_SDV;
                     break;
                 default:
                     break;
@@ -1048,45 +1069,35 @@ CM_RT_API int32_t CmDeviceEmu::GetCaps(CM_DEVICE_CAP_NAME capName, size_t& capVa
         }
 
     case CAP_GT_PLATFORM:
-        if( capValueSize >= sizeof( uint32_t ) )
+        if( capValueSize >= sizeof(PLATFORM_INTEL_GT_UNKNOWN) )
         {
-            auto genPlatform = CmEmuPlatformUse::UNDEFINED;
+            auto genPlatform = GfxEmu::Platform::UNDEFINED;
             GetGenPlatform(genPlatform);
 
-            if (genPlatform >= CmEmuPlatformUse::BXT)
-            {
+            if (genPlatform >= GfxEmu::Platform::BXT) {
+
                 return CmNotImplemented("getting CAP_GT_PLATFORM for platform >= BXT");
             }
 
-            char * envSku = nullptr;
-            CM_GETENV(envSku, CM_RT_SKU);
+            const auto& cfgSku = GfxEmu::Cfg ().Sku;
+            auto gtPlatform = GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN;
 
-            capValueSize = sizeof( uint32_t );
-            uint32_t gtPlatform = 0;
+            gtPlatform =
+                cfgSku.getStr () == "gt1" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT1 :
+                cfgSku.getStr () == "gt2" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT2 :
+                cfgSku.getStr () == "gt3" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT3 :
+                cfgSku.getStr () == "gt4" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT4 :
+                cfgSku.getStr () == "gta" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTA :
+                cfgSku.getStr () == "gtc" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTC :
+                cfgSku.getStr () == "gtx" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTX :
+                                            GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN
+            ;
 
-            if(envSku == nullptr)
-                gtPlatform = PLATFORM_INTEL_GT2;
-            else if(strcmp(envSku, "gt1")==0)
-                gtPlatform = PLATFORM_INTEL_GT1;
-            else if(strcmp(envSku, "gt2")==0)
-                gtPlatform = PLATFORM_INTEL_GT2;
-            else if(strcmp(envSku, "gt3")==0)
-                gtPlatform = PLATFORM_INTEL_GT3;
-            else if(strcmp(envSku, "gt4")==0)
-                gtPlatform = PLATFORM_INTEL_GT4;
-            else if(strcmp(envSku, "gta")==0)
-                gtPlatform = PLATFORM_INTEL_GTA;
-            else if(strcmp(envSku, "gtc")==0)
-                gtPlatform = PLATFORM_INTEL_GTC;
-            else if(strcmp(envSku, "gtx")==0)
-                gtPlatform = PLATFORM_INTEL_GTX;
-            else
-                gtPlatform = PLATFORM_INTEL_GT_UNKNOWN;
+            if(gtPlatform == GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN) {
+                GFX_EMU_WARNING_MESSAGE(fCfg, "platform %s is not recognized.\n", cfgSku.getStr ().c_str ());
+            }
 
-            CmSafeMemCopy( pCapValue, &gtPlatform, capValueSize );
-
-            CM_GETENV_FREE(envSku);
-
+            CmSafeMemCopy( pCapValue, &gtPlatform, sizeof(gtPlatform) );
             return CM_SUCCESS;
         }
         else
@@ -1166,13 +1177,13 @@ CM_RT_API int32_t CmDeviceEmu::CreateBufferUP(uint32_t size, void* pSysMem, CmBu
     CmBufferEmu * ptemp = nullptr;
     if((size < CM_MIN_SURF_WIDTH) || (size > CM_MAX_1D_SURF_WIDTH))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
     }
 
     if(pSysMem == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
     CLock locker(m_CriticalSection_Surface);
@@ -1232,7 +1243,7 @@ CM_RT_API int32_t CmDeviceEmu::GetSurface2DInfo(uint32_t width,
     int32_t result = m_pSurfaceMgr->Surface2DSanityCheck(width, height, format);
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return result;
     }
     switch( format )
@@ -1264,21 +1275,21 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2DUP( uint32_t width,
     if( ( format == CM_SURFACE_FORMAT_NV12 ) &&
         ( height & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_HEIGHT;
     }
 
     if( ( format == CM_SURFACE_FORMAT_NV12 ) &&
         ( width & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_WIDTH;
     }
 
     if( ( format == CM_SURFACE_FORMAT_YUY2 ) &&
         ( width & 0x1 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_WIDTH;
     }
     CLock locker(m_CriticalSection_Surface);
@@ -1295,7 +1306,7 @@ CM_RT_API int32_t CmDeviceEmu::DestroySurface2DUP( CmSurface2DUP* & pSurface)
 {
     if(pSurface == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
     CLock locker(m_CriticalSection_Surface);
@@ -1308,18 +1319,19 @@ CM_RT_API int32_t CmDeviceEmu::DestroySurface2DUP( CmSurface2DUP* & pSurface)
     return status;
 }
 
-int32_t CmDeviceEmu::GetGenPlatform(CmEmuPlatformUse& platform )
+int32_t CmDeviceEmu::GetGenPlatform(GfxEmu::Platform::Id& platform )
 {
-    platform = CmDeviceEmu::CurrentPlatform;
+    static auto p_ = GfxEmu::Cfg ().Platform.getInt<GfxEmu::Platform::Id> ();
+    platform = p_;
     return CM_SUCCESS;
 }
 
 bool CmDeviceEmu::IsValidSurfaceIndex(uint32_t surfBTI)
 {
-    CmEmuPlatformUse platformid;
+    GfxEmu::Platform::Id platformid;
     GetGenPlatform(platformid);
 
-    if (platformid >= CmEmuPlatformUse::SKL)
+    if (platformid >= GfxEmu::Platform::SKL)
     {
         if (surfBTI >= (
                 CM_GLOBAL_SURFACE_INDEX_START_GEN9_PLUS + CM_MAX_GLOBAL_SURFACE_NUMBER
@@ -1352,7 +1364,7 @@ CM_RT_API int32_t CmDeviceEmu::CreateBufferSVM( uint32_t size,
     CmBufferEmu * ptemp = nullptr;
     if( size < CM_MIN_SURF_WIDTH  )
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
     }
 
@@ -1415,8 +1427,8 @@ CM_RT_API int32_t CmDeviceEmu::CreateBufferAlias(CmBuffer *buffer,
 
     if (!buffer)
     {
-        CmAssert(0);
-        CmErrorMessage("Error: Pointer to CmBuffer is null.");
+        GFX_EMU_ASSERT(0);
+        GfxEmu::ErrorMessage("Error: Pointer to CmBuffer is null.");
         return CM_NULL_POINTER;
     }
 
@@ -1425,8 +1437,8 @@ CM_RT_API int32_t CmDeviceEmu::CreateBufferAlias(CmBuffer *buffer,
     result = bufferEmu->CreateBufferAlias(aliasIndex);
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
-        CmErrorMessage("Error: Failed to create buffer alias.");
+        GFX_EMU_ASSERT(0);
+        GfxEmu::ErrorMessage("Error: Failed to create buffer alias.");
         return result;
     }
 
@@ -1476,7 +1488,7 @@ CM_RT_API int32_t CmDeviceEmu::CreateQueueEx(CmQueue *& pQueue, CM_QUEUE_CREATE_
     }
     else
     {
-        CmFailWithMessage("Failed to create a queue!");
+        GFX_EMU_FAIL_WITH_MESSAGE("Failed to create a queue!");
     }
 
     return result;
@@ -1489,8 +1501,8 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2DAlias(CmSurface2D* surface2d,
 
     if (!surface2d)
     {
-        CmErrorMessage("Error: Pointer to surface 2d is null.");
-        CmAssert(0);
+        GfxEmu::ErrorMessage("Error: Pointer to surface 2d is null.");
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
@@ -1499,8 +1511,8 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2DAlias(CmSurface2D* surface2d,
     result = surface2dEmu->CreateSurface2DAlias(aliasIndex);
     if (result != CM_SUCCESS)
     {
-        CmErrorMessage("Error: Failed to create surface2d alias.");
-        CmAssert(0);
+        GfxEmu::ErrorMessage("Error: Failed to create surface2d alias.");
+        GFX_EMU_ASSERT(0);
         return result;
     }
 

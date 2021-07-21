@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,32 +32,28 @@ static const int bxt_max_threads[8] = {0, -1, -1, -1, -1, 108, 72, 144};
 static const int kbl_max_threads[8] = { 0, -1, 161, 329 };
 static const int icllp_max_threads[3] = {0, 224, 448};
 static const int tgllp_max_threads[] = {0, 224, 672};
+static const int xehp_sdv_max_threads[] = {0, 1024, 2048, 4096};
 
 static const int skl_threads_per_eu[5] = {0, 7, 7, 7, 7};
 static const int bxt_threads_per_eu[8] = {0, -1, -1, -1, -1, 6, 6, 6}; //gt1,gt2,gt3,gt4 not defined
 static const int kbl_threads_per_eu[8] = { 0, -1, 7, 7}; //gt1,gt4 not defined
 static const int icllp_threads_per_eu[3] = { 0, 7, 7};
 static const int tgllp_threads_per_eu[] = {0, 7, 7};
+static const int xehp_sdv_threads_per_eu[] = {0, 8, 8, 8};
 
 static const int skl_eu_per_subslice[5] = {0, 8, 8, 8, 8};
 static const int bxt_eu_per_subslice[8] = {0, -1, -1, -1, -1, 6, 6, 8}; //gt1,gt2,gt3,gt4 not defined
 static const int kbl_eu_per_subslice[8] = { 0, -1, 8, 8 }; //gt1, gt4 not defined
 static const int icllp_eu_per_subslice[3] = { 0, 8, 8};
 static const int tgllp_eu_per_subslice[]  = {0, 16, 16};
+static const int xehp_sdv_eu_per_subslice[]    = {0, 16, 16, 16};
+static const int xehp_sdv_max_ccs_index[] = {0, 1, 2, 4};
 
 // 2047x2047 (max TS size) * 256 bytes(color bits)  per walker, platform GEN11+(gen11+)
 #define CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS  256
 #define CM_MAX_USER_THREADS_PER_MEDIA_WALKER_GEN11_PLUS (CM_MAX_THREADSPACE_WIDTH_SKLUP_FOR_MW * CM_MAX_THREADSPACE_HEIGHT_SKLUP_FOR_MW * CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS)
 
-enum class CmEmuPlatformUse {
-    UNDEFINED = -1,
-    BDW = 40,
-    SKL = 50,
-    BXT = 51,
-    KBL = 53,
-    ICLLP = 71,
-    TGLLP = 81
-};
+#include "emu_platform.h"
 
 #include "type_gpu_platform.h"
 #include "type_gpu_gt_platform.h"
@@ -80,6 +76,8 @@ enum class CmEmuPlatformUse {
 #define MAX_THREAD_SPACE_HEIGHT_PERGROUP 64
 #define MAX_THREAD_SPACE_WIDTH_PERGROUP_GEN12LP 64
 #define MAX_THREAD_SPACE_HEIGHT_PERGROUP_GEN12LP 64
+#define MAX_THREAD_SPACE_WIDTH_PERGROUP_XEHP_SDV 128
+#define MAX_THREAD_SPACE_HEIGHT_PERGROUP_XEHP_SDV 128
 #define CM_MAX_TASKS 4
 
 #define CM_MAX_KERNELS_PER_TASK 64

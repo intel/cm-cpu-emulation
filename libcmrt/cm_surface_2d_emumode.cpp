@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,7 +84,7 @@ int32_t CmSurface2DEmu::Initialize( uint32_t index, void* &pSysMem, bool dummySu
         m_buffer = malloc(m_width * m_height);
         if(m_buffer == nullptr)
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             return CM_OUT_OF_HOST_MEMORY;
         }
         CmSafeMemSet( m_buffer, 0, m_width * m_height );
@@ -124,8 +124,11 @@ int32_t CmSurface2DEmu::RegisterSurface(uint32_t index)
             return CM_FAILURE;
         }
 
-        CmFastMemCopyFromWC((char *)buff_iter->p_volatile + m_width * buff_iter->height, (char *)m_buffer + m_width * buff_iter->height,
-            this->m_width, GetCpuInstructionLevel());
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //CmFastMemCopyFromWC((char *)buff_iter->p_volatile + m_width * buff_iter->height, (char *)m_buffer + m_width * buff_iter->height,
+        //    this->m_width, GetCpuInstructionLevel());
 
         //UV plane
         CmEmulSys::iobuffer new_buff;
@@ -178,7 +181,7 @@ int32_t CmSurface2DEmu::Create( uint32_t index, uint32_t sizePerPixel, uint32_t 
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
 
@@ -191,13 +194,13 @@ CM_RT_API int32_t CmSurface2DEmu::WriteSurface( const unsigned char* pSysMem, Cm
 
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -224,13 +227,13 @@ CM_RT_API int32_t CmSurface2DEmu::ReadSurface( unsigned char* pSysMem , CmEvent*
 
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -301,13 +304,13 @@ CM_RT_API int32_t CmSurface2DEmu::ReadSurfaceStride( unsigned char* pSysMem, CmE
     SurfaceIndex* pIndex;
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
     this->GetIndex(pIndex);
@@ -337,13 +340,13 @@ CM_RT_API int32_t CmSurface2DEmu::WriteSurfaceStride( const unsigned char* pSysM
 
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -383,39 +386,51 @@ int32_t CmSurface2DEmu::DoCopy()
         case CM_SURFACE_FORMAT_NV12:
         case CM_SURFACE_FORMAT_P010:
         case CM_SURFACE_FORMAT_P016:
-            for (uint32_t i = 0; i < m_newHeight; i++)
-            {
-                CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
-                                    (char *)buff_iter->p_volatile + i*m_newWidth,
-                                     m_newWidth,
-                                     GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight; i++)
+            //{
+            //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
+            //                        (char *)buff_iter->p_volatile + i*m_newWidth,
+            //                         m_newWidth,
+            //                         GetCpuInstructionLevel());
+            //}
 
             buff_iter2 = CmEmulSys::search_buffer(m_pIndex->get_data()+GENX_SURFACE_UV_PLANE);
             if(buff_iter2->p_volatile == nullptr)
                 return CM_FAILURE;
 
-            for (uint32_t i = 0; i < m_newHeight/2; i++)
-            {
-                CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width + m_width*m_height*2/3,
-                                    (char *)buff_iter2->p_volatile + i*m_newWidth,
-                                    m_newWidth,
-                                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight/2; i++)
+            //{
+            //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width + m_width*m_height*2/3,
+            //                        (char *)buff_iter2->p_volatile + i*m_newWidth,
+            //                        m_newWidth,
+            //                        GetCpuInstructionLevel());
+            //}
             break;
         default:
-            if(!memcmp(m_buffer, buff_iter->p_volatile, this->m_width*this->m_height))
-            {
-                return CM_SUCCESS;
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
 
-            for (uint32_t i = 0; i < m_newHeight; i++)
-            {
-                CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
-                    (char *)buff_iter->p_volatile + i*m_newWidth,
-                    m_newWidth,
-                    GetCpuInstructionLevel());
-            }
+            //if(!memcmp(m_buffer, buff_iter->p_volatile, this->m_width*this->m_height))
+            //{
+                return CM_SUCCESS;
+            //}
+
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight; i++)
+            //{
+            //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
+            //        (char *)buff_iter->p_volatile + i*m_newWidth,
+            //        m_newWidth,
+            //        GetCpuInstructionLevel());
+            //}
             break;
     }
 
@@ -439,34 +454,43 @@ int32_t CmSurface2DEmu::DoGPUCopy(
         case CM_SURFACE_FORMAT_NV12:
         case CM_SURFACE_FORMAT_P010:
         case CM_SURFACE_FORMAT_P016:
-            for (uint32_t i = 0; i < m_newHeight; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
-                                    (char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
-                                    m_newWidth,
-                                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
+            //                        (char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
+            //                        m_newWidth,
+            //                        GetCpuInstructionLevel());
+            //}
 
             buff_iter2 = CmEmulSys::search_buffer(m_pIndex->get_data() + GENX_SURFACE_UV_PLANE);
             if (buff_iter2->p_volatile == nullptr)
                 return CM_FAILURE;
 
-            for (uint32_t i = 0; i < m_newHeight / 2; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*m_newWidth,
-                                    (char*)m_buffer + m_XOffset + m_YOffset/2* m_width + i*m_width + m_width*m_height*2/3,
-                                     m_newWidth,
-                                     GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight / 2; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*m_newWidth,
+            //                        (char*)m_buffer + m_XOffset + m_YOffset/2* m_width + i*m_width + m_width*m_height*2/3,
+            //                         m_newWidth,
+            //                         GetCpuInstructionLevel());
+            //}
             break;
         default:
-            for (uint32_t i = 0; i < m_newHeight; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
-                    (char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
-                    m_newWidth,
-                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint32_t i = 0; i < m_newHeight; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
+            //        (char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
+            //        m_newWidth,
+            //        GetCpuInstructionLevel());
+            //}
             break;
     }
 
@@ -536,7 +560,7 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
 
     if (surfStateParam == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
@@ -585,13 +609,16 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
                                    surfStateParam->width*bytesPerPixel, surfStateParam->height, surfFormat, 1, 0);
             buff_iter = CmEmulSys::search_buffer(surfIndex->get_data());
 
-            for (uint i = 0; i < surfStateParam->height; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
-                                    (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset*m_width + i*m_width,
-                                    surfStateParam->width*bytesPerPixel,
-                                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint i = 0; i < surfStateParam->height; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
+            //                        (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset*m_width + i*m_width,
+            //                        surfStateParam->width*bytesPerPixel,
+            //                        GetCpuInstructionLevel());
+            //}
             buff_iter->p =  buff_iter->p_volatile;
             //UV plane
 
@@ -603,13 +630,16 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
 
             cm_list<CmEmulSys::iobuffer>::iterator buff_iterUV = CmEmulSys::search_buffer(surfIndexUV->get_data());
 
-            for (uint i = 0; i < surfStateParam->height/2; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iterUV->p_volatile + i*surfStateParam->width*bytesPerPixel,
-                    (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset/2*m_width + i*m_width + m_width*m_height * 2 / 3,
-                    surfStateParam->width*bytesPerPixel,
-                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint i = 0; i < surfStateParam->height/2; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iterUV->p_volatile + i*surfStateParam->width*bytesPerPixel,
+            //        (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset/2*m_width + i*m_width + m_width*m_height * 2 / 3,
+            //        surfStateParam->width*bytesPerPixel,
+            //        GetCpuInstructionLevel());
+            //}
             buff_iterUV->p = buff_iterUV->p_volatile;
             delete surfIndexUV;
             break;
@@ -621,13 +651,16 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
                 surfStateParam->width*bytesPerPixel, surfStateParam->height, surfFormat, 1, 0);
             buff_iter = CmEmulSys::search_buffer(surfIndex->get_data());
             buff_iter->p = buff_iter->p_volatile;
-            for (uint i = 0; i < surfStateParam->height; i++)
-            {
-                CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
-                    (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset*m_width + i*m_width,
-                    surfStateParam->width*bytesPerPixel,
-                    GetCpuInstructionLevel());
-            }
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //for (uint i = 0; i < surfStateParam->height; i++)
+            //{
+            //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
+            //        (char*)m_buffer + surfStateParam->surface_x_offset + surfStateParam->surface_y_offset*m_width + i*m_width,
+            //        surfStateParam->width*bytesPerPixel,
+            //        GetCpuInstructionLevel());
+            //}
             break;
         }
 
@@ -639,7 +672,7 @@ CM_RT_API int32_t CmSurface2DEmu::SetSurfaceStateParam(SurfaceIndex *surfIndex,
 {
     if (surfStateParam == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
@@ -668,34 +701,43 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
                 case CM_SURFACE_FORMAT_NV12:
                 case CM_SURFACE_FORMAT_P010:
                 case CM_SURFACE_FORMAT_P016:
-                    for (uint32_t i = 0; i < iter->second.height; i++)
-                    {
-                        CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
-                            (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset* m_width + i*m_width,
-                            iter->second.width,
-                            GetCpuInstructionLevel());
-                    }
+                    // Let's consider the pre/post execution copy as legacy
+                    // and comment it out for now.
+
+                    //for (uint32_t i = 0; i < iter->second.height; i++)
+                    //{
+                    //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
+                    //        (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset* m_width + i*m_width,
+                    //        iter->second.width,
+                    //        GetCpuInstructionLevel());
+                    //}
 
                     buff_iter2 = CmEmulSys::search_buffer(m_aliasIndices[i]->get_data() + GENX_SURFACE_UV_PLANE);
                     if (buff_iter2->p_volatile == nullptr)
                         return CM_FAILURE;
 
-                    for (uint32_t i = 0; i < iter->second.height/2; i++)
-                    {
-                        CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*iter->second.width,
-                            (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset/2 * m_width + i*m_width + m_width*m_height *2/3,
-                            iter->second.width,
-                            GetCpuInstructionLevel());
-                    }
+                    // Let's consider the pre/post execution copy as legacy
+                    // and comment it out for now.
+
+                    //for (uint32_t i = 0; i < iter->second.height/2; i++)
+                    //{
+                    //    CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*iter->second.width,
+                    //        (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset/2 * m_width + i*m_width + m_width*m_height *2/3,
+                    //        iter->second.width,
+                    //        GetCpuInstructionLevel());
+                    //}
                     break;
                 default:
-                    for (uint32_t i = 0; i < iter->second.height; i++)
-                    {
-                        CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
-                            (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset* m_width + i*m_width,
-                            iter->second.width,
-                            GetCpuInstructionLevel());
-                    }
+                    // Let's consider the pre/post execution copy as legacy
+                    // and comment it out for now.
+
+                    //for (uint32_t i = 0; i < iter->second.height; i++)
+                    //{
+                    //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
+                    //        (char*)m_buffer + iter->second.surface_x_offset + iter->second.surface_y_offset* m_width + i*m_width,
+                    //        iter->second.width,
+                    //        GetCpuInstructionLevel());
+                    //}
                     break;
             }
 

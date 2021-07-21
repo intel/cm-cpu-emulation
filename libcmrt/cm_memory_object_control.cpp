@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ using std::string;
 using std::endl;
 
 static bool GenerateSettingSkl(MEMORY_OBJECT_CONTROL option,
-                               CmEmuPlatformUse current_platform,
+                               GfxEmu::Platform::Id current_platform,
                                ostream &gsf_stream) {
   string l3_control;
   switch (option) {

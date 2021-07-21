@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,12 +24,14 @@
 
 #include <stdio.h>
 #include <algorithm>
+#include <cerrno>
 
 #include <dlfcn.h>
 #include <link.h>
 #include <stdlib.h>
 #include <limits.h>
 
+#include "emu_log.h"
 #include "os_utils.h"
 
 // os-dependent functionality
@@ -44,7 +46,7 @@ bool IsLibHandleValid(SharedLibHandle h)
 SharedLibHandle LoadSharedLib(const std::string& name)
 {
     SharedLibHandle result;
-    result = dlopen(name.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    result = dlopen(name.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_DEEPBIND);
     return result;
 }
 
@@ -60,12 +62,20 @@ void *GetSharedSymbolAddress(SharedLibHandle h, const std::string& name)
 
 std::string GetSharedLibLocation(SharedLibHandle h)
 {
-    link_map *map;
+    link_map *map = nullptr;
+
     dlinfo(h, RTLD_DI_LINKMAP, &map);
+
     if(!map) {
-        return std::string();
+      GFX_EMU_FAIL_WITH_MESSAGE("Cannot get a DL link map");
     }
-    char *path = realpath(map->l_name, NULL);
+
+    char *path = realpath(map->l_name, nullptr);
+
+    if (!path) {
+      GFX_EMU_FAIL_WITH_MESSAGE("Cannot get a shared library path");
+    }
+
     return std::string(path);
 }
 
@@ -75,17 +85,26 @@ std::string CreateTempFile(const unsigned char* const bytes, size_t num_bytes)
 
     char tmpl[] = "tmpXXXXXX";
     int fd = mkstemp(tmpl);
+
     FILE *dll = fdopen(fd, "wb");
-    size_t written = fwrite(bytes, 1, num_bytes, dll);
-    fclose(dll);
-    if (num_bytes != written)
-    {
-        // something bad happened...
-        // should we delete the file?..
+
+    if (!dll) {
+      GFX_EMU_FAIL_WITH_MESSAGE("Cannot create a temporary file");
     }
+
+    size_t written = fwrite(bytes, 1, num_bytes, dll);
+    if (num_bytes != written) {
+      GFX_EMU_FAIL_WITH_MESSAGE("Temporary file write error: %s", std::strerror(errno));
+    }
+    fclose(dll);
+
     char *path = realpath(tmpl, NULL);
+
+    if (!path) {
+      GFX_EMU_FAIL_WITH_MESSAGE("Cannot get an absolute path for a temporary file");
+    }
+
     return std::string(path);
-    return std::string();
 }
 
 bool DeleteFile(const std::string& name)

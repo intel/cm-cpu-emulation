@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,8 @@
 
 #include "rt.h"
 #include "cm_common_macros.h"
+#include "emu_log.h"
+using namespace GfxEmu::Log::Flags;
 
 #include "genx_dataport.h"
 
@@ -122,7 +124,7 @@ cm_bf_cvt(const stream<T, SZ>& src0)
         }
         else
         {
-            fprintf(stderr, "only fp -> bf (reprented as hf) conversion is supported\n");
+            GFX_EMU_ERROR_MESSAGE("only fp -> bf (reprented as hf) conversion is supported\n");
             exit(EXIT_FAILURE);
         }
     }
@@ -144,13 +146,13 @@ cm_bf_cvt(const stream<T, SZ>& src0)
         }
         else
         {
-            fprintf(stderr, "only bf -> float (reprented as hf) conversion is supported\n");
+            GFX_EMU_ERROR_MESSAGE("only bf -> float (reprented as hf) conversion is supported\n");
             exit(EXIT_FAILURE);
         }
     }
     else
     {
-        fprintf(stderr, "unsupported data type.\n");
+        GFX_EMU_ERROR_MESSAGE("unsupported data type.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -1611,6 +1613,83 @@ cm_shl(const T1& src0, const T2& src1,
     return retv(0);
 }
 
+//Logical rorate left
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_rol(const stream<T1,SZ>& src0, const stream<T2,SZ>& src1,
+        const uint flags = 0)
+{
+    static const bool conformable1 = inttype<T1>::value;
+    static const bool conformable2 = unsignedtype<T2>::value;
+    static const bool conformable3 = inttype<RT>::value;
+
+    int i;
+    typename maxtype<T1>::type ret;
+    const typename maxtype<T1>::type mask = sizeof(T1) * 8 - 1;
+    vector<RT, SZ> retv;
+
+    for (i = 0; i < SZ; i++) {
+         SIMDCF_ELEMENT_SKIP(i);
+        ret = src0.get(i) << (src1.get(i) & mask) |
+            src0.get(i) >> (-src1.get(i) & mask);
+        retv(i) = CmEmulSys::satur<RT>::saturate(ret, flags);
+    }
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_rol(const stream<T1,SZ>& src0, const T2& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, SZ> v1;
+    vector<T2, SZ> v2(src1);
+    vector<RT, SZ> retv;
+    int i;
+
+    for (i = 0; i < SZ; i++) {
+        v1(i) = src0.get(i);
+    }
+
+    retv = cm_rol<RT>(v1, v2, flags);
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_rol(const T1& src0, const stream<T2,SZ>& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, SZ> v1(src0);
+    vector<T2, SZ> v2;
+    vector<RT, SZ> retv;
+    int i;
+
+    for (i = 0; i < SZ; i++) {
+        v2(i) = src1.get(i);
+    }
+
+    retv = cm_rol<RT>(v1, v2, flags);
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2>
+CM_API RT
+cm_rol(const T1& src0, const T2& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, 1> v1(src0);
+    vector<T2, 1> v2(src1);
+    vector<RT, 1> retv;
+
+    retv = cm_rol<RT>(v1, v2, flags);
+
+    return retv(0);
+}
+
 //Logical shift right
 template <typename RT, typename T1, typename T2, uint SZ>
 CM_API vector<RT, SZ>
@@ -1682,6 +1761,85 @@ cm_shr(const T1& src0, const T2& src1,
     vector<RT, 1> retv;
 
     retv = cm_shr<RT>(v1, v2, flags);
+
+    return retv(0);
+}
+
+//Logical rotate right
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_ror(const stream<T1,SZ>& src0, const stream<T2,SZ>& src1,
+        const uint flags = 0)
+{
+    static const bool conformable1 = unsignedtype<T1>::value;
+    static const bool conformable2 = unsignedtype<T2>::value;
+    static const bool conformable3 = unsignedtype<RT>::value;
+
+    int i;
+    typename maxtype<T1>::type ret;
+    const typename maxtype<T1>::type mask = sizeof(T1) * 8 - 1;
+    vector<RT, SZ> retv;
+
+    for (i = 0; i < SZ; i++) {
+         SIMDCF_ELEMENT_SKIP(i);
+        ret = src0.get(i) >> (src1.get(i) & mask) |
+            src0.get(i) << (-src1.get(i) & mask);
+        retv(i) = CmEmulSys::satur<RT>::saturate(ret, flags);
+    }
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_ror(const stream<T1,SZ>& src0, const T2& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, SZ> v1;
+    vector<T2, SZ> v2(src1);
+    vector<RT, SZ> retv;
+    int i;
+
+    for (i = 0; i < SZ; i++) {
+        v1(i) = src0.get(i);
+    }
+
+    //std::cout << "Hello1: " << src0.get(0) << " : " << src1 << std::endl;
+
+    retv = cm_ror<RT>(v1, v2, flags);
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2, uint SZ>
+CM_API vector<RT, SZ>
+cm_ror(const T1& src0, const stream<T2,SZ>& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, SZ> v1(src0);
+    vector<T2, SZ> v2;
+    vector<RT, SZ> retv;
+    int i;
+
+    for (i = 0; i < SZ; i++) {
+        v2(i) = src1.get(i);
+    }
+
+    retv = cm_ror<RT>(v1, v2, flags);
+
+    return retv;
+}
+
+template <typename RT, typename T1, typename T2>
+CM_API RT
+cm_ror(const T1& src0, const T2& src1,
+       const typename uint_type<T1, T2>::type flags = 0)
+{
+    vector<T1, 1> v1(src0);
+    vector<T2, 1> v2(src1);
+    vector<RT, 1> retv;
+
+    retv = cm_ror<RT>(v1, v2, flags);
 
     return retv(0);
 }
@@ -2329,70 +2487,70 @@ template <typename T, uint R, uint C>
 CM_API void
 cm_input(matrix<T,R,C> &in)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_input(matrix_ref<T,R,C> in)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_input(vector<T, S> &in)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_input(vector_ref<T, S> in)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template<typename T>
 CM_API void
 cm_input(T& in)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_output(const matrix<T,R,C> &out)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_output(const matrix_ref<T,R,C> out)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_output(const vector<T, S> &out)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_output(const vector_ref<T, S> out)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template<typename T>
 CM_API void
 cm_output(const T& out)
 {
-    //printf("workarroundForIpoBugOrFeature\n");
+    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint SZ>
@@ -3073,12 +3231,12 @@ cm_slm_read4_internal (uint slmBuffer, T1 v_Addr, vector_ref<T,M> v_Dst, SLM_Cha
     if (!(mask & 0x4)) {color[2]=1; numColors++;}
     if (!(mask & 0x8)) {color[3]=1; numColors++;}
     if (numColors == 0) {
-        fprintf(stderr, "cm_slm_read4 error: At least one"
+        GFX_EMU_ERROR_MESSAGE("cm_slm_read4 error: At least one"
                 "destination vector has to be read!\n");
         exit(EXIT_FAILURE);
     }
     if (M1 < numColors*N) {
-        fprintf(stderr, "cm_slm_read4 error: destination vector"
+        GFX_EMU_ERROR_MESSAGE("cm_slm_read4 error: destination vector"
                 "does not have enough space to hold data\n");
         exit(EXIT_FAILURE);
     }
@@ -3277,15 +3435,15 @@ void cm_slm_write4 (
 
     if (numColors == 0) {
 
-        fprintf(stdout, "cm_slm_read4 error: At least one"
+        GFX_EMU_ERROR_MESSAGE("cm_slm_read4 error: At least one"
                 "destination vector has to be read!\n");
         exit(EXIT_FAILURE);
     }
 
     if (SrcElCount < numColors*AddrCount) {
-        fprintf(stdout, "cm_slm_read4 error: destination vector"
+        GFX_EMU_ERROR_MESSAGE("cm_slm_read4 error: destination vector"
                 "does not have enough space to hold data\n");
-         exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     const auto baseOffset = reinterpret_cast<T2*>(__cm_emu_get_slm() + slmBuffer);
@@ -3313,7 +3471,7 @@ read_local(SurfaceIndex & buf_id, int x_pos, int y_pos, int block_width, int blo
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3394,7 +3552,7 @@ read_local(SurfaceIndex & buf_id, int x_pos, int y_pos, int block_width, int blo
     }
     else
     {
-        fprintf(stderr, "this transpose is not supported in emulation mode.\n");
+        GFX_EMU_ERROR_MESSAGE("this transpose is not supported in emulation mode.\n");
         exit(EXIT_FAILURE);
     }
     return true;
@@ -3661,7 +3819,7 @@ template <typename T>
 CM_API vector<T, 8>
 cm_get_r0( )
 {
-    fprintf(stderr, "cm_get_r0 is not supported in emulation mode.\n");
+    GFX_EMU_ERROR_MESSAGE("cm_get_r0 is not supported in emulation mode.\n");
     exit(EXIT_FAILURE);
     return {};
 }
@@ -3670,7 +3828,7 @@ template <typename T>
 CM_API vector<T, 4>
 cm_get_sr0( )
 {
-    fprintf(stderr, "cm_get_sr0 is not supported in emulation mode.\n");
+    GFX_EMU_ERROR_MESSAGE("cm_get_sr0 is not supported in emulation mode.\n");
     exit(EXIT_FAILURE);
     return {};
 }
@@ -3679,28 +3837,28 @@ template <typename T>
 CM_API void
 cm_label(const char *pLabel)
 {
-    fprintf(stderr, "\nInsert label %s:\n", pLabel);
+    GFX_EMU_ERROR_MESSAGE("\nInsert label %s:\n", pLabel);
 }
 
 template <typename T>
 CM_API void
 cm_label(const char *pLabel, int i)
 {
-    fprintf(stderr, "\nInsert label %s_%d:\n", pLabel, i);
+    GFX_EMU_ERROR_MESSAGE("\nInsert label %s_%d:\n", pLabel, i);
 }
 
 template <typename T>
 CM_API void
 cm_label(const char *pLabel, int i, int j)
 {
-    fprintf(stderr, "\nInsert label %s_%d_%d\n", pLabel, i, j);
+    GFX_EMU_ERROR_MESSAGE("\nInsert label %s_%d_%d\n", pLabel, i, j);
 }
 
 template <typename T>
 CM_API void
 cm_label(const char *pLabel, int i, int j, int k)
 {
-    fprintf(stderr, "\nInsert label %s_%d_%d_%d:\n", pLabel, i, j, k);
+    GFX_EMU_ERROR_MESSAGE("\nInsert label %s_%d_%d_%d:\n", pLabel, i, j, k);
 }
 
 // Implementation of SLM atomic operations
@@ -3822,7 +3980,7 @@ cm_slm_atomic_internal(uint slmBuffer, CmSLMAtomicOpType op, vector<ushort,N> &v
                 v_Dst(i) = *uintPtr;
                 break;
             default:
-                printf("Error writing SLM: invalid opcode for SLM atomic write!\n");
+                GFX_EMU_ERROR_MESSAGE("writing SLM: invalid opcode for SLM atomic write!\n");
                 exit(EXIT_FAILURE);
         }
     }
@@ -4039,7 +4197,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, T v_Addr,
     CmSLMAtomicOpType op = Get_Gen_Atomic_Opcode(aop);
 
     if (op != SLM_ATOMIC_CMPWR) {
-        fprintf(stderr, "Two sources not allowed for the Atomic Operation! \n");
+        GFX_EMU_ERROR_MESSAGE("Two sources not allowed for the Atomic Operation! \n");
         exit(EXIT_FAILURE);
     }
     cm_slm_atomic_generic(slmBuffer, op, v_Addr, v_Src0, v_Src1, v_Dst);
@@ -4055,12 +4213,12 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, T v_Addr,
 
     switch (op) {
         case SLM_ATOMIC_CMPWR:
-            fprintf(stderr, "Two sources needed for ATOMIC_CMPWR! \n");
+            GFX_EMU_ERROR_MESSAGE("Two sources needed for ATOMIC_CMPWR! \n");
             exit(EXIT_FAILURE);
         case SLM_ATOMIC_INC:
         case SLM_ATOMIC_DEC:
         case SLM_ATOMIC_PREDEC:
-            fprintf(stderr, "No sources allowed for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("No sources allowed for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
         default:
         break;
@@ -4083,7 +4241,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, T v_Addr,
         case SLM_ATOMIC_PREDEC:
             break;
         default:
-            fprintf(stderr, "Need source(s) for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("Need source(s) for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
     }
     cm_slm_atomic_generic(slmBuffer, op, v_Addr, src0, src1, v_Dst);
@@ -4098,12 +4256,12 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, T v_Addr,
     CmSLMAtomicOpType op = Get_Gen_Atomic_Opcode(aop);
 
     if (dst != 0) {
-        fprintf(stderr, "cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
+        GFX_EMU_ERROR_MESSAGE("cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
         exit(EXIT_FAILURE);
     }
 
     if (op != SLM_ATOMIC_CMPWR) {
-        fprintf(stderr, "Two sources not allowed for the Atomic Operation! \n");
+        GFX_EMU_ERROR_MESSAGE("Two sources not allowed for the Atomic Operation! \n");
         exit(EXIT_FAILURE);
     }
     cm_slm_atomic_generic(slmBuffer, op, v_Addr, v_Src0, v_Src1, v_Dst);
@@ -4119,18 +4277,18 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, T v_Addr,
     CmSLMAtomicOpType op = Get_Gen_Atomic_Opcode(aop);
 
     if (dst != 0) {
-        fprintf(stderr, "cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
+        GFX_EMU_ERROR_MESSAGE("cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
         exit(EXIT_FAILURE);
     }
 
     switch (op) {
         case SLM_ATOMIC_CMPWR:
-            fprintf(stderr, "Two sources needed for ATOMIC_CMPWR! \n");
+            GFX_EMU_ERROR_MESSAGE("Two sources needed for ATOMIC_CMPWR! \n");
             exit(EXIT_FAILURE);
         case SLM_ATOMIC_INC:
         case SLM_ATOMIC_DEC:
         case SLM_ATOMIC_PREDEC:
-            fprintf(stderr, "No sources allowed for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("No sources allowed for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
         default:
         break;
@@ -4151,7 +4309,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, vector<T,N> &v_Addr,
     CmSLMAtomicOpType op = Get_Gen_Atomic_Opcode(aop);
 
     if (dst != 0) {
-        fprintf(stderr, "cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
+        GFX_EMU_ERROR_MESSAGE("cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
         exit(EXIT_FAILURE);
     }
 
@@ -4161,7 +4319,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, vector<T,N> &v_Addr,
         case SLM_ATOMIC_PREDEC:
             break;
         default:
-            fprintf(stderr, "Need source(s) for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("Need source(s) for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
     }
     cm_slm_atomic_generic(slmBuffer, op, v_Addr, src0, src1, v_Dst);
@@ -4180,7 +4338,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, vector_ref<T,N> v_Addr,
     CmSLMAtomicOpType op = Get_Gen_Atomic_Opcode(aop);
 
     if (dst != 0) {
-        fprintf(stderr, "cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
+        GFX_EMU_ERROR_MESSAGE("cm_slm_atomic passed destination vec as int but not NULL %x\n", dst);
         exit(EXIT_FAILURE);
     }
 
@@ -4190,7 +4348,7 @@ cm_slm_atomic(uint slmBuffer, CmAtomicOpType aop, vector_ref<T,N> v_Addr,
         case SLM_ATOMIC_PREDEC:
             break;
         default:
-            fprintf(stderr, "Need source(s) for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("Need source(s) for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
     }
     cm_slm_atomic_generic(slmBuffer, op, v_Addr, src0, src1, v_Dst);
@@ -4313,7 +4471,7 @@ cm_svm_block_read(uint64_t addr, // SVM pointer
                   vector_ref<T, N> v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_read: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4328,7 +4486,7 @@ cm_svm_block_read(uint64_t addr, // SVM pointer
                   vector<T, N> &v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_read: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4343,7 +4501,7 @@ cm_svm_block_read(uint64_t addr, // SVM pointer
                   matrix_ref<T, R, C> v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_read: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4359,7 +4517,7 @@ cm_svm_block_read(uint64_t addr, // SVM pointer
                   matrix<T, R, C> &v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_read: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4378,7 +4536,7 @@ cm_svm_block_read_unaligned(uint64_t addr, // SVM pointer
                   vector_ref<T, N> v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 3) {
-        fprintf(stderr, "cm_svm_block_read_unaligned: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read_unaligned: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4393,7 +4551,7 @@ cm_svm_block_read_unaligned(uint64_t addr, // SVM pointer
                   vector<T, N> &v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 3) {
-        fprintf(stderr, "cm_svm_block_read_unaligned: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read_unaligned: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4408,7 +4566,7 @@ cm_svm_block_read_unaligned(uint64_t addr, // SVM pointer
                   matrix_ref<T, R, C> v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 3) {
-        fprintf(stderr, "cm_svm_block_read_unaligned: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read_unaligned: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4424,7 +4582,7 @@ cm_svm_block_read_unaligned(uint64_t addr, // SVM pointer
                   matrix<T, R, C> &v_Dst)   // Data vector to be written from SVM
 {
     if (addr & 3) {
-        fprintf(stderr, "cm_svm_block_read_unaligned: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_read_unaligned: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4618,7 +4776,7 @@ cm_svm_block_write(uint64_t addr, // SVM pointer
             )
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_write: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_write: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4634,7 +4792,7 @@ cm_svm_block_write(uint64_t addr, // SVM pointer
             )
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_write: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_write: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != N; i++) {
@@ -4650,7 +4808,7 @@ cm_svm_block_write(uint64_t addr, // SVM pointer
             )
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_write: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_write: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4667,7 +4825,7 @@ cm_svm_block_write(uint64_t addr, // SVM pointer
             )
 {
     if (addr & 15) {
-        fprintf(stderr, "cm_svm_block_write: address unaligned\n");
+        GFX_EMU_ERROR_MESSAGE("cm_svm_block_write: address unaligned\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i != R; i++)
@@ -4928,7 +5086,7 @@ cm_svm_atomic_internal(CmAtomicOpType op, vector<uint64_t,N> &v_Addr,
                 *uintPtr = (*uintPtr == (uint) v_Src0(i)) ? (uint) v_Src1(i) : *uintPtr;
                 break;
             default:
-                printf("Error writing SVM: invalid opcode for SVM atomic write!\n");
+                GFX_EMU_ERROR_MESSAGE("writing SVM: invalid opcode for SVM atomic write!\n");
                 exit(EXIT_FAILURE);
         }
     }
@@ -5106,7 +5264,7 @@ cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr,
               T1 &v_Dst, T2 v_Src0, T3 v_Src1)
 {
     if (op != ATOMIC_CMPXCHG) {
-        fprintf(stderr, "Two sources not allowed for the Atomic Operation! \n");
+        GFX_EMU_ERROR_MESSAGE("Two sources not allowed for the Atomic Operation! \n");
         exit(EXIT_FAILURE);
     }
     cm_svm_atomic_generic(op, v_Addr, v_Src0, v_Src1, v_Dst);
@@ -5120,11 +5278,11 @@ cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr,
     T1 src1 = 0;
     switch (op) {
         case ATOMIC_CMPXCHG:
-            fprintf(stderr, "Two sources needed for ATOMIC_CMPXCHG! \n");
+            GFX_EMU_ERROR_MESSAGE("Two sources needed for ATOMIC_CMPXCHG! \n");
             exit(EXIT_FAILURE);
         case ATOMIC_INC:
         case ATOMIC_DEC:
-            fprintf(stderr, "No sources allowed for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("No sources allowed for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
         default:
         break;
@@ -5143,7 +5301,7 @@ cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr, T1 &v_Dst)
         case ATOMIC_DEC:
             break;
         default:
-            fprintf(stderr, "Need source(s) for the Atomic Operation! \n");
+            GFX_EMU_ERROR_MESSAGE("Need source(s) for the Atomic Operation! \n");
             exit(EXIT_FAILURE);
     }
     cm_svm_atomic_generic(op, v_Addr, src0, src1, v_Dst);

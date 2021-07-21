@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,19 +29,33 @@
 #include <fstream>
 #include <string.h>
 
+#include "emu_kernel_support.h"
+#include "emu_log.h"
+
 using namespace std;
 
-int32_t CmProgramEmu::Create( CmDeviceEmu* pCmDev, CmProgramEmu*& pProgram )
+int32_t CmProgramEmu::Create(
+    CmDeviceEmu* pCmDev,
+    CmProgramEmu*& pProgram,
+    void *programAddr,
+    size_t size)
 {
     int32_t result = CM_SUCCESS;
-    pProgram = new CmProgramEmu( pCmDev );
+
+    pProgram = new CmProgramEmu( pCmDev,  programAddr, size );
+
+    if (!pProgram->GetProgramModule ()) {
+        GFX_EMU_WARNING_MESSAGE_AT("CmProgramEmu::Create: can't setup program for address %p.\n", programAddr);
+
+    }
+
     if( pProgram )
     {
         pProgram->Acquire();
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -58,8 +72,9 @@ int32_t CmProgramEmu::Destroy( CmProgramEmu* &pProgram )
     return CM_SUCCESS;
 }
 
-CmProgramEmu::CmProgramEmu( CmDeviceEmu* pCmDev ):
-    m_pCmDev( pCmDev )
+CmProgramEmu::CmProgramEmu( CmDeviceEmu* pCmDev, void *programAddr, size_t size):
+    m_pCmDev( pCmDev ),
+    m_programModule ( GfxEmu::KernelSupport::setupProgram(programAddr, size) )
 {
     m_refCount = 0;
 }

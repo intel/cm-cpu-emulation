@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,59 @@
 #include "cm_device_base.h"
 #include "cm_queue_base.h"
 #include "cm_event_base.h"
-#include "cm_debug.h"
+#include "emu_log.h"
+
+//*-----------------------------------------------------------------------------
+//| Macro checks the COM Results
+//*-----------------------------------------------------------------------------
+#ifndef CHK_RET
+#define CHK_RET(stmt)                                                           \
+{                                                                               \
+    result = (stmt);                                                            \
+    if (result != CM_SUCCESS)                                                   \
+    {                                                                           \
+        GfxEmu::PrintMessage("%s: hr check failed\n", __FUNCTION__);            \
+        GFX_EMU_ASSERT(0);                                                      \
+        goto finish;                                                            \
+    }                                                                           \
+}
+#endif // CHK_HR
+
+#ifndef CHK_NULL
+#define CHK_NULL(p)                                                             \
+{                                                                               \
+    if ( (p) == nullptr)                                                        \
+    {                                                                           \
+        GfxEmu::PrintMessage("%s: nullptr check failed\n", __FUNCTION__);       \
+        GFX_EMU_ASSERT(0);                                                      \
+        result = CM_NULL_POINTER;                                               \
+        goto finish;                                                            \
+    }                                                                           \
+}
+#endif
+
+#ifndef CHK_NULL_RETURN
+#define CHK_NULL_RETURN(p)                                                      \
+{                                                                               \
+    if ( (p) == nullptr)                                                        \
+    {                                                                           \
+        GfxEmu::PrintMessage("%s: nullptr check failed\n", __FUNCTION__);       \
+        GFX_EMU_ASSERT(0);                                                      \
+        return CM_NULL_POINTER;                                                 \
+    }                                                                           \
+}
+#endif
+
+#ifndef CHK_FAILURE_RETURN
+#define CHK_FAILURE_RETURN(ret)                                                 \
+{                                                                               \
+    if ( (ret) != CM_SUCCESS)                                                   \
+    {                                                                           \
+        GfxEmu::PrintMessage("%s:%d: return check failed\n", __FUNCTION__, __LINE__);\
+        return ret;                                                             \
+    }                                                                           \
+}
+#endif
 
 //!
 //! \brief      Returns the corresponding CM_RETURN_CODE error string
@@ -69,10 +121,12 @@ extern "C" CM_RT_API const char* GetCmErrorString(int code)
         ENUM_STRING(CM_EXCEED_MAX_KERNEL_PER_ENQUEUE),
         ENUM_STRING(CM_EXCEED_MAX_KERNEL_SIZE_IN_BYTE),
         ENUM_STRING(CM_EXCEED_MAX_THREAD_AMOUNT_PER_ENQUEUE),
+        "Internal Error",
         ENUM_STRING(CM_INVALID_THREAD_SPACE),
         ENUM_STRING(CM_EXCEED_MAX_TIMEOUT),
         ENUM_STRING(CM_JITDLL_LOAD_FAILURE),
         ENUM_STRING(CM_JIT_COMPILE_FAILURE),
+        "Internal Error",
         ENUM_STRING(CM_INVALID_THREAD_GROUP_SPACE),
         ENUM_STRING(CM_THREAD_ARG_NOT_ALLOWED),
         ENUM_STRING(CM_INVALID_GLOBAL_BUFFER_INDEX),
@@ -80,6 +134,7 @@ extern "C" CM_RT_API const char* GetCmErrorString(int code)
         ENUM_STRING(CM_EXCEED_MAX_SLM_SIZE),
         ENUM_STRING(CM_JITDLL_OLDER_THAN_ISA),
         ENUM_STRING(CM_INVALID_HARDWARE_THREAD_NUMBER),
+        "Internal Error",
         ENUM_STRING(CM_INVALIDE_L3_CONFIGURATION),
         ENUM_STRING(CM_INVALID_TEXTURE2D_USAGE),
         ENUM_STRING(CM_INTEL_GFX_NOTFOUND),
@@ -101,6 +156,8 @@ extern "C" CM_RT_API const char* GetCmErrorString(int code)
         ENUM_STRING(CM_GPUCOPY_OUT_OF_RESOURCE),
         ENUM_STRING(CM_DEVICE_INVALID_VIDEO_DEVICE),
         ENUM_STRING(CM_SURFACE_DELAY_DESTROY),
+        "Internal Error",
+        "Internal Error",
         ENUM_STRING(CM_FEATURE_NOT_SUPPORTED_BY_HARDWARE),
         ENUM_STRING(CM_RESOURCE_USAGE_NOT_SUPPORT_READWRITE),
         ENUM_STRING(CM_MULTIPLE_MIPLEVELS_NOT_SUPPORTED),
@@ -134,6 +191,7 @@ extern "C" CM_RT_API const char* GetCmErrorString(int code)
         ENUM_STRING(CM_EXCEED_MAX_NUM_2D_ALIASES),
         ENUM_STRING(CM_INVALID_PARAM_SIZE),
         ENUM_STRING(CM_GT_UNSUPPORTED),
+        "Internal Error",
         ENUM_STRING(CM_PLATFORM_UNSUPPORTED_FOR_API),
         ENUM_STRING(CM_TASK_MEDIA_RESET),
         ENUM_STRING(CM_KERNELPAYLOAD_SAMPLER_INVALID_BTINDEX),
@@ -142,6 +200,7 @@ extern "C" CM_RT_API const char* GetCmErrorString(int code)
         ENUM_STRING(CM_FAILED_TO_CREATE_CURBE_SURFACE),
         ENUM_STRING(CM_INVALID_CAP_NAME),
         ENUM_STRING(CM_INVALID_PARAM_FOR_CREATE_QUEUE_EX),
+        "Internal Error",
         ENUM_STRING(CM_INVALID_KERNEL_ARG_POINTER),
         ENUM_STRING(CM_LOAD_LIBRARY_FAILED),
 #undef ENUM_STRING

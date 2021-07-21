@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,7 +50,7 @@ _GENX_ inline void cm_slm_load (uint         slmBuffer,    // SLM buffer
 
     //check that loadSize is a multiple of 256 * #_threads_in_a_group
     if( loadSize % 256 != 0 ) {
-        fprintf(stderr, "Warning: load size for cm_slm_load() must be multiple of 256\n");
+        GFX_EMU_ERROR_MESSAGE("Warning: load size for cm_slm_load() must be multiple of 256\n");
     }
 
     int numTotalBlocks = loadSize / 256;

@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,8 @@
 #include "cm_group_space_emumode.h"
 #include "cm_mem.h"
 
+#include "emu_cfg.h"
+
 int32_t CmThreadGroupSpace::Create( CmDevice* pDevice, uint32_t thrdSpaceWidth, uint32_t thrdSpaceHeight, uint32_t grpSpaceWidth, uint32_t grpSpaceHeight, CmThreadGroupSpace* & pTGS)
 {
     return Create(pDevice, thrdSpaceWidth, thrdSpaceHeight, 1, grpSpaceWidth, grpSpaceHeight, 1, pTGS);
@@ -40,8 +42,13 @@ int32_t CmThreadGroupSpace::Create(CmDevice *pDevice, uint32_t thrdSpaceWidth, u
     pDevice->GetCaps(CAP_USER_DEFINED_THREAD_COUNT_PER_THREAD_GROUP, size, &max_thread_count_per_group);
     uint32_t max_thread_space_width_pergroup = 0;
     uint32_t max_thread_space_height_pergroup = 0;
+    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    {
+        max_thread_space_width_pergroup  = MAX_THREAD_SPACE_WIDTH_PERGROUP_XEHP_SDV;
+        max_thread_space_height_pergroup = MAX_THREAD_SPACE_HEIGHT_PERGROUP_XEHP_SDV;
+    }
 
-    if (CmDeviceEmu::CurrentPlatform == CmEmuPlatformUse::TGLLP)
+    if (GfxEmu::Cfg ().Platform.getInt () == GfxEmu::Platform::TGLLP)
     {
         max_thread_space_width_pergroup  = MAX_THREAD_SPACE_WIDTH_PERGROUP_GEN12LP;
         max_thread_space_height_pergroup = MAX_THREAD_SPACE_HEIGHT_PERGROUP_GEN12LP;
@@ -58,8 +65,8 @@ int32_t CmThreadGroupSpace::Create(CmDevice *pDevice, uint32_t thrdSpaceWidth, u
         || (thrdSpaceHeight > max_thread_space_height_pergroup)
         || (thrdSpaceDepth * thrdSpaceHeight * thrdSpaceWidth > max_thread_count_per_group))
     {
-        CmErrorMessage("Exceed thread group size limitation!");
-        CmAssert( 0 );
+        GfxEmu::ErrorMessage("Exceed thread group size limitation!");
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_THREAD_GROUP_SPACE;
     }
 
@@ -75,7 +82,7 @@ int32_t CmThreadGroupSpace::Create(CmDevice *pDevice, uint32_t thrdSpaceWidth, u
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -89,7 +96,7 @@ int32_t CmThreadGroupSpace::Destroy( CmThreadGroupSpace* &pTGS )
 
 int32_t CmThreadGroupSpace::GetThreadGroupSpaceSize(uint32_t & thrdSpaceWidth, uint32_t & thrdSpaceHeight, uint32_t & grpSpaceWidth, uint32_t & grpSpaceHeight)
 {
-    CmAssert(1 == m_threadSpaceDepth && 1 == m_groupSpaceDepth);
+    GFX_EMU_ASSERT(1 == m_threadSpaceDepth && 1 == m_groupSpaceDepth);
     thrdSpaceWidth = m_threadSpaceWidth;
     thrdSpaceHeight = m_threadSpaceHeight;
     grpSpaceWidth = m_groupSpaceWidth;
