@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,9 +37,9 @@ enum MEMORY_OBJECT_CONTROL
     MEMORY_OBJECT_CONTROL_SKL_NO_CACHE,
     MEMORY_OBJECT_CONTROL_SKL_COUNT,
 
-    MEMORY_OBJECT_CONTROL_TGL_DEFAULT = 0,
-    MEMORY_OBJECT_CONTROL_TGL_L1_ENABLED,
-    MEMORY_OBJECT_CONTROL_TGL_COUNT,
+    MEMORY_OBJECT_CONTROL_XE_LP_DEFAULT = 0,
+    MEMORY_OBJECT_CONTROL_XE_LP_L1_ENABLED,
+    MEMORY_OBJECT_CONTROL_XE_LP_COUNT,
 
     MEMORY_OBJECT_CONTROL_UNKNOWN = 0xff
 };

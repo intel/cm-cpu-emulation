@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,95 +26,192 @@
 
 #include <cm_priv_def.h>
 #include <cm_kernel_base.h>
-//#include <cm_debug.h>
 
 #include "rt.h"
+#include "emu_log.h"
+#include "emu_kernel_support.h"
+#include "emu_utils.h"
+
+#include "emu_cfg.h"
+
+using namespace GfxEmu::Log::Flags;
 
 #define FFI_BUILDING
 #include <ffi.h>
 
+namespace cmrt
+{
+
+size_t thread_linear_id ();
+
 CmEmu_KernelLauncher::CmEmu_KernelLauncher(
     VoidFuncPtr p,
-    const std::vector<CmEmuArg>& argsVecRef,
-    size_t threadId) :
-        m_kernel_func_ptr((void (*)())p),
-        m_argsVecRef(argsVecRef),
-        m_thread_linear_id(threadId)
+    const std::vector<GfxEmu::KernelArg>& argsVecRef,
+    size_t threadId
+) : CmEmu_KernelLauncher(
+    nullptr,
+    GfxEmu::KernelSupport::setupProgram(0),
+    argsVecRef,
+    threadId,
+    p
+) {}
+
+CmEmu_KernelLauncher::CmEmu_KernelLauncher(
+    const char *kernelName,
+    const GfxEmu::KernelSupport::ProgramModule& programModule,
+    const std::vector<GfxEmu::KernelArg>& argsVecRef,
+    size_t threadId,
+    VoidFuncPtr p
+) :
+    m_programModule(programModule),
+    m_kernel_func_ptr(p),
+    m_thread_linear_id(threadId)
 {
+    if(kernelName)
+        m_kernelName = kernelName;
+
+    for (const auto& a: argsVecRef) {
+        if (!a.isSet()) break;
+        m_args.push_back(a);
+    }
+
+#ifdef GFX_EMU_KERNEL_SUPPORT_ENABLED
+    const auto& argSymbData =
+        GfxEmu::KernelSupport::getKernelDesc(
+                        m_kernelName,
+                        m_programModule,
+                        m_kernel_func_ptr).args;
+
+    if (argSymbData.size () != m_args.size ()) {
+        if (argSymbData.size ())
+            GFX_EMU_FAIL_WITH_MESSAGE(
+                "kernel %s arguments count (%u) doesn't match "
+                "with the one from kernel debug data (%u)\n",
+                m_kernelName.c_str(),
+                argSymbData.size (),
+                m_args.size ());
+    } else {
+        int i = 0;
+        for(const auto& a: argSymbData)
+            m_args.at(i++).annotate(a);
+    }
+#endif
 }
 
 CmEmu_KernelLauncher::~CmEmu_KernelLauncher()
 {
 }
 
-namespace cmrt
-{
-size_t thread_linear_id ();
-}
-
 void CmEmu_KernelLauncher::launch()
 {
-    if(m_thread_linear_id == kThreadIdUnset)
-    {
+    if(m_thread_linear_id == kThreadIdUnset) {
          m_thread_linear_id = cmrt::thread_linear_id ();
     }
 
-    std::vector<CmEmu_KernelLauncher::ArgInfo> argsVect;
+    class FfiArgData
+    {
 
-    for (auto& arg: m_argsVecRef) {
-        if (!arg.isSet ()) break;
-        argsVect.emplace_back(arg.getBufferPtr(arg.isPerThread () ? m_thread_linear_id : 0), arg.getUnitSize ());
-    }
+    private:
+        std::vector<ffi_type*> classMemberDescPtrs;
+        ffi_type classTypeDesc;
+        void* argPtr__ {nullptr};
+
+    public:
+        ffi_type* typeDescPtr;
+        void* argPtr {nullptr};
+
+        FfiArgData () = default;
+        void create (
+                const bool isPointer,
+                const bool isFloat,
+                bool isClass,
+                size_t size,
+                void* argPtr_
+        ) {
+            isClass |= size > sizeof(uint64_t); // Fallback in case no kernel arguments metadata.
+
+            if(isClass) {
+                argPtr__ = argPtr_;
+                argPtr = &argPtr__;
+                typeDescPtr = &ffi_type_pointer;
+            } else {
+                argPtr = argPtr_;
+                typeDescPtr =
+                    isPointer ? &ffi_type_pointer :
+                    isFloat ? (
+                        size == sizeof(double) ?      &ffi_type_double :
+                        size == sizeof(long double) ? &ffi_type_longdouble :
+                                                      &ffi_type_float ) :
+                    size == sizeof(uint8_t) ?  &ffi_type_uint8 :
+                    size == sizeof(uint16_t) ? &ffi_type_uint16 :
+                    size == sizeof(uint32_t) ? &ffi_type_uint32 :
+                    size == sizeof(uint64_t) ? &ffi_type_uint64 :
+                                               &ffi_type_pointer
+                ;
+            }
+        }
+    };
+
+    std::vector<FfiArgData> ffiArgsData {m_args.size()}; // NB: will contain self-referrenced data, no relocations please.
 
     std::vector<ffi_type*> argsLibFfiT;
-    std::vector<void*>     argsLibFfiV;
+    std::vector<void*> argsLibFfiV;
+    int argIdx = 0;
+    for (const auto& arg: m_args) {
 
-    using FfiStructData = std::pair<std::vector<ffi_type*>, ffi_type>;
+        auto& ffiArgData = ffiArgsData[argIdx++];
 
-    for (const auto& a: argsVect)
-    {
-        const bool isStruct = a.size > sizeof(long long);
+        GFX_EMU_DEBUG_MESSAGE(fKernelLaunch | fExtraDetail,
+                "arg %s of type %s info: isPtr: %u, isFloat: %u, isClass: %u, size: %u\n",
+            arg.name.c_str (),
+            arg.typeName.c_str (),
+            arg.isPointer,
+            arg.isFloat,
+            arg.isClass,
+            arg.getUnitSize ());
 
-        argsLibFfiT.emplace_back(
-            a.size == sizeof(char)   ? &ffi_type_uchar :
-            a.size == sizeof(short)  ? &ffi_type_ushort :
-            a.size == sizeof(int)    ? &ffi_type_uint :
-            a.size == sizeof(long)   ? &ffi_type_ulong :
-            a.size == sizeof(double) ? &ffi_type_double :
-            &ffi_type_pointer
+        ffiArgData.create(
+            arg.isPointer,
+            arg.isFloat,
+            arg.isClass,
+            arg.getUnitSize (),
+            arg.getBufferPtr(arg.isPerThread () ? m_thread_linear_id : 0)
         );
 
-        argsLibFfiV.emplace_back(
-            isStruct ? (void*)&a.pValue : a.pValue
-        );
+        argsLibFfiT.emplace_back(ffiArgData.typeDescPtr);
+        argsLibFfiV.emplace_back(ffiArgData.argPtr);
     }
+
+    GfxEmu::DebugMessage<fKernelLaunch | fExtraDetail>("calling kernel at %p\n",
+        m_kernel_func_ptr);
 
     ffi_cif cif;
     if(ffi_prep_cif(&cif, FFI_DEFAULT_ABI, argsLibFfiT.size (), &ffi_type_void, argsLibFfiT.data ())
-        == FFI_OK)
-    {
+        == FFI_OK) {
         ffi_call(
             &cif,
             m_kernel_func_ptr,
             nullptr,
             argsLibFfiV.data ());
     }
+    else
+        GFX_EMU_FAIL_WITH_MESSAGE(fKernelLaunch,
+            "ffi_prep_cif returned not FFI_OK. Unable to prepare data for and call kernel at %p\n",
+                m_kernel_func_ptr);
 }
-
-namespace cmrt
-{
 
 //=============================================================================
 void CmEmuMt_ThreadBell::wait_for_ring() {
-     std::unique_lock<std::mutex> lk(m_mutex);
-     m_condition.wait(lk, [this] {
-          if (this->m_ringing == true) {
-               this->m_ringing = false;
-               return true;
-          } else {
-               return false;
-          }
-     });
+
+    std::unique_lock<std::mutex> lk(m_mutex);
+    m_condition.wait(lk, [this] {
+         if (this->m_ringing == true) {
+              this->m_ringing = false;
+              return true;
+         } else {
+              return false;
+         }
+    });
 }
 
 //-----------------------------------------------------------------------------
@@ -125,6 +222,17 @@ void CmEmuMt_ThreadBell::ring() {
 }
 
 //=============================================================================
+CmEmuMt_Thread::CmEmuMt_Thread(
+                   CmEmu_KernelLauncher launcher,
+                   CmEmuMt_Kernel* kernel)
+    : m_resources(nullptr),
+      m_extra_resources(nullptr),
+      m_kernel_launcher(launcher),
+      m_kernel(kernel)
+{
+    wrapper_debug();
+}
+
 CmEmuMt_Thread::CmEmuMt_Thread(uint32_t local_idx, uint32_t group_idx,
                    std::shared_ptr<CmEmuMt_GroupState> resources,
                    std::shared_ptr<CmEmuMt_GroupState> extra_resources,
@@ -137,15 +245,36 @@ CmEmuMt_Thread::CmEmuMt_Thread(uint32_t local_idx, uint32_t group_idx,
       m_kernel_launcher(launcher),
       m_kernel(kernel)
 {
-    //m_fcompleted = m_pcompleted.get_future();
-    m_os_thread = std::thread(&CmEmuMt_Thread::wrapper, this);
+    state(CmEmuMt_Thread::State::UNSPAWNED);
 }
 
-CmEmuMt_Thread::~CmEmuMt_Thread() { m_os_thread.join(); }
+std::atomic<uint32_t> g_stat_current_os_threads = 0, g_stat_max_os_threads = 0;
+
+CmEmuMt_Thread::~CmEmuMt_Thread() {}
 
 //-----------------------------------------------------------------------------
-void CmEmuMt_Thread::suspend() { kernel()->suspend_thread(this); }
-void CmEmuMt_Thread::resume() { kernel()->resume_thread(this); }
+void CmEmuMt_Thread::suspend() {
+    kernel()->suspend_thread(this);
+}
+
+void CmEmuMt_Thread::resume() {
+    GFX_EMU_DEBUG_MESSAGE(fSched | fExtraDetail, "resuming thread with local idx %u\n", local_idx());
+
+        if(m_state.load() == State::UNSPAWNED) {
+            m_os_thread_ptr.reset(new std::thread(&CmEmuMt_Thread::wrapper, this));
+            m_os_thread_ptr->detach ();
+
+            g_stat_current_os_threads.fetch_add(1);
+            GfxEmu::Utils::atomicUpdateMax(g_stat_max_os_threads, g_stat_current_os_threads.load ());
+            GFX_EMU_DEBUG_MESSAGE(fSched | fExtraDetail, "OS threads stat: current: %u, max: %u\n",
+                g_stat_current_os_threads.load(),
+                g_stat_max_os_threads.load());
+
+            while(!suspended());
+        }
+
+    kernel()->resume_thread(this);
+}
 
 //-----------------------------------------------------------------------------
 bool CmEmuMt_Thread::next_group() {
@@ -159,7 +288,10 @@ bool CmEmuMt_Thread::next_group() {
 
 //-----------------------------------------------------------------------------
 void CmEmuMt_Thread::complete() {
+    GFX_EMU_MESSAGE(fSched | fExtraDetail,
+        "completing thread with local idx %u\n", local_idx());
     m_state.store(CmEmuMt_Thread::State::COMPLETED);
+    g_stat_current_os_threads.fetch_sub(1, std::memory_order_relaxed);
     kernel()->complete_thread(this);
 }
 
@@ -169,6 +301,15 @@ bool CmEmuMt_Thread::completed() {
 }
 
 //-----------------------------------------------------------------------------
+void CmEmuMt_Thread::wrapper_debug() {
+    g_resident_thread = this;
+    for (m_group_idx = 0; m_group_idx < kernel()->group_count(); m_group_idx++) {
+        for (m_local_idx = 0; m_local_idx < kernel()->group_size(); m_local_idx++) {
+          execute();
+        }
+    }
+}
+
 void CmEmuMt_Thread::wrapper() {
     g_resident_thread = this;
     suspend();
@@ -195,6 +336,14 @@ CmEmuMt_Kernel::CmEmuMt_Kernel(
       m_resident_groups_limit(resident_groups_limit),
       m_parallel_threads_limit(parallel_threads_limit) {
 
+      if(GfxEmu::Cfg ().ParallelThreads.isNotDefault ()) {
+        m_parallel_threads_limit = GfxEmu::Cfg ().ParallelThreads.getInt ();
+      }
+
+      if(GfxEmu::Cfg ().ResidentGroups.isNotDefault ()) {
+        m_resident_groups_limit = GfxEmu::Cfg ().ResidentGroups.getInt ();
+      }
+
       auto get_strides =
           [](std::vector<uint32_t> dims) {
               auto n = dims.size();
@@ -210,33 +359,36 @@ CmEmuMt_Kernel::CmEmuMt_Kernel(
       m_group_count = m_grid_strides[0] * m_grid_dims[0];
       m_group_size = m_group_strides[0] * m_group_dims[0];
 
-      m_resident_groups_limit = std::min(m_group_count, resident_groups_limit);
+      m_resident_groups_limit = std::min(m_group_count, m_resident_groups_limit);
 }
+
+thread_local void* CmEmuMt_Kernel::m_sched_ctx = nullptr;
 
 CmEmuMt_Kernel::~CmEmuMt_Kernel(){
 }
 
 //-----------------------------------------------------------------------------
 void CmEmuMt_Kernel::suspend_thread(CmEmuMt_Thread* thread) {
-    if (!thread->suspended ()) {
-        thread->state(CmEmuMt_Thread::State::SUSPENDED);
+        if (thread->suspended ()) {
+            GFX_EMU_ERROR_MESSAGE("trying to suspend an already suspended thread.\n");
+            exit(EXIT_FAILURE);
+        }
+
+    if(!thread->suspended () && !thread->unspawned())
         m_running_threads_count.fetch_sub(1);
-        thread->bell()->wait_for_ring();
-    } else {
-        std::cerr << "*** Error: trying to suspend an already suspended thread." << std::endl;
-        exit(EXIT_FAILURE);
-    };
+
+    thread->state(CmEmuMt_Thread::State::SUSPENDED);
+    thread->bell()->wait_for_ring();
 }
 
 //-----------------------------------------------------------------------------
 void CmEmuMt_Kernel::resume_thread(CmEmuMt_Thread * thread) {
-    if (thread->suspended ())
-    {
+    if (thread->suspended () || thread->unspawned()) {
         thread->state(CmEmuMt_Thread::State::RUNNING);
         m_running_threads_count.fetch_add(1);
         thread->bell()->ring();
     } else {
-        std::cerr << "*** Error: trying to resume not a suspended thread." << std::endl;
+        GFX_EMU_ERROR_MESSAGE("*** Error: trying to resume not a suspended thread.\n");
         exit(EXIT_FAILURE);
     };
 }
@@ -268,20 +420,49 @@ uint32_t CmEmuMt_Kernel::group_count(uint32_t dim) {
 }
 
 //-----------------------------------------------------------------------------
+bool CmEmuMt_Kernel::run_debug()
+{
+    GFX_EMU_MESSAGE(fSched | fSticky, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "RUNNING IN SINGLE-THREAD NON-FIBERS WORK-ITEMS SCHEDULING MODE.\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Kernels with synchronization will not work in this mode.\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Use only for debugging purposes on simple kernels!\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Alternative modes for debugging kernels with synchronization are:\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "NB: 1) CM_RT_PARALLEL_THREADS=1\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "NB: See README_CONFIG.md for details.\n");
+    GFX_EMU_MESSAGE(fSched | fSticky, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
+    CmEmuMt_Thread { m_kernel_launcher, this };
+    return true;
+}
+
 bool CmEmuMt_Kernel::run(double timeout)
 {
+
+    //-----------------------------------------------------------------
+    static auto once = 0;
+    if(!once++) {
+        GFX_EMU_MESSAGE(fSched | fSticky, "work-items scheduling mode: multi-thread work-items.\n");
+        GfxEmu::Log::adviceToEnable(fSched, "for more info on scheduling.\n");
+    }
+    GFX_EMU_MESSAGE(fSched, "work-groups: %d\n", m_group_count);
+    GFX_EMU_MESSAGE(fSched, "resident work-groups: %d\n", m_resident_groups_limit);
+    GFX_EMU_MESSAGE(fSched, "work-items per work-group: %d\n", m_group_size);
+
     std::list<CmEmuMt_Thread> threadsList;
 
-    for (uint32_t group_idx = 0; group_idx < m_resident_groups_limit; ++group_idx) {
-        auto resources = std::make_shared<CmEmuMt_GroupState>(this);
-        auto extra_resources = std::make_shared<CmEmuMt_GroupState>(this);
+    for (uint32_t group_idx = 0;
+        group_idx < m_resident_groups_limit;
+        ++group_idx)
+    {
+        auto groupState1Ptr = std::make_shared<CmEmuMt_GroupState>(this);
+        auto groupState2Ptr = std::make_shared<CmEmuMt_GroupState>(this);
 
         for (uint32_t local_idx = 0; local_idx < m_group_size; ++local_idx) {
-            m_running_threads_count++;
+            //m_running_threads_count++;
             threadsList.emplace_back(
                     local_idx,
                     group_idx,
-                    resources, extra_resources,
+                    groupState1Ptr,
+                    groupState2Ptr,
                     m_kernel_launcher,
                     this);
         }
@@ -296,7 +477,7 @@ bool CmEmuMt_Kernel::run(double timeout)
         if(!(chkTimeoutI++ % 100) &&
             std::chrono::duration<double> {std::chrono::system_clock::now() - startTime}.count () > timeout)
         {
-            std::cerr << "*** Error: timeout while running a kernel!" << std::endl;
+            GFX_EMU_ERROR_MESSAGE("*** Error: timeout while running a kernel!\n");
             return true;
         }
         return false;
@@ -307,14 +488,19 @@ bool CmEmuMt_Kernel::run(double timeout)
     {
         if (isTimeout ()) return false;
 
-        if (curThreadIt->suspended()) {
+        if (curThreadIt->suspended() || curThreadIt->unspawned()) {
             if(m_running_threads_count.load() < m_parallel_threads_limit)
                 curThreadIt->resume ();
         }
 
-        curThreadIt = curThreadIt->completed () ?
-            threadsList.erase(curThreadIt) :
-            std::next(curThreadIt);
+        if(m_parallel_threads_limit > 1 ||
+           m_running_threads_count.load() == 0 // Guarantee sequentiality of threads spawning in parallelism = 1 mode.
+        )
+        {
+            curThreadIt = curThreadIt->completed () ?
+                threadsList.erase(curThreadIt) :
+                std::next(curThreadIt);
+        }
 
         if (curThreadIt == threadsList.end())
             curThreadIt = threadsList.begin();
@@ -332,8 +518,10 @@ CmEmuMt_GroupBarrier::CmEmuMt_GroupBarrier(CmEmuMt_Kernel *kernel) : m_kernel(ke
 void CmEmuMt_GroupBarrier::signal(CmEmuMt_Thread *thread) {
     // we use split-version of sensing barrier
     m_local_sense[thread->local_idx()] = ~m_local_sense[thread->local_idx()];
+
     while (m_counter.load() > m_kernel->group_size() - 1)
         ;
+
     if (m_counter.fetch_add(1) == m_kernel->group_size() - 1) {
         m_counter.store(0);
         m_global_sense.store(m_local_sense[thread->local_idx()]);
@@ -384,7 +572,7 @@ int32_t group_size () {
 
 void simple_group_barrier_signal()
 {
-    return g_resident_thread->simple_barrier()->signal(g_resident_thread);
+    g_resident_thread->simple_barrier()->signal(g_resident_thread);
 }
 
 void simple_group_barrier_wait()
@@ -394,8 +582,6 @@ void simple_group_barrier_wait()
 
 void aux_barrier_signal() { g_resident_thread->aux_barrier()->signal(g_resident_thread);}
 void aux_barrier_wait() { g_resident_thread->aux_barrier()->wait(g_resident_thread);}
-
-void suspend() {}
 
 size_t thread_linear_id ()
 {
@@ -435,28 +621,25 @@ void CmEmuMt_SLM::set_size (unsigned int size)
     std::lock_guard<std::mutex> lk(m_mutex);
 
     if (!size) {
-        fprintf(stderr, "Error in SLM Emulation:  Specify SLM size!\n");
-        exit(EXIT_FAILURE);
+        GFX_EMU_FAIL_WITH_MESSAGE("SLM size must not be 0.\n");
     }
 
-    int slm_max_size = CmEmuMt_SLM::kDefaultMaxSize;
+    const auto slm_max_size =
+        CmEmuMt_SLM::kDefaultMaxSize
+    ;
 
     size = ((int)ceil((double)size / CmEmuMt_SLM::kChunkSize)) * CmEmuMt_SLM::kChunkSize;
 
     if (size > slm_max_size) {
-        fprintf(stderr, "Error in SLM Emulation:  Max SLM size = %dK!\n", slm_max_size/1024);
-        exit(EXIT_FAILURE);
+        GFX_EMU_FAIL_WITH_MESSAGE("Error in SLM Emulation:  Max SLM size = %dK!\n", slm_max_size/1024);
     }
 
-    if (m_memory.empty())
-    {
+    if (m_memory.empty()) {
         m_memory.resize(size);
-    }
-    else
-    {
-        if (m_memory.size() != size)
-        {
-            throw std::runtime_error("SLM size already set to " + std::to_string(m_memory.size()));
+    } else {
+        if (m_memory.size() != size) {
+            GFX_EMU_FAIL_WITH_MESSAGE("Requesting SLM size of %u while SLM size already set to %u\n",
+                size, m_memory.size());
         }
     }
 

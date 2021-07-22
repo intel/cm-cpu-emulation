@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,39 +22,7 @@
  OTHER DEALINGS IN THE SOFTWARE.
 ======================= end_copyright_notice ==================================*/
 
-#ifndef CM_UTILS_H
-#define CM_UTILS_H
+#pragma once
+#define GFX_EMU_API
+#define GFX_EMU_API_IMPORT
 
-#include <algorithm>
-#include <cctype>
-#include <cstdlib>
-#include <string>
-
-namespace CmUtils {
-
-namespace String {
-
-std::string getEnvStrNoSynch(const char* name) {
-    if (name)
-        if (const char* val = std::getenv(name))
-            return val;
-    return "";
-}
-
-std::string toLower(std::string str)
-{
-    std::transform(str.begin(), str.end(), str.begin(),
-        [](unsigned char c){ return std::tolower(c); });
-
-    return str;
-}
-
-};
-
-namespace Bits {
-
-};
-
-};
-
-#endif

@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,19 +63,6 @@ typedef enum _CM_SUB_MAJOR_STEPPING {
   Y = 24,
   Z = 25
 } CM_SUB_MAJOR_STEPPING;
-
-typedef enum _CM_SUB_PLATFORM_USE_SKU {
-  CM_SKU_UNDEFINED = 0,
-  GT1 = 1,
-  GT2 = 2,
-  GT3 = 3,
-  GT4 = 4,
-  GT5 = 5,
-  GTA = 5,
-  GTC = 6,
-  GTX = 7,
-  GT1_5 = 8
-} CM_SUB_PLATFORM_USE_SKU;
 
 typedef int32_t  (__cdecl *ReleaseSurfaceCallback)(void *cmDevice, void *surface);
 

@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,7 +71,7 @@ int32_t CmSurface3DEmu::Create( uint32_t index, uint32_t arrayIndex, uint32_t wi
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
 
@@ -83,13 +83,13 @@ CM_RT_API int32_t CmSurface3DEmu::WriteSurface( const unsigned char* pSysMem, Cm
 {
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height * this->m_depth )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -102,13 +102,13 @@ CM_RT_API int32_t CmSurface3DEmu::ReadSurface( unsigned char* pSysMem , CmEvent*
 {
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width * this->m_height * this->m_depth )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 

@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 
 #include "cm_def.h"
 #include "cm_kernel_base.h"
+#include "emu_kernel_support.h"
 
 class CmDevice;
 class CmDeviceEmu;
@@ -50,7 +51,11 @@ public:
 
     int32_t GetBinary(void* & pBinary, uint32_t & size );
     //int32_t GetThreadCount(uint32_t& count );
-    const void* getFuncPnt();
+    const void* GetFuncPnt() const;
+
+    const GfxEmu::KernelSupport::ProgramModule& GetProgramModule() const {
+        return m_programModule;
+    }
 
     CM_RT_API int32_t SetThreadCount(uint32_t count );
     /*CM_RT_API */int32_t GetThreadCount(uint32_t& count );
@@ -71,13 +76,13 @@ public:
     int32_t ResetArgs( void );
 
     bool CheckArgs();
-    std::vector<CmEmuArg>& GetArgsVecRef( );
-    int32_t GetArgs( CmEmuArg* & pArg );
+    const std::vector<GfxEmu::KernelArg>& GetArgsVecRef( ) const;
+    int32_t GetArgs( GfxEmu::KernelArg* & pArg );
     int32_t GetArgCount( uint32_t & argCount );
     int32_t GetThreadArgCount( uint32_t & threadArgCount );
     int32_t GetMaxArgCount( uint32_t & maxArgCount );
 
-    char *GetName( void ) { return (char *)m_KernelName; }
+    char *GetName( void ) const { return (char *)m_KernelName; }
     char *GetOptions(void) { return (char *)m_Options; }
 
     void AddScoreBoardCoord(uint32_t x, uint32_t y, uint32_t threadID);
@@ -94,7 +99,7 @@ public:
 
     int32_t GetThreadGroupSpace(CmThreadGroupSpace* &threadGroupSpace);
 protected:
-    CmKernelEmu(CmDeviceEmu *device, const void * fncPt);
+    CmKernelEmu(CmDeviceEmu *device, const void * fncPt, const GfxEmu::KernelSupport::ProgramModule&);
 
     ~CmKernelEmu() = default;
 
@@ -110,6 +115,8 @@ protected:
     const void * funcPt;
     uint32_t m_BinaryCodeSize;
 
+    const GfxEmu::KernelSupport::ProgramModule& m_programModule;
+
     uint32_t m_ThreadCount;
 
     uint32_t m_ArgCount;
@@ -121,7 +128,7 @@ protected:
     bool m_AssociatedToTS;      //Indicates if this kernel is associated the task threadspace (scoreboard)
 
     CM_HAL_MAX_VALUES* m_pMaxVhalVals;
-    std::vector <CmEmuArg> m_Args;
+    std::vector <GfxEmu::KernelArg> m_Args;
     SurfaceIndex*  m_GlobalSurfaces[CM_MAX_GLOBAL_SURFACE_NUMBER];
 
     class SIM_SCB_COORD

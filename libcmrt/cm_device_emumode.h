@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,8 +59,6 @@ public:
     static int32_t Create( CmDeviceEmu* &pDevice );
     static int32_t Destroy( CmDeviceEmu* &pDevice );
 
-    static CmEmuPlatformUse CurrentPlatform;
-
     int32_t Acquire();
     int32_t SafeRelease();
 
@@ -76,7 +74,7 @@ public:
     CM_RT_API int32_t CreateQueue( CmQueue* & pQueue) override;
     CM_RT_API int32_t LoadProgram(void* pCommonISACode, const uint32_t size, CmProgram*& pProgram, const char* options = nullptr ) override;
     CM_RT_API int32_t CreateKernel( CmProgram* pProgram, const char* kernelName, const void * fncPnt, CmKernel* & pKernel, const char* options = nullptr) override;
-    CM_RT_API int32_t CreateKernel( CmProgram* pProgram, const char* kernelName, CmKernel* & pKernel, const char* options = nullptr) override {return CM_FAILURE;};
+    CM_RT_API int32_t CreateKernel( CmProgram* pProgram, const char* kernelName, CmKernel* & pKernel, const char* options = nullptr) override;
     CM_RT_API int32_t CreateTask(CmTask *& pKernelArray) override;
 
     //CM_RT_API int32_t GetCaps(CM_DEVICE_CAP_NAME capName, size_t& capValueSize, void* pCapValue );
@@ -107,7 +105,7 @@ public:
     int32_t GetSurfManager( CmSurfaceManagerEmu* &m_pSurfaceMgr);
     int32_t DoCopyAll();
     int32_t DoGPUCopySelect();
-    int32_t GetGenPlatform(CmEmuPlatformUse& platform );
+    int32_t GetGenPlatform(GfxEmu::Platform::Id& platform );
     bool IsValidSurfaceIndex(uint32_t surfBTI);
 
     CM_RT_API int32_t InitPrintBuffer(size_t size = CM_DEFAULT_PRINT_BUFFER_SIZE ) override {return CM_SUCCESS; };

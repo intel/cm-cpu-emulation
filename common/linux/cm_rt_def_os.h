@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,8 @@
 #include <iostream>
 
 #endif // __SYCL_EXPLICIT_SIMD_PLUGIN__
+
+#define EXTERN_C extern "C"
 
 #ifndef CM_NOINLINE
     #define CM_NOINLINE __attribute__((noinline))

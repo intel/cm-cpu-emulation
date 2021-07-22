@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,9 +31,13 @@
 
 #include "os_utils.h"
 
+#include "emu_api_export.h"
+#include "emu_utils.h"
+
 enum class CmArgumentType
 {
     SurfaceIndex,
+    Fp,
     Scalar,
     Invalid
 };
@@ -67,22 +71,23 @@ struct ProgramInfo
     ProgramHandle handle = ProgramHandle();
     KernelMap kernels;
 
-    bool isValid();
+    GFX_EMU_API bool isValid();
 };
 
 class ProgramManager
 {
 public:
-    ProgramInfo AddProgram(const unsigned char* const bytes, size_t size);
-    bool IsProgramValid(ProgramHandle program);
-    bool FreeProgram(ProgramHandle program);
+    GFX_EMU_API ProgramInfo AddProgram(const unsigned char* const bytes, size_t size);
+    GFX_EMU_API bool IsProgramValid(ProgramHandle program);
+    GFX_EMU_API bool FreeProgram(ProgramHandle program);
 
-    static ProgramManager& instance();
+    GFX_EMU_API static ProgramManager& instance();
 
 private:
-    bool FreeProgramInternal(ProgramHandle program);
+    GFX_EMU_API bool FreeProgramInternal(ProgramHandle program);
     ProgramManager();
-    ~ProgramManager();
+    void Complete();
+    ~ProgramManager() = default;
 
 private:
     std::unordered_set<ProgramHandle> m_programs;
@@ -93,6 +98,8 @@ public:
     ProgramManager& operator=(const ProgramManager&) = delete;
 };
 
-extern CmArgumentType CmArgumentTypeFromString(const std::string& s);
-extern Kernel2SigMap EnumerateKernels(os::SharedLibHandle dll);
-extern CmArgTypeVector ParseKernelSignature(const std::string &signature);
+static auto& g_shimProgramManagerInit_ = ProgramManager::instance();
+
+GFX_EMU_API extern CmArgumentType CmArgumentTypeFromString(const std::string& s);
+GFX_EMU_API extern Kernel2SigMap EnumerateKernels(os::SharedLibHandle dll);
+GFX_EMU_API extern CmArgTypeVector ParseKernelSignature(const std::string &signature);

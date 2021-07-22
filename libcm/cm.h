@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,7 +50,9 @@
     defined(CM_GEN8_5)  || \
     defined(CM_GEN9)    || \
     defined(CM_JIT)
+#if !defined(CM_GENX)
 #define CM_GENX
+#endif // !defined(CM_GENX)
 #endif
 
  #define CM_execute_kernels CM_execute_kernels_emu

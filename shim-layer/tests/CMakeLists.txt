@@ -10,6 +10,7 @@ set(TESTS_DIR
 
 
     set(TESTS
+        #xehpsdvbgemm
         vadd_hello_ocl
         vadd_hello_l0
     )

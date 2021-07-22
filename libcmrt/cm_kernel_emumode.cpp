@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,17 @@
 #include "cm_thread_space_emumode.h"
 #include "cm.h"
 
-CmKernelEmu::CmKernelEmu( CmDeviceEmu *device, const void * fncPt )
+#include "cm_program_emumode.h"
+
+#include "emu_kernel_support.h"
+#include "emu_cfg.h"
+
+CmKernelEmu::CmKernelEmu(
+    CmDeviceEmu *device,
+    const void * fncPt,
+    const GfxEmu::KernelSupport::ProgramModule& programModule
+) :
+    m_programModule(programModule)
 {
     funcPt = fncPt;
     m_pCmDev = device;
@@ -52,10 +62,20 @@ CmKernelEmu::CmKernelEmu( CmDeviceEmu *device, const void * fncPt )
     m_threadGroupSpace = nullptr;
 }
 
-int32_t CmKernelEmu::Create( CmDeviceEmu * device, CmProgram* pProgram, const char* kernelName, const void* funcPt, CmKernelEmu* & pKernel, const char* options )
+int32_t CmKernelEmu::Create(
+    CmDeviceEmu * device,
+    CmProgram* pProgram,
+    const char* kernelName,
+    const void* funcPt,
+    CmKernelEmu* & pKernel,
+    const char* options )
 {
     int32_t result = CM_SUCCESS;
-    pKernel = new CmKernelEmu( device, funcPt );
+    pKernel = new CmKernelEmu(
+        device,
+        funcPt,
+        static_cast<CmProgramEmu*>(pProgram)->GetProgramModule ()
+    );
 
     if( pKernel )
     {
@@ -68,7 +88,7 @@ int32_t CmKernelEmu::Create( CmDeviceEmu * device, CmProgram* pProgram, const ch
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -86,13 +106,13 @@ int32_t CmKernelEmu::Initialize( const char* kernelName, const char* options )
         }
         else
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             return CM_FAILURE;
         }
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
 
@@ -111,7 +131,7 @@ int32_t CmKernelEmu::Initialize( const char* kernelName, const char* options )
     try {
         m_Args.resize (m_pMaxVhalVals->maxArgsPerKernel);
     } catch (...) {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_OUT_OF_HOST_MEMORY;
     }
 
@@ -119,7 +139,7 @@ int32_t CmKernelEmu::Initialize( const char* kernelName, const char* options )
     return CM_SUCCESS;
 }
 
-const void * CmKernelEmu::getFuncPnt()
+const void * CmKernelEmu::GetFuncPnt() const
 {
     return funcPt;
 }
@@ -128,7 +148,7 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
 {
     if( index >= m_pMaxVhalVals->maxArgsPerKernel )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_INDEX;
         //return CM_FAILURE;
 
@@ -140,13 +160,13 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
     //if( size == 0 )
     if( size ==0 || ((int)size < 0))
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_SIZE;
     }
 
     if( !pValue )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -154,7 +174,7 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
 
     if (!m_Args[index].setValueFrom (pValue, size))
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_KERNEL_ARG_SETTING_FAILED;
     }
 
@@ -165,12 +185,12 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
 CM_RT_API int32_t CmKernelEmu::SetStaticBuffer(uint32_t index,const void * pValue )
 {
     if(index >= CM_MAX_GLOBAL_SURFACE_NUMBER) {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_GLOBAL_BUFFER_INDEX;
     }
 
     if(!pValue) {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_BUFFER_HANDLER;
     }
 
@@ -184,14 +204,14 @@ CM_RT_API int32_t CmKernelEmu::SetThreadArg(uint32_t threadId, uint32_t index, s
 {
     if(m_ThreadCount > this->m_pMaxVhalVals-> maxUserThreadsPerTask || (int)m_ThreadCount <=0)
     {
-        CmErrorMessage("Minimum or Maximum number of threads exceeded.");
-        CmAssert( 0 );
+        GfxEmu::ErrorMessage("Minimum or Maximum number of threads exceeded.");
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
 
     if( index >= m_pMaxVhalVals->maxArgsPerKernel )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_KERNEL_ARG_AMOUNT;
 
     }else if((index + 1) > m_MaxArgCount)
@@ -201,7 +221,7 @@ CM_RT_API int32_t CmKernelEmu::SetThreadArg(uint32_t threadId, uint32_t index, s
 
     if( threadId >= m_ThreadCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_THREAD_INDEX;
 
     }
@@ -209,13 +229,13 @@ CM_RT_API int32_t CmKernelEmu::SetThreadArg(uint32_t threadId, uint32_t index, s
     //if( size ==0 )
     if( size ==0 || ((int)size < 0))
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_SIZE;
     }
 
     if( !pValue)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -223,7 +243,7 @@ CM_RT_API int32_t CmKernelEmu::SetThreadArg(uint32_t threadId, uint32_t index, s
 
     if(!m_Args[index].setValueFrom (pValue, size, threadId, m_ThreadCount))
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_KERNEL_ARG_SETTING_FAILED;
     }
 
@@ -261,12 +281,12 @@ bool CmKernelEmu::CheckArgs()
     return true;
 }
 
-std::vector<CmEmuArg>& CmKernelEmu::GetArgsVecRef( )
+const std::vector<GfxEmu::KernelArg>& CmKernelEmu::GetArgsVecRef( ) const
 {
     return m_Args;
 }
 
-int32_t CmKernelEmu::GetArgs( CmEmuArg* & pArg )
+int32_t CmKernelEmu::GetArgs( GfxEmu::KernelArg* & pArg )
 {
     pArg = m_Args.data ();
     return CM_SUCCESS;
@@ -384,14 +404,14 @@ int32_t CmKernelEmu::SetSurfaceBTI(SurfaceIndex* pSurfaceIndex, uint32_t BTIndex
 
     if(pSurfaceIndex == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
 
     //check the dst BTIndex is valid or not
     if(!m_pCmDev->IsValidSurfaceIndex(BTIndex))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_KERNELPAYLOAD_SURFACE_INVALID_BTINDEX;
     }
 
@@ -406,7 +426,7 @@ int32_t CmKernelEmu::SetSurfaceBTI(SurfaceIndex* pSurfaceIndex, uint32_t BTIndex
     m_pCmDev->GetSurfaceManagerEmu( m_pSurfaceMg );
     if(m_pSurfaceMg == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
 
@@ -496,13 +516,13 @@ int32_t CmKernelEmu::AssociateThreadSpace_preG12(CmThreadSpace* & threadSpace)
 {
     if (threadSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
     if (m_threadGroupSpace != nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_KERNEL_THREADSPACE;
     }
 
@@ -520,9 +540,7 @@ CM_RT_API int32_t CmKernelEmu::AssociateThreadSpace(CmThreadSpace *&threadSpace)
 {
     int32_t ret;
 
-    if (
-        CmDeviceEmu::CurrentPlatform == CmEmuPlatformUse::TGLLP
-    )
+    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadSpaceEmu * threadSpace_h = dynamic_cast<CmThreadSpaceEmu *>(threadSpace);
         CmThreadGroupSpace *thread_group_space_h = threadSpace_h ?
@@ -541,13 +559,13 @@ CM_RT_API int32_t CmKernelEmu::AssociateThreadGroupSpace(CmThreadGroupSpace* & t
 {
     if (threadGroupSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
     if (m_threadSpace != nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_KERNEL_THREADGROUPSPACE;
     }
 
@@ -560,12 +578,12 @@ int32_t CmKernelEmu::DeAssociateThreadSpace_preG12(CmThreadSpace* & threadSpace)
 {
     if (threadSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
     if (m_threadSpace != dynamic_cast<CmThreadSpaceEmu *>(threadSpace))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -578,9 +596,7 @@ CM_RT_API int32_t CmKernelEmu::DeAssociateThreadSpace(CmThreadSpace *&threadSpac
 {
     int32_t ret;
 
-    if (
-        CmDeviceEmu::CurrentPlatform == CmEmuPlatformUse::TGLLP
-    )
+    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadSpaceEmu * threadSpace_h = dynamic_cast<CmThreadSpaceEmu *>(threadSpace);
         CmThreadGroupSpace *thread_group_space_h = threadSpace_h ?
@@ -599,13 +615,13 @@ CM_RT_API int32_t CmKernelEmu::DeAssociateThreadGroupSpace(CmThreadGroupSpace* &
 {
     if (threadGroupSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
     if (m_threadGroupSpace != threadGroupSpace)
     {
-        CmFailWithMessage("Trying to deassociate "
+        GFX_EMU_FAIL_WITH_MESSAGE("Trying to deassociate "
             "thread group space not equal to the one associated with this kernel.");
         return CM_INVALID_ARG_VALUE;
     }
@@ -631,30 +647,18 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArgPointer(uint32_t index,
                                                    size_t size,
                                                    const void * pValue)
 {
-    if( !pValue )
+    if( !pValue || size > sizeof(uint64_t))
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     CmSurfaceManagerEmu* surfMgr;
-    uint64_t gfxAddress;
-    bool isValid = false;
+    uint64_t gfxAddress = 0;
+    CmSafeMemCopy(&gfxAddress, pValue, size);
 
-    /* # */
-    void *pTemp = new uint8_t[sizeof(uint64_t)];
-    CmSafeMemCopy(pTemp, pValue, size);
-    gfxAddress = *(reinterpret_cast<uint64_t *>(pTemp));
-
-    CmAssert( gfxAddress != 0 );
-
-    if (!isValid)
-    {
-        CmErrorMessage("Error: the kernel arg pointer is not valid.");
-        CmAssert(0);
-        return CM_INVALID_KERNEL_ARG_POINTER;
-    }
 
     return SetKernelArg(index, size, &gfxAddress);
 }
+
 

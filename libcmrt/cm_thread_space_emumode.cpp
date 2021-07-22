@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,8 @@
  OTHER DEALINGS IN THE SOFTWARE.
 ======================= end_copyright_notice ==================================*/
 
+#include <cmath>
+
 #include "cm_include.h"
 #include "cm_thread_space_emumode.h"
 #include "cm_group_space_emumode.h"
@@ -29,14 +31,15 @@
 #include "cm_kernel_emumode.h"
 #include "cm_mem.h"
 #include "cm_device_emumode.h"
-#include <cmath>
+
+#include "emu_cfg.h"
 
 int32_t CmThreadSpaceEmu::Create( CmDeviceEmu* pDevice, uint32_t width, uint32_t height, CmThreadSpaceEmu* & pTS )
 {
     if( ( width == 0 ) || ( height == 0 ) )
     {
-        CmErrorMessage("Thread space width and height must be non-zero!");
-        CmAssert( 0 );
+        GfxEmu::ErrorMessage("Thread space width and height must be non-zero!");
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
 
@@ -52,7 +55,7 @@ int32_t CmThreadSpaceEmu::Create( CmDeviceEmu* pDevice, uint32_t width, uint32_t
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -112,7 +115,7 @@ int32_t CmThreadSpaceEmu::Initialize( void )
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_OUT_OF_HOST_MEMORY;
     }
 
@@ -145,12 +148,12 @@ CM_RT_API int32_t CmThreadSpaceEmu::AssociateThreadWithMask( uint32_t x, uint32_
 CM_RT_API int32_t CmThreadSpaceEmu::SetThreadSpaceColorCount( uint32_t colorCount )
 {
     if (colorCount == CM_INVALID_COLOR_COUNT ||
-        (CmDeviceEmu::CurrentPlatform <= CmEmuPlatformUse::KBL
+        (GfxEmu::Cfg ().Platform.getInt () <= GfxEmu::Platform::KBL
         )  ?
             (colorCount > CM_THREADSPACE_MAX_COLOR_COUNT) :
             (colorCount > CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -165,7 +168,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SelectMediaWalkingPattern( CM_WALKING_PATTER
 
     if( m_DependencyPatternType != CM_NONE_DEPENDENCY )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_DEPENDENCY_WITH_WALKING_PATTERN;
     }
 
@@ -199,7 +202,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SelectMediaWalkingPattern( CM_WALKING_PATTER
             m_WalkingPattern = CM_WALK_WAVEFRONT45XD_2;
             break;
         default:
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             result = CM_INVALID_MEDIA_WALKING_PATTERN;
             break;
     }
@@ -246,7 +249,7 @@ int32_t CmThreadSpaceEmu::AssociateThreadInternal( uint32_t x, uint32_t y, CmKer
     if(x >= m_Width || y >= m_Height ||
         pKernel == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
     uint32_t linear_offset = y*m_Width + x;
@@ -257,7 +260,7 @@ int32_t CmThreadSpaceEmu::AssociateThreadInternal( uint32_t x, uint32_t y, CmKer
     CmKernelEmu *temp = dynamic_cast<CmKernelEmu *>(pKernel);
     if(temp==NULL)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
     CmKernelEmu*pKernel_RT = dynamic_cast<CmKernelEmu *> (pKernel);
@@ -300,8 +303,8 @@ CM_RT_API int32_t CmThreadSpaceEmu::SetThreadDependencyPattern( uint32_t count, 
 {
     if( count > CM_MAX_DEPENDENCY_COUNT )
     {
-        CmErrorMessage("Exceed dependency count limitation, which is 8!");
-        CmAssert( 0 );
+        GfxEmu::ErrorMessage("Exceed dependency count limitation, which is 8!");
+        GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
 
     }
@@ -335,7 +338,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SelectThreadDependencyPattern ( CM_DEPENDENC
         }
         else
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             return CM_OUT_OF_HOST_MEMORY;
         }
     }
@@ -349,7 +352,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SelectThreadDependencyPattern ( CM_DEPENDENC
         }
         else
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             if( m_pBoardFlag )
                 CmSafeDeleteArray(m_pBoardFlag);
             return CM_OUT_OF_HOST_MEMORY;
@@ -358,7 +361,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SelectThreadDependencyPattern ( CM_DEPENDENC
 
     if( ( pattern != CM_NONE_DEPENDENCY) && (m_WalkingPattern != CM_WALK_DEFAULT) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_DEPENDENCY_WITH_WALKING_PATTERN;
     }
 
@@ -532,8 +535,8 @@ bool CmThreadSpaceEmu::IntegrityCheck(CmKernelArrayEmu* pTask)
 
         if (unassociated != 0)
         {
-            //CmAssert(0);
-            CmReleaseMessage(("pTS->IntegrityCheck Failed: ThreadSpace association is not correct!\n"));
+            //GFX_EMU_ASSERT(0);
+            GfxEmu::PrintMessage(("pTS->IntegrityCheck Failed: ThreadSpace association is not correct!\n"));
             return false;
         }
         else

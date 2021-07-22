@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ int32_t CmSurfaceManagerEmu::Create(CmSurfaceManagerEmu *&pManager, CM_HAL_MAX_V
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
 
@@ -71,13 +71,13 @@ int32_t CmSurfaceManagerEmu::CreateBuffer(uint32_t width, CmBufferEmu* & pSurfac
 
     if( index >= this->m_maxSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
     if( m_bufferCount >= m_maxBufferCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
@@ -86,7 +86,7 @@ int32_t CmSurfaceManagerEmu::CreateBuffer(uint32_t width, CmBufferEmu* & pSurfac
 
     if( result != CM_SUCCESS )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return result;
     }
     else
@@ -116,7 +116,7 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
         ( format != CM_SURFACE_FORMAT_R10G10B10A2 ) &&
         ( format != CM_SURFACE_FORMAT_A16B16G16R16 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return 0;
     }
 
@@ -152,8 +152,8 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
         break;
 
     default:
-        CmErrorMessage("Fail to get surface description!");
-        CmAssert( 0 );
+        GfxEmu::ErrorMessage("Fail to get surface description!");
+        GFX_EMU_ASSERT( 0 );
         return -1;
     }
 
@@ -187,20 +187,20 @@ int32_t CmSurfaceManagerEmu::CreateSurface2D(uint32_t width,
 
     if( index +additional_increment >= this->m_maxSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
     if( m_2DSurfaceCount >= m_max2DSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
     int32_t result = Surface2DSanityCheck(width, height, format);
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return result;
     }
 
@@ -212,7 +212,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface2D(uint32_t width,
     m_bufferID+=additional_increment;
     if( result != CM_SUCCESS )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return result;
     }
     else
@@ -251,13 +251,13 @@ int32_t CmSurfaceManagerEmu::CreateSurface2DUP(uint32_t width, uint32_t height, 
     int32_t result = Surface2DSanityCheck(width, height, format);
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return result;
     }
 
     if (nullptr == pSysMem)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -265,13 +265,13 @@ int32_t CmSurfaceManagerEmu::CreateSurface2DUP(uint32_t width, uint32_t height, 
 
     if( index +additional_increment >= this->m_maxSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
     if( m_2DUPSurfaceCount >= m_max2DUPSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
@@ -283,7 +283,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface2DUP(uint32_t width, uint32_t height, 
     m_bufferID+=additional_increment;
     if( result != CM_SUCCESS )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return result;
     }
     else
@@ -307,7 +307,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
         ( format != CM_SURFACE_FORMAT_R32G32B32A32F ) &&
         ( format != CM_SURFACE_FORMAT_A8R8G8B8 ) )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_SURFACE_FORMAT_NOT_SUPPORTED;
     }
 
@@ -332,13 +332,13 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
 
     if( index +additional_increment >= this->m_maxSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
     if( m_3DSurfaceCount >= m_max3DSurfaceCount )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_EXCEED_SURFACE_AMOUNT;
     }
 
@@ -356,7 +356,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
         ( height > CM_MAX_3D_SURF_HEIGHT ) ||
         ( depth > CM_MAX_3D_SURF_DEPTH ))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -364,7 +364,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
 
     if( result != CM_SUCCESS )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return result;
     }
     else
@@ -404,7 +404,7 @@ int32_t CmSurfaceManagerEmu::DestroySurface( CmBufferEmu* & pSurface1D )
     uint32_t index = 0;
     pSurface1D->GetArrayIndex( index );
 
-    CmAssert( m_SurfaceArray.GetElement( index ) == pSurface1D );
+    GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface1D );
     m_SurfaceArray.SetElement( index , nullptr );
 
     std::vector<SurfaceIndex *> aliasIndices = pSurface1D->GetAliasIndices();
@@ -431,7 +431,7 @@ int32_t CmSurfaceManagerEmu::DestroySurface( CmSurface2DEmu* & pSurface2D )
     uint32_t index = 0;
     pSurface2D->GetArrayIndex( index );
 
-    CmAssert( m_SurfaceArray.GetElement( index ) == pSurface2D );
+    GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface2D );
     m_SurfaceArray.SetElement( index , nullptr);
 
     if(m_SurfaceArray.GetElement( index+1 ) == m_pSurfaceDummy)
@@ -479,7 +479,7 @@ int32_t CmSurfaceManagerEmu::DestroySurface( CmSurface3DEmu* & pSurface3D )
     uint32_t index = 0;
     pSurface3D->GetArrayIndex( index );
 
-    CmAssert( m_SurfaceArray.GetElement( index ) == pSurface3D );
+    GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface3D );
     m_SurfaceArray.SetElement( index , nullptr);
 
     CmSurfaceEmu* pSurface = pSurface3D;
@@ -563,7 +563,7 @@ int32_t CmSurfaceManagerEmu::DestroySurface2DUP( CmSurface2DEmu* & pSurface2D )
     uint32_t index = 0;
     pSurface2D->GetArrayIndex( index );
 
-    CmAssert( m_SurfaceArray.GetElement( index ) == pSurface2D );
+    GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface2D );
     m_SurfaceArray.SetElement( index , nullptr);
 
     if(m_SurfaceArray.GetElement( index+1 ) == m_pSurfaceDummy)
@@ -639,7 +639,8 @@ CmSurfaceManagerEmu::~CmSurfaceManagerEmu()
 
 int32_t CmSurfaceManagerEmu::findFreeIndex(uint32_t additional_increment, uint32_t &index)
 {
-    for(uint32_t i = 0; i + additional_increment < this->m_maxSurfaceCount; i++)
+    bool skip_surface_index0 = getenv("SKIP_SURFACE_INDEX0");
+    for(uint32_t i = skip_surface_index0 ? 1 : 0; i + additional_increment < this->m_maxSurfaceCount; i++)
     {
         switch(additional_increment)
         {
@@ -733,13 +734,13 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
 {
     if ((width < CM_MIN_SURF_WIDTH) || (width > CM_MAX_2D_SURF_WIDTH))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_WIDTH;
     }
 
     if ((height < CM_MIN_SURF_HEIGHT) || (height > CM_MAX_2D_SURF_HEIGHT))
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_HEIGHT;
     }
 
@@ -759,18 +760,18 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
     case CM_SURFACE_FORMAT_YUY2:
         if (width & 0x1)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_INVALID_WIDTH;
         }
         break;
         if (width & 0x1)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_INVALID_WIDTH;
         }
         if (height & 0x1)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_INVALID_HEIGHT;
         }
         break;
@@ -778,13 +779,13 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
     case CM_SURFACE_FORMAT_NV12:
         if (width & 0x1)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_INVALID_WIDTH;
         }
         break;
 
     default:
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_SURFACE_FORMAT_NOT_SUPPORTED;
     }
 
@@ -809,7 +810,7 @@ CmSurfaceFormatID CmSurfaceManagerEmu::ConvertOsFmtToSurfFmt(CM_SURFACE_FORMAT f
     case CM_SURFACE_FORMAT_P016:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_P010:                    return R16_UNORM;
     default:
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return INVALID_SURF_FORMAT;
     }
 }

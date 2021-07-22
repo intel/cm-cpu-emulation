@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,9 @@
 #include "cm_statistics.h"
 #include "cm_mem_fast_copy.h"
 
+#include "emu_utils.h"
+#include "emu_cfg.h"
+
 using namespace std;
 
 #define INVISIBLE_EVENT_MAGIC_NUM ((CmEvent *)(-1))  // Magic Number for invisible event.
@@ -59,7 +62,7 @@ int32_t CmQueueEmu::Create(CmDeviceEmu *pDevice, CmQueueEmu *&pQueue)
     }
     else
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;
@@ -102,7 +105,7 @@ int32_t CmQueueEmu::GetTaskHasThreadArg(CmTask *pKernelArray, bool &threadArgExi
     CmKernelArrayEmu *pKA = (CmKernelArrayEmu *)pKernelArray;
     if (!pKA)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
 
@@ -113,7 +116,7 @@ int32_t CmQueueEmu::GetTaskHasThreadArg(CmTask *pKernelArray, bool &threadArgExi
         kernel = (CmKernelEmu *)pKA->GetKernelPointer(i);
         if (!kernel)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             return CM_FAILURE;
         }
 
@@ -144,7 +147,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
     int      totalOffset    = 0;
     void (*fncPt)()         = nullptr;
     CmKernelEmu *kernel     = NULL;
-    //CmEmuArg *     pArg       = nullptr;
+    //GfxEmu::KernelArg *     pArg       = nullptr;
 
     bool threadArgExists = false;
 
@@ -152,9 +155,9 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (pKernelArray == nullptr)
     {
-        CmErrorMessage("Kernel array is NULL.");
-        CmAssert(0);
-        //CmReleaseMessage( ("Kernel array is NULL.") );
+        GfxEmu::ErrorMessage("Kernel array is NULL.");
+        GFX_EMU_ASSERT(0);
+        //GfxEmu::PrintMessage( ("Kernel array is NULL.") );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -165,9 +168,9 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (kernelCount > this->m_pMaxVhalVals->maxKernelsPerTask)
     {
-        CmErrorMessage("Maximum number of Kernels per task exceeded.");
-        CmAssert(0);
-        //CmReleaseMessage( ("Maximum number of Kernels per task exceeded.") );
+        GfxEmu::ErrorMessage("Maximum number of Kernels per task exceeded.");
+        GFX_EMU_ASSERT(0);
+        //GfxEmu::PrintMessage( ("Maximum number of Kernels per task exceeded.") );
         return CM_EXCEED_MAX_KERNEL_PER_ENQUEUE;
     }
 
@@ -192,7 +195,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
         {
             if (!threadSpaceEmu->IntegrityCheck(pKATmp))
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 return CM_INVALID_THREAD_SPACE;
             }
         }
@@ -202,7 +205,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
         kernel->GetMaxArgCount(numMaxArgs);
         kernel->GetArgCount(kernelArgCount);
         numThreads = GetThreadCount(kernel, threadSpaceEmu);
-        fncPt      = (void (*)())kernel->getFuncPnt();
+        fncPt      = (void (*)())kernel->GetFuncPnt();
         if (!threadArgCount)
         {
             if (threadSpaceEmu != nullptr)
@@ -212,7 +215,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
                     threadSpaceEmu->AssociateKernel(kernel);
                 if ((result = ExecuteScoreBoard_1(threadSpaceEmu, true)) != CM_SUCCESS)
                 {
-                    CmAssert(0);
+                    GFX_EMU_ASSERT(0);
                     return result;
                 }
             }
@@ -222,7 +225,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
                 {
                     set_thread_origin_x(i % 511);
                     set_thread_origin_y(i / 511);
-                    Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, i);
+                    Execute(*kernel, i);
                 }
             }
         }
@@ -235,7 +238,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
             if (ExecuteScoreBoard_1(threadSpaceEmu, false) == CM_FAILURE)
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 return CM_FAILURE;
             }
         }
@@ -248,7 +251,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
                     continue;
                 set_thread_origin_x(threadId % 512);
                 set_thread_origin_y(threadId / 512);
-                Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, threadId);
+                Execute(*kernel, threadId);
             }
         }
         m_pDevice->DoCopyAll();
@@ -256,8 +259,8 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (kernelCount == 0)
     {
-        CmErrorMessage("There are no valid kernels!");
-        CmAssert(0);
+        GfxEmu::ErrorMessage("There are no valid kernels!");
+        GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
 
@@ -276,7 +279,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
         // if the input pEvent equals to INVISIBLE_EVENT_MAGIC_NUM, event will not be created.
         pEvent = nullptr;
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
 
     if (CmStatistics::Get() != nullptr)
     {
@@ -294,15 +297,14 @@ CM_RT_API int32_t CmQueueEmu::Enqueue(
 {
     int32_t           ret;
     CmThreadSpaceEmu *threadSpace = dynamic_cast<CmThreadSpaceEmu *>(const_cast<CmThreadSpace *>(pTS));
-    if (
-        CmDeviceEmu::CurrentPlatform == CmEmuPlatformUse::TGLLP
-    )
+
+    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadGroupSpace *thread_group_space_h = threadSpace ? threadSpace->GetThreadGroupSpace() : nullptr;
         if (!thread_group_space_h)
         {
             CmKernelArrayEmu *                pKATmp      = (CmKernelArrayEmu *)pKernelArray;
-            int                               kernelCount = pKATmp->GetKernelCount();
+            uint32_t                          kernelCount = pKATmp->GetKernelCount();
             CmKernelEmu *                     kernel      = NULL;
             uint32_t                          numThreads  = 0;
             uint32_t                          gwidth      = 0;
@@ -378,15 +380,15 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
     int      totalOffset = 0;
     void (*fncPt)()      = nullptr;
     CmKernelEmu *kernel  = NULL;
-    //CmEmuArg *     pArg    = nullptr;
+    //GfxEmu::KernelArg *     pArg    = nullptr;
     uint32_t     threadSpaceWidth, threadSpaceHeight, threadSpaceDepth,
         groupSpaceWidth, groupSpaceHeight, groupSpaceDepth;
 
     if (pKernelArray == nullptr)
     {
-        CmErrorMessage("Kernel array is NULL.");
-        CmAssert(0);
-        //CmReleaseMessage( ("Kernel array is NULL.") );
+        GfxEmu::ErrorMessage("Kernel array is NULL.");
+        GFX_EMU_ASSERT(0);
+        //GfxEmu::PrintMessage( ("Kernel array is NULL.") );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -396,9 +398,9 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
 
     if (kernelCount > this->m_pMaxVhalVals->maxKernelsPerTask)
     {
-        CmErrorMessage("Maximum number of Kernels per task exceeded.");
-        CmAssert(0);
-        //CmReleaseMessage( ("Maximum number of Kernels per task exceeded.") );
+        GfxEmu::ErrorMessage("Maximum number of Kernels per task exceeded.");
+        GFX_EMU_ASSERT(0);
+        //GfxEmu::PrintMessage( ("Maximum number of Kernels per task exceeded.") );
         return CM_EXCEED_MAX_KERNEL_PER_ENQUEUE;
     }
 
@@ -431,12 +433,12 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
         kernel->GetThreadArgCount(threadArgCount);
         //kernel->GetArgs(pArg);
         kernel->GetMaxArgCount(numMaxArgs);
-        fncPt = (void (*)())kernel->getFuncPnt();
+        fncPt = (void (*)())kernel->GetFuncPnt();
 
         if (threadArgCount)
         {
-            CmErrorMessage("No thread Args allowed when using group space");
-            CmAssert(0);
+            GfxEmu::ErrorMessage("No thread Args allowed when using group space");
+            GFX_EMU_ASSERT(0);
             return CM_THREAD_ARG_NOT_ALLOWED;
         }
 
@@ -447,12 +449,15 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
             {threadSpaceWidth, threadSpaceHeight, threadSpaceDepth},
             m_ResidentGroupNum,
             m_ParallelThreadNum,
-            CmEmu_KernelLauncher {
-                (CmEmu_KernelLauncher::VoidFuncPtr)(kernel->getFuncPnt()),
-                kernel->GetArgsVecRef ()
+            cmrt::CmEmu_KernelLauncher {
+                kernel->GetName (),
+                kernel->GetProgramModule (),
+                kernel->GetArgsVecRef (),
+                cmrt::CmEmu_KernelLauncher::kThreadIdUnset,
+                reinterpret_cast<void(*)()> (kernel->GetFuncPnt ())
             }}.run ())
         {
-            CmErrorMessage("Kernel group execution timeout.");
+            GfxEmu::ErrorMessage("Kernel group execution timeout.");
             return CM_FAILURE;
         }
 
@@ -475,7 +480,7 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
         // if the input pEvent equals to INVISIBLE_EVENT_MAGIC_NUM, event will not be created.
         pEvent = nullptr;
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
 
     if (CmStatistics::Get() != nullptr)
     {
@@ -583,10 +588,26 @@ CM_RT_API int32_t CmQueueEmu::EnqueueCopyGPUToCPU(CmSurface2D *pSurface, unsigne
     return ret;
 }
 
-int32_t CmQueueEmu::Execute(uint32_t numMaxArgs, std::vector<CmEmuArg>& argsVecRef, void (*fncPt)(), uint32_t threadId)
+int32_t CmQueueEmu::Execute(const CmKernelEmu& kernel, uint32_t threadId)
 {
-    CmEmu_KernelLauncher{fncPt,argsVecRef,threadId}.launch();
-    return CM_SUCCESS;
+    if (!cmrt::CmEmuMt_Kernel {
+        {1,1,1},
+        {1,1,1},
+        1,
+        1,
+        cmrt::CmEmu_KernelLauncher{
+            kernel.GetName (),
+            kernel.GetProgramModule (),
+            kernel.GetArgsVecRef (),
+            threadId,
+            reinterpret_cast<void(*)()> (kernel.GetFuncPnt ())
+        }}.run()
+    ) {
+        GfxEmu::ErrorMessage("Kernel execution timeout.");
+        return CM_FAILURE;
+    }
+    else
+        return CM_SUCCESS;
 }
 
 int32_t CmQueueEmu::ExecuteScoreBoard(CmThreadSpaceEmu *threadSpace, bool be_walker)
@@ -598,13 +619,13 @@ int32_t CmQueueEmu::ExecuteScoreBoard(CmThreadSpaceEmu *threadSpace, bool be_wal
     uint32_t              numExecuted = 1;
     uint32_t              numSkipped  = 0;
     uint32_t              xCoord, yCoord = 0;
-    //CmEmuArg *              pArg = nullptr;
+    //GfxEmu::KernelArg *              pArg = nullptr;
     void (*fncPt)()            = nullptr;
     CM_DEPENDENCY *pDependency = nullptr;
 
     if (threadSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
     threadSpace->GetThreadSpaceUnit(pThreadSpaceUnit);
@@ -630,11 +651,11 @@ int32_t CmQueueEmu::ExecuteScoreBoard(CmThreadSpaceEmu *threadSpace, bool be_wal
 
                 if (kernel == nullptr)
                 {
-                    CmAssert(0);
+                    GFX_EMU_ASSERT(0);
                     return CM_FAILURE;
                 }
 
-                fncPt = (void (*)())kernel->getFuncPnt();
+                fncPt = (void (*)())kernel->GetFuncPnt();
 
                 //kernel->GetArgs(pArg);
                 kernel->GetMaxArgCount(numMaxArgs);
@@ -642,7 +663,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard(CmThreadSpaceEmu *threadSpace, bool be_wal
                 set_thread_origin_x(x);
                 set_thread_origin_y(y);
 
-                Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, pThreadSpaceUnit[y * width + x].threadId);
+                Execute(*kernel, pThreadSpaceUnit[y * width + x].threadId);
                 pThreadSpaceUnit[y * width + x].numEdges--;
                 numExecuted++;
 
@@ -679,7 +700,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
     uint32_t              height           = 0;
     uint32_t              width            = 0;
     void (*fncPt)()                        = nullptr;
-    //CmEmuArg *  pArg                         = nullptr;
+    //GfxEmu::KernelArg *  pArg                         = nullptr;
     uint32_t  numMaxArgs                   = 0;
     uint32_t  x                            = 0;
     uint32_t  y                            = 0;
@@ -688,7 +709,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
 
     if (!threadSpace)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -696,7 +717,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
     threadSpace->GetThreadSpaceUnit(pThreadSpaceUnit);
     if (!pThreadSpaceUnit)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -705,14 +726,14 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
     result = threadSpace->Wavefront26ZSequence();
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         goto finish;
     }
 
     threadSpace->GetBoardOrder(pBoardOrder);
     if (!pBoardOrder)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -729,12 +750,12 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
         CmKernelEmu *kernel = (CmKernelEmu *)pThreadSpaceUnit[index].pKernel;
         if (!kernel)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             result = CM_FAILURE;
             goto finish;
         }
 
-        fncPt = (void (*)())kernel->getFuncPnt();
+        fncPt = (void (*)())kernel->GetFuncPnt();
 
         //kernel->GetArgs(pArg);
         kernel->GetMaxArgCount(numMaxArgs);
@@ -742,7 +763,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26Z(CmThreadSpaceEmu *threadSpace)
         set_thread_origin_x(x);
         set_thread_origin_y(y);
 
-        Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, pThreadSpaceUnit[index].threadId);
+        Execute(*kernel, pThreadSpaceUnit[index].threadId);
     }
 
 finish:
@@ -756,7 +777,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
     uint32_t              height           = 0;
     uint32_t              width            = 0;
     void (*fncPt)()                        = nullptr;
-    //CmEmuArg *  pArg                         = nullptr;
+    //GfxEmu::KernelArg *  pArg                         = nullptr;
     uint32_t  numMaxArgs                   = 0;
     uint32_t  x                            = 0;
     uint32_t  y                            = 0;
@@ -765,7 +786,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
 
     if (!threadSpace)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -773,7 +794,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
     threadSpace->GetThreadSpaceUnit(pThreadSpaceUnit);
     if (!pThreadSpaceUnit)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -802,14 +823,14 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
 
     if (result != CM_SUCCESS)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         goto finish;
     }
 
     threadSpace->GetBoardOrder(pBoardOrder);
     if (!pBoardOrder)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -826,12 +847,12 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
         CmKernelEmu *kernel = (CmKernelEmu *)pThreadSpaceUnit[index].pKernel;
         if (!kernel)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             result = CM_FAILURE;
             goto finish;
         }
 
-        fncPt = (void (*)())kernel->getFuncPnt();
+        fncPt = (void (*)())kernel->GetFuncPnt();
 
         //kernel->GetArgs(pArg);
         kernel->GetMaxArgCount(numMaxArgs);
@@ -839,7 +860,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard26ZI(CmThreadSpaceEmu *threadSpace)
         set_thread_origin_x(x);
         set_thread_origin_y(y);
 
-        Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, pThreadSpaceUnit[index].threadId);
+        Execute(*kernel, pThreadSpaceUnit[index].threadId);
     }
 
 finish:
@@ -862,7 +883,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
     uint32_t              numSkipped  = 0;
     uint32_t              xCoord      = 0;
     uint32_t              yCoord      = 0;
-    //CmEmuArg *              pArg        = nullptr;
+    //GfxEmu::KernelArg *              pArg        = nullptr;
     void (*fncPt)()                   = nullptr;
     CM_DEPENDENCY *       pDependency = nullptr;
     CM_DEPENDENCY_PATTERN DependencyPatternType;
@@ -890,7 +911,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
 
     if (threadSpace == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_INVALID_ARG_VALUE;
         goto finish;
     }
@@ -902,17 +923,17 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
 
     if (be_walker)
     {
-        if (CmDeviceEmu::CurrentPlatform < CmEmuPlatformUse::SKL)
+        if (GfxEmu::Cfg ().Platform.getInt () < GfxEmu::Platform::SKL)
         {
             if (width > CM_MAX_THREADSPACE_WIDTH_FOR_MW)
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 result = CM_INVALID_THREAD_SPACE;
                 goto finish;
             }
             if (height > CM_MAX_THREADSPACE_HEIGHT_FOR_MW)
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 result = CM_INVALID_THREAD_SPACE;
                 goto finish;
             }
@@ -921,13 +942,13 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
         {
             if (width > CM_MAX_THREADSPACE_WIDTH_SKLUP_FOR_MW)
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 result = CM_INVALID_THREAD_SPACE;
                 goto finish;
             }
             if (height > CM_MAX_THREADSPACE_HEIGHT_SKLUP_FOR_MW)
             {
-                CmAssert(0);
+                GFX_EMU_ASSERT(0);
                 result = CM_INVALID_THREAD_SPACE;
                 goto finish;
             }
@@ -938,13 +959,13 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
         // for now 1.21.15 only allow 512x512, 16 MB in second level batch buffer regardless of HW platform
         if (width > CM_MAX_THREADSPACE_WIDTH_FOR_MO)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             result = CM_INVALID_THREAD_SPACE;
             goto finish;
         }
         if (height > CM_MAX_THREADSPACE_HEIGHT_FOR_MO)
         {
-            CmAssert(0);
+            GFX_EMU_ASSERT(0);
             result = CM_INVALID_THREAD_SPACE;
             goto finish;
         }
@@ -982,7 +1003,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
         WalkingPattern = CM_WALK_WAVEFRONT26ZIG;
         break;
     default:
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         WalkingPattern = CM_WALK_DEFAULT;
         break;
     }
@@ -1127,7 +1148,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
         localStartX            = width;
         break;
     default:
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         result = CM_FAILURE;
         goto finish;
     }
@@ -1230,12 +1251,12 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
 
                         if (kernel == nullptr)
                         {
-                            CmAssert(0);
+                            GFX_EMU_ASSERT(0);
                             result = CM_FAILURE;
                             goto finish;
                         }
 
-                        fncPt = (void (*)())kernel->getFuncPnt();
+                        fncPt = (void (*)())kernel->GetFuncPnt();
 
                         //kernel->GetArgs(pArg);
                         kernel->GetMaxArgCount(numMaxArgs);
@@ -1246,7 +1267,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
                         {
                             set_color(c);
 
-                            Execute(numMaxArgs, kernel->GetArgsVecRef (), fncPt, pThreadSpaceUnit[y * width + x].threadId);
+                            Execute(*kernel, pThreadSpaceUnit[y * width + x].threadId);
                             numExecuted++;
                         }
 
@@ -1339,11 +1360,13 @@ CM_RT_API int32_t CmQueueEmu::EnqueueCopyGPUToGPU(CmSurface2D *pOutputSurface, C
 
     uint32_t          DstSurfaceWidth  = pDstSurf2D->GetWidth();
     uint32_t          DstSurfaceHeight = pDstSurf2D->GetHeight();
-    CM_SURFACE_FORMAT DstSurfaceFormat;
+    CmSurfaceFormatID DstSurfaceFormat = INVALID_SURF_FORMAT;
+    pDstSurf2D->GetSurfaceFormat(DstSurfaceFormat);
 
     uint32_t          SrcSurfaceWidth  = pSrcSurf2D->GetWidth();
     uint32_t          SrcSurfaceHeight = pSrcSurf2D->GetHeight();
-    CM_SURFACE_FORMAT SrcSurfaceFormat;
+    CmSurfaceFormatID SrcSurfaceFormat = INVALID_SURF_FORMAT;
+    pSrcSurf2D->GetSurfaceFormat(SrcSurfaceFormat);
 
     if ((DstSurfaceWidth != SrcSurfaceWidth) ||
         (DstSurfaceHeight != SrcSurfaceHeight) ||
@@ -1493,4 +1516,3 @@ CM_RT_API int32_t CmQueueEmu::SetResidentGroupAndParallelThreadNum(uint32_t resi
     m_ParallelThreadNum = parallelThreadNum;
     return CM_SUCCESS;
 }
-

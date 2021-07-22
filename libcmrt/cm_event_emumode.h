@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 
 #include "cm_event_base.h"
 #include "cm_def.h"
-#include "cm_debug.h"
+#include "emu_log.h"
 
 class CmEvent;
 

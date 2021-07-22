@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,13 +28,10 @@
 #include <map>
 #include <vector>
 #include "cm_include.h"
-#include "cm_debug.h"
+#include "emu_log.h"
 #include "cm_memory_object_control.h"
-
-class SurfaceIndex;
-
+#include "cm_index_types.h"
 #include "type_buffer_state_param.h"
-
 #include "type_surface_2d_state_param.h"
 
 namespace cmrt {
@@ -63,7 +60,7 @@ class SurfaceAliasTable {
   SurfaceIndex* CreateAlias(unsigned int original_index,
                             unsigned int surface_array_size) {
     if (alias_indices_.size() >= MAX_SURFACE_ALIAS_COUNT) {
-      CmAssert(0);
+      GFX_EMU_ASSERT(0);
       return nullptr;
     }
     unsigned int new_idx = original_index

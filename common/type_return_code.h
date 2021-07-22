@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,9 +27,10 @@
 
 enum CM_RETURN_CODE
 {
+#define CM_INTERNAL_ERROR(ENUM) CM_INTERNAL_ERROR_##ENUM
     CM_SUCCESS                                  = 0,
     /*
-     * RANGE -1 ~ -9999 FOR EXTERNAL ERROR CODE
+     * RANGE -1 ~ -9999 FOR ERROR CODE
      */
     CM_FAILURE                                  = -1,
     CM_NOT_IMPLEMENTED                          = -2,
@@ -54,10 +55,12 @@ enum CM_RETURN_CODE
     CM_EXCEED_MAX_KERNEL_PER_ENQUEUE            = -21,
     CM_EXCEED_MAX_KERNEL_SIZE_IN_BYTE           = -22,
     CM_EXCEED_MAX_THREAD_AMOUNT_PER_ENQUEUE     = -23,
+    CM_INTERNAL_ERROR(24)                       = -24,
     CM_INVALID_THREAD_SPACE                     = -25,
     CM_EXCEED_MAX_TIMEOUT                       = -26,
     CM_JITDLL_LOAD_FAILURE                      = -27,
     CM_JIT_COMPILE_FAILURE                      = -28,
+    CM_INTERNAL_ERROR(29)                       = -29,
     CM_INVALID_THREAD_GROUP_SPACE               = -30,
     CM_THREAD_ARG_NOT_ALLOWED                   = -31,
     CM_INVALID_GLOBAL_BUFFER_INDEX              = -32,
@@ -65,6 +68,7 @@ enum CM_RETURN_CODE
     CM_EXCEED_MAX_SLM_SIZE                      = -34,
     CM_JITDLL_OLDER_THAN_ISA                    = -35,
     CM_INVALID_HARDWARE_THREAD_NUMBER           = -36,
+    CM_INTERNAL_ERROR(37)                       = -37,
     CM_INVALIDE_L3_CONFIGURATION                = -38,
     CM_INVALID_TEXTURE2D_USAGE                  = -39,
     CM_INTEL_GFX_NOTFOUND                       = -40,
@@ -86,6 +90,8 @@ enum CM_RETURN_CODE
     CM_GPUCOPY_OUT_OF_RESOURCE                  = -56,
     CM_INVALID_VIDEO_DEVICE                     = -57,
     CM_SURFACE_DELAY_DESTROY                    = -58,
+    CM_INTERNAL_ERROR(59)                       = -59,
+    CM_INTERNAL_ERROR(60)                       = -60,
     CM_FEATURE_NOT_SUPPORTED_BY_HARDWARE        = -61,
     CM_RESOURCE_USAGE_NOT_SUPPORT_READWRITE     = -62,
     CM_MULTIPLE_MIPLEVELS_NOT_SUPPORTED         = -63,
@@ -119,6 +125,7 @@ enum CM_RETURN_CODE
     CM_EXCEED_MAX_NUM_2D_ALIASES                = -91,
     CM_INVALID_PARAM_SIZE                       = -92,
     CM_GT_UNSUPPORTED                           = -93,
+    CM_INTERNAL_ERROR(94)                       = -94,
     CM_PLATFORM_UNSUPPORTED_FOR_API             = -95,
     CM_TASK_MEDIA_RESET                         = -96,
     CM_KERNELPAYLOAD_SAMPLER_INVALID_BTINDEX    = -97,
@@ -127,6 +134,7 @@ enum CM_RETURN_CODE
     CM_FAILED_TO_CREATE_CURBE_SURFACE           = -100,
     CM_INVALID_CAP_NAME                         = -101,
     CM_INVALID_PARAM_FOR_CREATE_QUEUE_EX        = -102,
+    CM_INTERNAL_ERROR(103)                        = -103,
     CM_INVALID_KERNEL_ARG_POINTER                 = -104,
     CM_LOAD_LIBRARY_FAILED                        = -105,
     CM_NO_SUPPORTED_ADAPTER                       = -106,
@@ -140,5 +148,6 @@ enum CM_RETURN_CODE
      * RANGE <=-20000 AREAD FOR MOST STATUS CONVERSION
      */
     CM_MOS_STATUS_CONVERTED_CODE_OFFSET         = -20000
+#undef CM_INTERNAL_ERROR
 };
 #endif // GUARD_common_type_return_code_h

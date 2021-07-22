@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -117,5 +117,17 @@ private:
     void Lock() { m_refSync.Acquire(); }
     void Unlock() { m_refSync.Release(); }
 };
+
+#include <string>
+#include "emu_log.h"
+inline CM_RETURN_CODE CmNotImplemented (std::string msg) {
+    msg = "NOT IMPLEMENTED: " + msg;
+#ifdef GFX_EMU_FAIL_ON_NOT_IMPLEMENTED_
+        GFX_EMU_FAIL_WITH_MESSAGE(msg.c_str());
+#else
+        GfxEmu::WarningMessage(msg.c_str());
+        return CM_NOT_IMPLEMENTED;
+#endif
+}
 
 #endif  // #ifndef CMRTLIB_AGNOSTIC_SHARE_CM_DEF_H_

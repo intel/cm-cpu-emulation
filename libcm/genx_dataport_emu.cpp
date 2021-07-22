@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +25,18 @@
 #define CM_EMU
 
 #include <assert.h>
-#include <regex>
 
 #include "cm_lib.h"
 #include "genx_lib.h"
 #include "cm_list.h"
 
+#include "emu_cfg.h"
+#include "emu_platform.h"
+
 using namespace std;
 
 #define CM_GETENV(dst, name) dst = getenv(name)
 
-#define CM_RT_PLATFORM "CM_RT_PLATFORM"
 #define GLOBAL_SURFACE_INDEX_NUMBER 4
  const int maxbsize = 255;
 CMRT_LIBCM_API cm_list<CmEmulSys::iobuffer> CmEmulSys::iobuffers; /* List of allocated (loaded) genx i/o buffers */
@@ -117,15 +118,15 @@ CM_API ushort get_color()
 
 CM_API ushort get_thread_origin_x()
 {
-    char *platform = nullptr;
-    CM_GETENV(platform, CM_RT_PLATFORM);
+    if(GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+        return cm_group_id(0);
     return thread_origin_x;
 }
 
 CM_API ushort get_thread_origin_y()
 {
-    char *platform = nullptr;
-    CM_GETENV(platform, CM_RT_PLATFORM);
+    if(GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+        return cm_group_id(1);
     return thread_origin_y;
 }
 
@@ -136,10 +137,13 @@ CM_unregister_buffer_emu(int buf_id)
     CmEmulSys::enter_dataport_cs();
     cm_list<CmEmulSys::iobuffer>::iterator buff_iter = CmEmulSys::search_buffer(buf_id);
     if (buff_iter != CmEmulSys::iobuffers.end()) {
-        if(buff_iter->bclass == GEN4_INPUT_OUTPUT_BUFFER) {
-            memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
-            free(buff_iter->p_volatile);
-        }
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //if(buff_iter->bclass == GEN4_INPUT_OUTPUT_BUFFER) {
+        //    memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
+        //    free(buff_iter->p_volatile);
+        //}
         CmEmulSys::iobuffers.remove(buff_iter);
     }
     CmEmulSys::leave_dataport_cs();
@@ -158,7 +162,7 @@ CM_register_buffer_emu(int buf_id, CmBufferType bclass, void *src, uint width, u
     buff_iter = CmEmulSys::search_buffer(src, bclass);
     if (buff_iter != CmEmulSys::iobuffers.end()) {
         if(buff_iter->id != buf_id) {
-            printf("Error: the registration of buffer %d conflicts with the registration of buffer %d!\n", buf_id, buff_iter->id);
+            GFX_EMU_ERROR_MESSAGE("the registration of buffer %d conflicts with the registration of buffer %d!\n", buf_id, buff_iter->id);
             exit(EXIT_FAILURE);
         }
     }
@@ -178,11 +182,15 @@ CM_register_buffer_emu(int buf_id, CmBufferType bclass, void *src, uint width, u
     // INPUT type buffer. Therefore no need to consider depth
     // in the buffer size calculation "width*height".
     if(bclass == GEN4_INPUT_OUTPUT_BUFFER) {
-        new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
-        if(new_buff.p_volatile != NULL)
-        {
-            memcpy(new_buff.p_volatile, src, width*height*depth);
-        }
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
+        //if(new_buff.p_volatile != NULL)
+        //{
+        //    memcpy(new_buff.p_volatile, src, width*height*depth);
+        //}
+        new_buff.p_volatile = src;
     } else {
         new_buff.p_volatile = NULL;
     }
@@ -232,11 +240,14 @@ CM_unregister_buffer_emu(SurfaceIndex buf_id, bool copy)
     cm_list<CmEmulSys::iobuffer>::iterator buff_iter = CmEmulSys::search_buffer(buf_id.get_data());
     if (buff_iter != CmEmulSys::iobuffers.end()) {
         if(buff_iter->bclass == GEN4_INPUT_OUTPUT_BUFFER) {
-            if(copy)
-            {
-                memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
-            }
-            free(buff_iter->p_volatile);
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //if(copy)
+            //{
+            //    memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
+            //}
+            //free(buff_iter->p_volatile);
         }
         CmEmulSys::iobuffers.remove(buff_iter);
     }
@@ -269,11 +280,15 @@ CM_register_buffer_emu(SurfaceIndex buf_id, CmBufferType bclass, void *src, uint
     // INPUT type buffer. Therefore no need to consider depth
     // in the buffer size calculation "width*height".
     if(bclass == GEN4_INPUT_OUTPUT_BUFFER) {
-        new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
-        if(new_buff.p_volatile != NULL)
-        {
-            memcpy(new_buff.p_volatile, src, width*height*depth);
-        }
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
+        //if(new_buff.p_volatile != NULL)
+        //{
+        //    memcpy(new_buff.p_volatile, src, width*height*depth);
+        //}
+        new_buff.p_volatile = src;
     } else {
         new_buff.p_volatile = NULL;
     }
@@ -309,8 +324,8 @@ CM_modify_buffer_emu(SurfaceIndex buf_id, CmBufferDescField field, int value)
         case GEN4_FIELD_SAMPLING_MIP_MODE:
         case GEN4_FIELD_SAMPLING_MAP_MODE:
             break;
-            default:
-                 break;
+        default:
+             break;
         }
     }
     CmEmulSys::leave_dataport_cs();
@@ -322,10 +337,13 @@ cm_fence()
     for (auto it = CmEmulSys::iobuffers.begin();
               it != CmEmulSys::iobuffers.end(); ++it)
     {
-        if (it->p_volatile != 0)
-        {
-            memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
-        }
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //if (it->p_volatile != 0)
+        //{
+        //    memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
+        //}
     }
     // Add global fence if enabling threading in emulation mode.
 }
@@ -336,10 +354,13 @@ cm_fence(unsigned char bit_mask)
     for (auto it = CmEmulSys::iobuffers.begin();
               it != CmEmulSys::iobuffers.end(); ++it)
     {
-        if (it->p_volatile != 0)
-        {
-            memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
-        }
+        // Let's consider the pre/post execution copy as legacy
+        // and comment it out for now.
+
+        //if (it->p_volatile != 0)
+        //{
+        //    memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
+        //}
     }
     // Add global fence if enabling threading in emulation mode.
 }

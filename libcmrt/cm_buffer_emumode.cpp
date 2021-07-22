@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,7 +69,7 @@ int32_t CmBufferEmu::Initialize( uint32_t index, uint32_t arrayIndex, void *&sys
     {
         posix_memalign(&m_buffer, 16, m_width); // oword aligned
         if (m_buffer == nullptr) {
-            fprintf(stderr, "Out of memory (%d) - 1dEmu\n", m_width);
+            GFX_EMU_ERROR_MESSAGE("Out of memory (%d) - 1dEmu\n", m_width);
             fflush(stderr);
             exit(1);
         }
@@ -99,7 +99,7 @@ int32_t CmBufferEmu::Create(uint32_t index, uint32_t arrayIndex, uint32_t width,
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_OUT_OF_HOST_MEMORY;
     }
     // noRegisterBuffer is true for an SVM buffer. We don't want to register
@@ -119,13 +119,13 @@ CM_RT_API int32_t CmBufferEmu::ReadSurface(unsigned char *pSysMem, CmEvent* pEve
 
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
     /*
@@ -143,13 +143,13 @@ CM_RT_API int32_t CmBufferEmu::WriteSurface(const unsigned char *pSysMem, CmEven
 {
     if(pSysMem == nullptr)
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
     if( sysMemSize < this->m_width )
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -182,7 +182,10 @@ int32_t CmBufferEmu::DoCopy()
     buff_iter = CmEmulSys::search_buffer(m_pIndex->get_data());
     if(buff_iter->p_volatile == nullptr)
         return CM_FAILURE;
-    CmFastMemCopyFromWC((int8_t*)m_buffer+m_baseAddressOffset, buff_iter->p_volatile, m_newSize, GetCpuInstructionLevel());
+    // Let's consider the pre/post execution copy as legacy
+    // and comment it out for now.
+
+    //CmFastMemCopyFromWC((int8_t*)m_buffer+m_baseAddressOffset, buff_iter->p_volatile, m_newSize, GetCpuInstructionLevel());
     return CM_SUCCESS;
 }
 
@@ -193,7 +196,10 @@ int32_t CmBufferEmu::DoGPUCopy(
     buff_iter = CmEmulSys::search_buffer(m_pIndex->get_data());
     if(buff_iter->p_volatile == nullptr)
         return CM_FAILURE;
-    CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + m_baseAddressOffset, m_newSize, GetCpuInstructionLevel());
+    // Let's consider the pre/post execution copy as legacy
+    // and comment it out for now.
+
+    //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + m_baseAddressOffset, m_newSize, GetCpuInstructionLevel());
 
     GPUCopyForBufferAlias();
 
@@ -229,58 +235,61 @@ CM_RT_API int32_t CmBufferEmu::SetSurfaceStateParam(SurfaceIndex *surfIndex,
 {
     if (bufferStateParam == nullptr)
     {
-        CmAssert(0);
+        GFX_EMU_ASSERT(0);
         return CM_NULL_POINTER;
     }
 
     uint32_t        newSize = 0;
     uint32_t        aliasIndex = 0;
-    if (bufferStateParam->base_address_offset + bufferStateParam->size > m_width)
+    if (bufferStateParam->uiBaseAddressOffset + bufferStateParam->uiSize > m_width)
     {
-        CmErrorMessage("The offset exceeds the buffer size.");
-        CmAssert(0);
+        GfxEmu::ErrorMessage("The offset exceeds the buffer size.");
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
-    if (bufferStateParam->base_address_offset % 16) // the offset must be 16-aligned, otherwise it will cause a GPU hang
+    if (bufferStateParam->uiBaseAddressOffset % 16) // the offset must be 16-aligned, otherwise it will cause a GPU hang
     {
-        CmErrorMessage("The offset must be 16-aligned, otherwise it will cause GPU hang.");
-        CmAssert(0);
+        GfxEmu::ErrorMessage("The offset must be 16-aligned, otherwise it will cause GPU hang.");
+        GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
 
-    if (bufferStateParam->size)
+    if (bufferStateParam->uiSize)
     {
-        newSize = bufferStateParam->size;
+        newSize = bufferStateParam->uiSize;
     }
     else
     {
-        newSize = m_width - bufferStateParam->base_address_offset;
+        newSize = m_width - bufferStateParam->uiBaseAddressOffset;
     }
 
     if (surfIndex)
     {
         aliasIndex = surfIndex->get_data();
         CM_BUFFER_STATE_PARAM aliasBufferState;
-        aliasBufferState.size = newSize;
-        aliasBufferState.base_address_offset = bufferStateParam->base_address_offset;
+        aliasBufferState.uiSize = newSize;
+        aliasBufferState.uiBaseAddressOffset = bufferStateParam->uiBaseAddressOffset;
         std::pair<uint32_t, CM_BUFFER_STATE_PARAM> newElement(aliasIndex, aliasBufferState);
         m_aliasBufferStates.insert(newElement);
     }
     else
     {
         aliasIndex = m_pIndex->get_data();
-        m_baseAddressOffset = bufferStateParam->base_address_offset;
+        m_baseAddressOffset = bufferStateParam->uiBaseAddressOffset;
         m_newSize = newSize;
     }
 
-    CM_register_buffer_emu(aliasIndex, GEN4_INPUT_OUTPUT_BUFFER, (int8_t*)m_buffer + bufferStateParam->base_address_offset, newSize);
+    CM_register_buffer_emu(aliasIndex, GEN4_INPUT_OUTPUT_BUFFER, (int8_t*)m_buffer + bufferStateParam->uiBaseAddressOffset, newSize);
 
     cm_list<CmEmulSys::iobuffer>::iterator buff_iter;
     buff_iter = CmEmulSys::search_buffer(aliasIndex);
     if (buff_iter->p_volatile == nullptr)
         return CM_FAILURE;
 
-    CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + bufferStateParam->base_address_offset, newSize, GetCpuInstructionLevel());
+    // Let's consider the pre/post execution copy as legacy
+    // and comment it out for now.
+
+    //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + bufferStateParam->uiBaseAddressOffset, newSize, GetCpuInstructionLevel());
 
     return CM_SUCCESS;
 }
@@ -299,7 +308,10 @@ int32_t CmBufferEmu::GPUCopyForBufferAlias()
         else
         {
             buff_iter = CmEmulSys::search_buffer(m_aliasIndices[i]->get_data());
-            CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + iter->second.base_address_offset, iter->second.size, GetCpuInstructionLevel());
+            // Let's consider the pre/post execution copy as legacy
+            // and comment it out for now.
+
+            //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + iter->second.uiBaseAddressOffset, iter->second.size, GetCpuInstructionLevel());
         }
     }
     return CM_SUCCESS;

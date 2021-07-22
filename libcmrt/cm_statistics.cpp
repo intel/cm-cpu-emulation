@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,7 +65,7 @@ CmStatistics::Create(void)
         m_pTracker = new (std::nothrow) CmStatistics();
         if(m_pTracker == nullptr)
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             return nullptr;
         }
     }
@@ -138,7 +138,7 @@ CmStatistics::TrackRunnedKernels( const CmTask * const pTask )
         unsigned int len = (unsigned int)strnlen(name, CM_MAX_KERNEL_NAME_SIZE_IN_BYTE);
         if( len >= CM_MAX_KERNEL_NAME_SIZE_IN_BYTE )
         {
-            CmAssert( 0 );
+            GFX_EMU_ASSERT( 0 );
             return CM_FAILURE;
         }
         CmRunnedKernels_t *p = m_lsRunnedKernel;
@@ -155,7 +155,7 @@ CmStatistics::TrackRunnedKernels( const CmTask * const pTask )
             p = new (std::nothrow) CmRunnedKernels_t;
             if( p == nullptr )
             {
-                CmAssert( 0 );
+                GFX_EMU_ASSERT( 0 );
                 return CM_OUT_OF_HOST_MEMORY;
             }
             CmSafeMemSet(p, 0, sizeof(CmRunnedKernels_t) );

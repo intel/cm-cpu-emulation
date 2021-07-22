@@ -20,7 +20,6 @@ set(CMRT_SOURCE
   cm_statistics.cpp
   cm_surface_2d_emumode.cpp
   cm_surface_3d_emumode.cpp
-  cm_surface_alias_table.cpp
   cm_surface_emumode.cpp
   cm_surface_manager_emumode.cpp
   cm_task_emumode.cpp
@@ -36,7 +35,7 @@ add_library(igfxcmrt SHARED ${CMRT_SOURCE})
 set_target_properties(igfxcmrt PROPERTIES
   CXX_STANDARD ${_cxx}
   CXX_STANDARD_REQUIRED ON
-  CXX_VISIBILITY_PRESET hidden
+  CXX_VISIBILITY_PRESET default
   OUTPUT_NAME ${_name}
   PUBLIC_HEADER "${COMMON_HEADERS}")
 
@@ -54,6 +53,7 @@ target_include_directories(igfxcmrt
       $<INSTALL_INTERFACE:include/igfxcmrt_emu>)
 
 target_link_libraries(igfxcmrt PUBLIC libcm)
+## target_link_libraries(igfxcmrt PRIVATE emu_common)
 
 install(TARGETS igfxcmrt
   ARCHIVE DESTINATION lib

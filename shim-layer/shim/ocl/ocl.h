@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,61 +22,25 @@
  OTHER DEALINGS IN THE SOFTWARE.
 ======================= end_copyright_notice ==================================*/
 
-#ifndef _ESIMDCPU_RUNTIME_H_INCLUDED_
-#define _ESIMDCPU_RUNTIME_H_INCLUDED_
+#ifndef CM_EMU_SHIM_OCL_OCL_H
+#define CM_EMU_SHIM_OCL_OCL_H
 
-#include <vector>
+#define CL_TARGET_OPENCL_VERSION 300
+#include <CL/cl.h>
+#include <CL/cl_ext.h>
+#include <CL/cl_icd.h>
 
-#define ESIMD_API
+#include <cm_rt.h>
 
-using fptrVoid = void(*)();
+# define ALIAS_X(name, aliasname) \
+  extern __typeof (name) aliasname __attribute__ ((alias (#name)))
 
-/// Imported from rt.h : Begin
+#define ALIAS(name, aliasname) ALIAS_X(name, aliasname)
 
-/// Imported from rt.h : End
+#define SHIM_CALL(x) shim_ ## x
 
-class ESimdCPUKernel
-{
- private:
-  const std::vector<uint32_t> m_singleGrpDim={1,1,1};
-  const std::vector<uint32_t> &m_spaceDim;
-  uint32_t m_parallel;
-  fptrVoid m_entryPoint;
+#define SHIM_EXPORT(x) ALIAS(SHIM_CALL(x), x)
 
- public:
-  ESIMD_API
-  ESimdCPUKernel(fptrVoid entryPoint,
-                 const std::vector<uint32_t> &spaceDim);
+#define ERRCODE(x) if (errcode_ret) *errcode_ret = x
 
-  ESIMD_API
-  void launchMT(const uint32_t argSize,
-               const void* rawArg);
-
-};
-
-namespace cm_support {
-
-ESIMD_API
-int32_t thread_local_idx();
-
-ESIMD_API
-void mt_barrier();
-
-ESIMD_API
-void split_barrier(int flag);
-
-ESIMD_API
-void set_slm_size(size_t sz);
-
-ESIMD_API
-size_t get_slm_size();
-
-ESIMD_API
-char* get_slm();
-
-ESIMD_API
-void aux_barrier();
-
-} // namespace cm_support
-
-#endif // _ESIMDCPU_RUNTIME_H_INCLUDED_
+#endif // CM_EMU_SHIM_OCL_OCL_H

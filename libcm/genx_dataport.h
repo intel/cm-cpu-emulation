@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@ class CmThreadSpace;
 #ifndef NEW_CM_RT
 #define NEW_CM_RT  // Defined for new CM Runtime APIs
 #endif
+
+#include "emu_log.h"
 
 #include "cm_list.h"
 #include "libcm_def.h"
@@ -189,7 +191,7 @@ read(uint buf_id, int x_pos, int y_pos, matrix<T,R,C> &in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -199,7 +201,7 @@ read(uint buf_id, int x_pos, int y_pos, matrix<T,R,C> &in)
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -378,7 +380,7 @@ read(uint buf_id, int x_pos, int y_pos, matrix_ref<T,R,C> in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -388,7 +390,7 @@ read(uint buf_id, int x_pos, int y_pos, matrix_ref<T,R,C> in)
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -566,12 +568,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, matrix<T,R,C>
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib < GENX_TOP_FIELD) || (buf_attrib > GENX_MODIFIED_BOTTOM_FIELD)) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -580,13 +582,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, matrix<T,R,C>
 
     if(buf_attrib >= GENX_MODIFIED) {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -797,12 +799,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, matrix_ref<T,
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib < GENX_TOP_FIELD) || (buf_attrib > GENX_MODIFIED_BOTTOM_FIELD)) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -811,13 +813,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, matrix_ref<T,
 
     if(buf_attrib >= GENX_MODIFIED) {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -1028,7 +1030,7 @@ write(uint buf_id, int x_pos, int y_pos, const matrix<T,R,C> &out)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1036,18 +1038,18 @@ write(uint buf_id, int x_pos, int y_pos, const matrix<T,R,C> &out)
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -1089,7 +1091,7 @@ write(uint buf_id, int x_pos, int y_pos, const matrix_ref<T,R,C> out)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1097,18 +1099,18 @@ write(uint buf_id, int x_pos, int y_pos, const matrix_ref<T,R,C> out)
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -1150,12 +1152,12 @@ write(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, const matrix
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib != GENX_TOP_FIELD) && (buf_attrib != GENX_BOTTOM_FIELD)) {
-        printf("Error writing buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1163,18 +1165,18 @@ write(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, const matrix
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -1231,12 +1233,12 @@ write(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, const matrix
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib != GENX_TOP_FIELD) && (buf_attrib != GENX_BOTTOM_FIELD)) {
-        printf("Error writing buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1244,18 +1246,18 @@ write(uint buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, const matrix
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -1312,7 +1314,7 @@ read(uint buf_id, int offset, vector<T,S> &in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1320,7 +1322,7 @@ read(uint buf_id, int offset, vector<T,S> &in)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
@@ -1328,7 +1330,7 @@ read(uint buf_id, int offset, vector<T,S> &in)
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -1359,7 +1361,7 @@ read(uint buf_id, int offset, vector_ref<T,S> in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1367,7 +1369,7 @@ read(uint buf_id, int offset, vector_ref<T,S> in)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
@@ -1375,7 +1377,7 @@ read(uint buf_id, int offset, vector_ref<T,S> in)
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -1406,14 +1408,14 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_DWALIGNED &&
        buf_attrib != GENX_MODIFIED_DWALIGNED && buf_attrib != GENX_CONSTANT &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1423,13 +1425,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &in)
     if(buf_attrib != GENX_DWALIGNED && buf_attrib != GENX_MODIFIED_DWALIGNED &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
         if((offset % 16) != 0) {
-            printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
     else {
         if((offset % 4) != 0) {
-            printf("Error reading buffer %d: offset must be 4-byte aligned!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 4-byte aligned!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -1441,7 +1443,7 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &in)
     if(buf_attrib == GENX_MODIFIED || buf_attrib == GENX_MODIFIED_DWALIGNED)
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
 
@@ -1478,14 +1480,14 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,S> in)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_DWALIGNED &&
        buf_attrib != GENX_MODIFIED_DWALIGNED && buf_attrib != GENX_CONSTANT &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1495,13 +1497,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,S> in)
     if(buf_attrib != GENX_DWALIGNED && buf_attrib != GENX_MODIFIED_DWALIGNED &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
         if((offset % 16) != 0) {
-            printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
     else {
         if((offset % 4) != 0) {
-            printf("Error reading buffer %d: offset must be 4-byte aligned!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 4-byte aligned!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -1513,7 +1515,7 @@ read(uint buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,S> in)
     if(buf_attrib == GENX_MODIFIED || buf_attrib == GENX_MODIFIED_DWALIGNED)
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
         buff = (char*) buff_iter->p_volatile;
@@ -1549,7 +1551,7 @@ write(uint buf_id, int offset, const vector<T,S> &out)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1557,19 +1559,19 @@ write(uint buf_id, int offset, const vector<T,S> &out)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error writing buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((S * sizeofT) % 16) != 0) {
-        printf("Error writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
@@ -1599,7 +1601,7 @@ write(uint buf_id, int offset, const vector_ref<T, S> out)
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1607,19 +1609,19 @@ write(uint buf_id, int offset, const vector_ref<T, S> out)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error writing buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: offset must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((S * sizeofT) % 16) != 0) {
-        printf("Error writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
@@ -1650,7 +1652,7 @@ read(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector<T,
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1662,13 +1664,13 @@ read(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector<T,
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1698,7 +1700,7 @@ read(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector_re
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1710,13 +1712,13 @@ read(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector_re
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1746,7 +1748,7 @@ read(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1758,13 +1760,13 @@ read(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1794,7 +1796,7 @@ read(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1806,13 +1808,13 @@ read(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1843,12 +1845,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector<uint, N>
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1859,13 +1861,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector<uint, N>
 
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1895,12 +1897,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector<uint, N>
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1911,13 +1913,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector<uint, N>
 
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1947,12 +1949,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector_ref<uint
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -1963,13 +1965,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector_ref<uint
 
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -1999,12 +2001,12 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector_ref<uint
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -2015,13 +2017,13 @@ read(uint buf_id, CmBufferAttrib buf_attrib, uint global_offset, vector_ref<uint
 
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered read!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2052,7 +2054,7 @@ write(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector<T
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2063,12 +2065,12 @@ write(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector<T
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2099,7 +2101,7 @@ write(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector_r
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2110,12 +2112,12 @@ write(uint buf_id, uint global_offset, vector<uint, N> &element_offset, vector_r
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2146,7 +2148,7 @@ write(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vecto
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2157,12 +2159,12 @@ write(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vecto
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2193,7 +2195,7 @@ write(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vecto
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2204,12 +2206,12 @@ write(uint buf_id, uint global_offset, vector_ref<uint, N> element_offset, vecto
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((N != 8) && (N != 16)) {
-        printf("Error reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: the vector parameter length must be 8 or 16 for DWord scattered write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2241,7 +2243,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2251,23 +2253,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2339,11 +2341,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2364,7 +2366,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2374,23 +2376,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2462,11 +2464,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2491,7 +2493,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2501,23 +2503,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2576,11 +2578,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) *((T*)((char*)buff_iter->p_volatile + pos)) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2601,7 +2603,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2611,23 +2613,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2699,11 +2701,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2724,7 +2726,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2734,23 +2736,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2822,11 +2824,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2851,7 +2853,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2861,23 +2863,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2936,11 +2938,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) *((T*)((char*)buff_iter->p_volatile + pos)) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -2961,7 +2963,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -2971,23 +2973,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3059,11 +3061,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3084,7 +3086,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3094,23 +3096,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3182,11 +3184,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3211,7 +3213,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3221,23 +3223,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3296,11 +3298,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) *((T*)((char*)buff_iter->p_volatile + pos)) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3321,7 +3323,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3331,23 +3333,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3419,11 +3421,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3444,7 +3446,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3454,23 +3456,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3542,11 +3544,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) v(i) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3571,7 +3573,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3581,23 +3583,23 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_MAXSINT) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3656,11 +3658,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = (((int) *((T*)((char*)buff_iter->p_volatile + pos)) >= (int) src(i))? v(i): src(i));
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3681,7 +3683,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3691,12 +3693,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3719,11 +3721,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3744,7 +3746,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3754,12 +3756,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3782,11 +3784,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3811,7 +3813,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3821,12 +3823,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3847,11 +3849,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector<uint, 8> &eleme
                     *((T*)((char*)buff_iter->p_volatile + pos)) = *((T*)((char*)buff_iter->p_volatile + pos)) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3872,7 +3874,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3882,12 +3884,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3910,11 +3912,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -3935,7 +3937,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                                     CmEmulSys::search_buffer(buf_id&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3945,12 +3947,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -3973,11 +3975,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -4002,7 +4004,7 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id&0xFF, buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -4012,12 +4014,12 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -4038,11 +4040,11 @@ write(uint buf_id, CmAtomicOpType op, uint global_offset, vector_ref<uint, 8> el
                     *((T*)((char*)buff_iter->p_volatile + pos)) = *((T*)((char*)buff_iter->p_volatile + pos)) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -4067,7 +4069,7 @@ read(SurfaceIndex & buf_id, int x_pos, int y_pos, matrix<T,R,C> &in)
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -4077,7 +4079,7 @@ read(SurfaceIndex & buf_id, int x_pos, int y_pos, matrix<T,R,C> &in)
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -4263,12 +4265,12 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, mat
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib < GENX_TOP_FIELD) || (buf_attrib > GENX_MODIFIED_BOTTOM_FIELD)) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -4277,13 +4279,13 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, mat
 
     if(buf_attrib >= GENX_MODIFIED) {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -4496,12 +4498,12 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, mat
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib < GENX_TOP_FIELD) || (buf_attrib > GENX_MODIFIED_BOTTOM_FIELD)) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -4510,13 +4512,13 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, mat
 
     if(buf_attrib >= GENX_MODIFIED) {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -4732,7 +4734,7 @@ write(SurfaceIndex & buf_id, int x_pos, int y_pos, const matrix<T,R,C> &out)
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -4740,18 +4742,18 @@ write(SurfaceIndex & buf_id, int x_pos, int y_pos, const matrix<T,R,C> &out)
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -4801,7 +4803,7 @@ write(SurfaceIndex & buf_id, int x_pos, int y_pos, const matrix_ref<T,R,C> out)
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -4809,18 +4811,18 @@ write(SurfaceIndex & buf_id, int x_pos, int y_pos, const matrix_ref<T,R,C> out)
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -4870,12 +4872,12 @@ write(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, co
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib != GENX_TOP_FIELD) && (buf_attrib != GENX_BOTTOM_FIELD)) {
-        printf("Error writing buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -4883,18 +4885,18 @@ write(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, co
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -4959,12 +4961,12 @@ write(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, co
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buf_attrib != GENX_TOP_FIELD) && (buf_attrib != GENX_BOTTOM_FIELD)) {
-        printf("Error writing buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -4972,18 +4974,18 @@ write(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int x_pos, int y_pos, co
     int height = buff_iter->height;
 
     if((x_pos % 4) != 0) {
-        printf("Error writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: X-coordinate must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((C * sizeofT) % 4) != 0) {
-        printf("Error writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input matrix width must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
     }
 
     uint x_pos_a, y_pos_a;  /* Actual positions */
@@ -5145,14 +5147,14 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &
         CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_DWALIGNED &&
        buf_attrib != GENX_MODIFIED_DWALIGNED && buf_attrib != GENX_CONSTANT &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -5162,13 +5164,13 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &
     if(buf_attrib != GENX_DWALIGNED && buf_attrib != GENX_MODIFIED_DWALIGNED &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
         if((offset % 16) != 0) {
-            printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
     else {
         if((offset % 4) != 0) {
-            printf("Error reading buffer %d: offset must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -5180,7 +5182,7 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector<T,S> &
     if(buf_attrib == GENX_MODIFIED || buf_attrib == GENX_MODIFIED_DWALIGNED)
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
 
@@ -5219,14 +5221,14 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_DWALIGNED &&
        buf_attrib != GENX_MODIFIED_DWALIGNED && buf_attrib != GENX_CONSTANT &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -5236,13 +5238,13 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,
     if(buf_attrib != GENX_DWALIGNED && buf_attrib != GENX_MODIFIED_DWALIGNED &&
        buf_attrib != GENX_CONSTANT_DWALIGNED) {
         if((offset % 16) != 0) {
-            printf("Error reading buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
     else {
         if((offset % 4) != 0) {
-            printf("Error reading buffer %d: offset must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: offset must be 4-byte aligned!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -5254,7 +5256,7 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, int offset, vector_ref<T,
     if(buf_attrib == GENX_MODIFIED || buf_attrib == GENX_MODIFIED_DWALIGNED)
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
         buff = (char*) buff_iter->p_volatile;
@@ -5292,7 +5294,7 @@ write(SurfaceIndex & buf_id, int offset, const vector<T,S> &out)
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5300,19 +5302,19 @@ write(SurfaceIndex & buf_id, int offset, const vector<T,S> &out)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error writing buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((S * sizeofT) % 16) != 0) {
-        printf("Error writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
@@ -5345,7 +5347,7 @@ write(SurfaceIndex & buf_id, int offset, const vector_ref<T, S> out)
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5353,19 +5355,19 @@ write(SurfaceIndex & buf_id, int offset, const vector_ref<T, S> out)
     int height = buff_iter->height;
 
     if((offset % 16) != 0) {
-        printf("Error writing buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: offset must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     int sizeofT = sizeof(T); /* Make this into a signed integer */
     if(((S * sizeofT) % 16) != 0) {
-        printf("Error writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: input vector size must be 16-byte aligned!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
     assert(height == 1);
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
@@ -5398,12 +5400,12 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, uint global_offset, vecto
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data()&0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -5412,7 +5414,7 @@ read(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, uint global_offset, vecto
 
     {
         if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -5612,12 +5614,12 @@ read_scaled(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, uint global_offset
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buf_attrib != GENX_MODIFIED && buf_attrib != GENX_CONSTANT) {
-        printf("Error reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data() & 0xFF, buf_attrib);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: incorrect buffer attribute %d!\n", buf_id.get_data() & 0xFF, buf_attrib);
         exit(EXIT_FAILURE);
     }
 
@@ -5626,7 +5628,7 @@ read_scaled(SurfaceIndex & buf_id, CmBufferAttrib buf_attrib, uint global_offset
 
     {
         if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data() & 0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer MODIFIED(%d): the registered buffer type is not INPUT_OUTPUT_BUFFER!\n", buf_id.get_data() & 0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -5710,7 +5712,7 @@ write(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> element_off
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5719,7 +5721,7 @@ write(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> element_off
 
     if((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-            printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
@@ -5772,7 +5774,7 @@ write_scaled(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> elem
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5781,7 +5783,7 @@ write_scaled(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> elem
 
     if ((buff_iter->bclass != GEN4_OUTPUT_BUFFER) &&
         (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-        printf("Error writing buffer %d: incorrect buffer type!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: incorrect buffer type!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5837,7 +5839,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -5847,23 +5849,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -5926,7 +5928,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -5942,7 +5944,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -5958,7 +5960,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6001,11 +6003,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6028,7 +6030,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -6038,23 +6040,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6117,7 +6119,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6133,7 +6135,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6149,7 +6151,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6192,11 +6194,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6224,7 +6226,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -6234,23 +6236,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6313,7 +6315,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6329,7 +6331,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6345,7 +6347,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6388,11 +6390,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6415,7 +6417,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -6425,23 +6427,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6504,7 +6506,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6520,7 +6522,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6536,7 +6538,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6579,11 +6581,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6606,7 +6608,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -6616,23 +6618,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6695,7 +6697,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6711,7 +6713,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6727,7 +6729,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6770,11 +6772,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6802,7 +6804,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -6812,23 +6814,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6891,7 +6893,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6907,7 +6909,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6923,7 +6925,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -6966,11 +6968,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -6993,7 +6995,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -7003,23 +7005,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7082,7 +7084,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7098,7 +7100,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7114,7 +7116,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7157,11 +7159,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7184,7 +7186,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -7194,23 +7196,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7273,7 +7275,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7289,7 +7291,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7305,7 +7307,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7348,11 +7350,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7380,7 +7382,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -7390,23 +7392,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7469,7 +7471,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7485,7 +7487,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7501,7 +7503,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7544,11 +7546,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7571,7 +7573,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -7581,23 +7583,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7660,7 +7662,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7676,7 +7678,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7692,7 +7694,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -7735,11 +7737,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -7765,7 +7767,7 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
                                     CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n",
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n",
                 buf_id.get_data() & 0xFF,
                 buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
@@ -7775,14 +7777,14 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
     int height = buff_iter->height;
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must \
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must \
                 be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n",
                 buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n",
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n",
                 buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
@@ -7850,7 +7852,7 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
             }
             else
             {
-                printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
             break;
@@ -7866,7 +7868,7 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
             }
             else
             {
-                printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
             break;
@@ -7882,7 +7884,7 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
             }
             else
             {
-                printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
             break;
@@ -7928,7 +7930,7 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
             }
             break;
         default:
-            printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n",
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n",
                     buf_id.get_data() & 0xFF);
             exit(EXIT_FAILURE);
         }
@@ -7939,29 +7941,11 @@ __write_atomic_impl(vector<ushort, N> mask, SurfaceIndex &buf_id,
 
 }
 
-// no return value
-template <CmAtomicOpType Op, typename T, int N>
-CM_API void
-write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
-             vector<T, N> src0, vector<T, N> src1) {
-  vector<T, N> dummy;
-  vector<ushort, N> mask = 1;
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, dummy);
-}
-
-// mask and no return value
-template <CmAtomicOpType Op, typename T, int N>
-CM_API void
-write_atomic(vector<ushort, N> mask, SurfaceIndex index,
-             vector<uint, N> elementOffset, vector<T, N> src0,
-             vector<T, N> src1) {
-  vector<T, N> dummy;
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, dummy);
-}
-
 // no return value, one source
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op != ATOMIC_CMPXCHG && Op != ATOMIC_FCMPWR &&
+                        Op != ATOMIC_INC && Op != ATOMIC_DEC, void>::type
 write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
              vector<T, N> src0) {
   vector<T, N> dummy;
@@ -7971,7 +7955,9 @@ write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
 
 // mask, no return value, one source
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op != ATOMIC_CMPXCHG && Op != ATOMIC_FCMPWR &&
+                        Op != ATOMIC_INC && Op != ATOMIC_DEC, void>::type
 write_atomic(vector<ushort, N> mask, SurfaceIndex index,
              vector<uint, N> elementOffset, vector<T, N> src0) {
   vector<T, N> dummy;
@@ -7980,28 +7966,29 @@ write_atomic(vector<ushort, N> mask, SurfaceIndex index,
 
 // INC/DEC: return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_INC || Op == ATOMIC_DEC, void>::type
 write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
              vector_ref<T, N> ret) {
   vector<uint, N> dummy;
-  vector_ref<uint, N> _Ret = ret.template format<uint>();
   vector<ushort, N> mask = 1;
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, dummy, dummy, _Ret);
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, dummy, dummy, ret);
 }
 
 // INC/DEC: mask and return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_INC || Op == ATOMIC_DEC, void>::type
 write_atomic(vector<ushort, N> mask, SurfaceIndex index,
              vector<uint, N> elementOffset, vector_ref<T, N> ret) {
   vector<uint, N> dummy;
-  vector_ref<uint, N> _Ret = ret.template format<uint>();
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, dummy, dummy, _Ret);
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, dummy, dummy, ret);
 }
 
 // INC/DEC: no return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_INC || Op == ATOMIC_DEC, void>::type
 write_atomic(SurfaceIndex index, vector<uint, N> elementOffset) {
   vector<T, N> dummy;
   vector<ushort, N> mask = 1;
@@ -8010,7 +7997,8 @@ write_atomic(SurfaceIndex index, vector<uint, N> elementOffset) {
 
 // INC/DEC: mask and no return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_INC || Op == ATOMIC_DEC, void>::type
 write_atomic(vector<ushort, N> mask, SurfaceIndex index,
              vector<uint, N> elementOffset) {
   vector<T, N> dummy;
@@ -8019,43 +8007,67 @@ write_atomic(vector<ushort, N> mask, SurfaceIndex index,
 
 // return value, one source
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op != ATOMIC_CMPXCHG && Op != ATOMIC_FCMPWR &&
+                        Op != ATOMIC_INC && Op != ATOMIC_DEC, void>::type
 write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
     vector<T, N> src0, vector_ref<T, N> ret) {
     vector<T, N> dummy;
-    vector_ref<T, N> _Ret = ret.template format<T>();
     vector<ushort, N> mask = 1;
-    __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, dummy, _Ret);
+    __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, dummy, ret);
 }
 
 // mask and return value, one source
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op != ATOMIC_CMPXCHG && Op != ATOMIC_FCMPWR &&
+                        Op != ATOMIC_INC && Op != ATOMIC_DEC, void>::type
 write_atomic(vector<ushort, N> mask, SurfaceIndex index,
-    vector<uint, N> elementOffset, vector<T, N> src0, vector_ref<uint, N> ret) {
+    vector<uint, N> elementOffset, vector<T, N> src0, vector_ref<T, N> ret) {
     vector<T, N> dummy;
-    vector_ref<uint, N> _Ret = ret.template format<uint>();
-    __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, dummy, _Ret);
+    __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, dummy, ret);
+}
+
+// CMPXCHG: no return value
+template <CmAtomicOpType Op, typename T, int N>
+CM_API
+typename std::enable_if<Op == ATOMIC_CMPXCHG || Op == ATOMIC_FCMPWR, void>::type
+write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
+             vector<T, N> src0, vector<T, N> src1) {
+  vector<T, N> dummy;
+  vector<ushort, N> mask = 1;
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, dummy);
+}
+
+// CMPXCHG: mask and no return value
+template <CmAtomicOpType Op, typename T, int N>
+CM_API
+typename std::enable_if<Op == ATOMIC_CMPXCHG || Op == ATOMIC_FCMPWR, void>::type
+write_atomic(vector<ushort, N> mask, SurfaceIndex index,
+             vector<uint, N> elementOffset, vector<T, N> src0,
+             vector<T, N> src1) {
+  vector<T, N> dummy;
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, dummy);
 }
 
 // CMPXCHG: return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_CMPXCHG || Op == ATOMIC_FCMPWR, void>::type
 write_atomic(SurfaceIndex index, vector<uint, N> elementOffset,
-             vector<T, N> src0, vector<T, N> src1, vector_ref<uint, N> ret) {
-  vector_ref<uint, N> _Ret = ret.template format<uint>();
+             vector<T, N> src0, vector<T, N> src1, vector_ref<T, N> ret) {
   vector<ushort, N> mask = 1;
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, _Ret);
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, ret);
 }
 
 // CMPXCHG: mask and return value
 template <CmAtomicOpType Op, typename T, int N>
-CM_API void
+CM_API
+typename std::enable_if<Op == ATOMIC_CMPXCHG || Op == ATOMIC_FCMPWR, void>::type
 write_atomic(vector<ushort, N> mask, SurfaceIndex index,
              vector<uint, N> elementOffset, vector<T, N> src0,
-             vector<T, N> src1, vector_ref<uint, N> ret) {
-  vector_ref<uint, N> _Ret = ret.template format<uint>();
-  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, _Ret);
+             vector<T, N> src1, vector_ref<T, N> ret) {
+  __write_atomic_impl<Op, T, N>(mask, index, 0, elementOffset, src0, src1, ret);
 }
 
 template <typename T, uint N>
@@ -8071,7 +8083,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8081,23 +8093,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8160,7 +8172,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8176,7 +8188,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8192,7 +8204,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8235,11 +8247,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8267,7 +8279,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8277,23 +8289,23 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if(op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
     if(op == ATOMIC_CMPXCHG || op == ATOMIC_FCMPWR) {
         if(N != 16) {
-            printf("Error writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 16 for DWord atomic write when op is ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     } else {
         if(N != 8) {
-            printf("Error writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 8 for DWord atomic write when op is not ATOMIC_CMPXCHG/ATOMIC_FCMPWR!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8356,7 +8368,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8372,7 +8384,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8388,7 +8400,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     else
                     {
-                        printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                        GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                         exit(EXIT_FAILURE);
                     }
                     break;
@@ -8431,11 +8443,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     }
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8458,7 +8470,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8468,12 +8480,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8496,11 +8508,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8523,7 +8535,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8533,12 +8545,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8561,11 +8573,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8593,7 +8605,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8603,12 +8615,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8631,11 +8643,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector<uint,
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8658,7 +8670,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8668,12 +8680,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8696,11 +8708,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8723,7 +8735,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8733,12 +8745,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8761,11 +8773,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v(i) - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8792,7 +8804,7 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
         exit(EXIT_FAILURE);
     }
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8802,12 +8814,12 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
     //assert(height == 1);
 
     if(buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
     }
 
     if((op != ATOMIC_INC) && (op != ATOMIC_DEC)) {
-        printf("Error writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: NULL src is only allowed for ATOMIC_INC or ATOMIC_DEC!\n", buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8831,11 +8843,11 @@ write(SurfaceIndex & buf_id, CmAtomicOpType op, uint global_offset, vector_ref<u
                     *((T*)((char*)buff_iter->p_volatile + pos)) = v - 1;
                     break;
                 default:
-                    printf("Error writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for DWord atomic write!\n", buf_id.get_data()&0xFF);
                     exit(EXIT_FAILURE);
             }
         } else {
-            printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for DWord atomic write!\n", buf_id.get_data()&0xFF);
             exit(EXIT_FAILURE);
         }
     }
@@ -8858,7 +8870,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -8868,7 +8880,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -8897,7 +8909,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
         }
     default:
         {
-            printf("Error reading buffer %d: Invalid Block Height!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid Block Height!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -8926,7 +8938,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
         }
     default:
         {
-            printf("Error reading buffer %d: Invalid Block Width!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid Block Width!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -8940,7 +8952,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
     y_pos = y_pos * block_height;
     if(C != block_height || R != block_width)
     {
-        printf("Error reading buffer %d: Block dimensions are not equal to matrix dimensions!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: Block dimensions are not equal to matrix dimensions!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
     }
 
@@ -8951,7 +8963,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
 
     if(sizeofT != 4)
     {
-        printf("Error reading buffer %d: Invalid matrix format!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid matrix format!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
     }
     for (i = 0; i < block_height; i++) {
@@ -9004,7 +9016,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
                                     CmEmulSys::search_buffer(buf_id.get_data()&0xFF);
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data()&0xFF, buf_id.get_data()&0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -9014,7 +9026,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
     {
         if((buff_iter->bclass != GEN4_INPUT_BUFFER) &&
             (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER)) {
-                printf("Error reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
+                GFX_EMU_ERROR_MESSAGE("reading buffer %d: the registered buffer type is not INPUT_BUFFER!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -9043,7 +9055,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
         }
     default:
         {
-            printf("Error reading buffer %d: Invalid Block Height!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid Block Height!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -9072,7 +9084,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
         }
     default:
         {
-            printf("Error reading buffer %d: Invalid Block Width!\n", buf_id.get_data()&0xFF);
+            GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid Block Width!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
         }
     }
@@ -9086,7 +9098,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
     y_pos = y_pos * block_height;
     if(C != block_height || R != block_width)
     {
-        printf("Error reading buffer %d: Block dimensions are not equal to matrix dimensions!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: Block dimensions are not equal to matrix dimensions!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
     }
 
@@ -9097,7 +9109,7 @@ read_transpose(SurfaceIndex & buf_id, CM_READ_SIZE region_height, CM_READ_SIZE r
 
     if(sizeofT != 4)
     {
-        printf("Error reading buffer %d: Invalid matrix format!\n", buf_id.get_data()&0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: Invalid matrix format!\n", buf_id.get_data()&0xFF);
                 exit(EXIT_FAILURE);
     }
     for (i = 0; i < block_height; i++) {
@@ -9155,19 +9167,19 @@ read_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     if ((channelMask >> 3) & 0x1) {color[3]=1; numColors++;}
 
     if (numColors == 0) {
-        fprintf(stderr, "read_typed error: At least one"
+        GFX_EMU_ERROR_MESSAGE("read_typed error: At least one"
                 "destination channel has to be read.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N1 < numColors) {
-        fprintf(stderr, "read_typed error: destination matrix"
+        GFX_EMU_ERROR_MESSAGE("read_typed error: destination matrix"
                 "does not have enough space to hold data.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N2 != 8 && N2 != 16) {
-        fprintf(stderr, "read_typed error: offset vector size"
+        GFX_EMU_ERROR_MESSAGE("read_typed error: offset vector size"
                 "must be 8 or 16.\n");
         exit(EXIT_FAILURE);
     }
@@ -9176,7 +9188,7 @@ read_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
                                     CmEmulSys::search_buffer(surfIndex.get_data());
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        fprintf(stderr, "Error: cannot read surface %d !\n", surfIndex.get_data());
+        GFX_EMU_ERROR_MESSAGE("Error: cannot read surface %d !\n", surfIndex.get_data());
         exit(EXIT_FAILURE);
     }
 
@@ -9190,7 +9202,7 @@ read_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
         (surfFormat == R32_FLOAT)) {
 
         if(channelMask != CM_R_ENABLE) {
-            fprintf(stderr, "read_typed error: only CM_R_ENABLE is supported for R32_SINT/R32_UINT/R32_FLOAT surface format.\n");
+            GFX_EMU_ERROR_MESSAGE("read_typed error: only CM_R_ENABLE is supported for R32_SINT/R32_UINT/R32_FLOAT surface format.\n");
             exit(EXIT_FAILURE);
         }
 
@@ -9198,7 +9210,7 @@ read_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     } else if (surfFormat == R8G8B8A8_UINT) {
         data_size = 1;
     } else {
-        fprintf(stderr, "read_typed error: only R32_SINT/R32_UINT/R32_FLOAT/R8G8B8A8_UINT surface formats are supported.\n");
+        GFX_EMU_ERROR_MESSAGE("read_typed error: only R32_SINT/R32_UINT/R32_FLOAT/R8G8B8A8_UINT surface formats are supported.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -9302,19 +9314,19 @@ write_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     if ((channelMask >> 3) & 0x1) {color[3]=1; numColors++;}
 
     if (numColors == 0) {
-        fprintf(stderr, "write_typed error: At least one"
+        GFX_EMU_ERROR_MESSAGE("write_typed error: At least one"
                 "destination channel has to be read.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N1 < numColors) {
-        fprintf(stderr, "write_typed error: source matrix"
+        GFX_EMU_ERROR_MESSAGE("write_typed error: source matrix"
                 "does not have enough space to hold data.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N2 != 8 && N2 != 16) {
-        fprintf(stderr, "write_typed error: offset vector size"
+        GFX_EMU_ERROR_MESSAGE("write_typed error: offset vector size"
                 "must be 8 or 16.\n");
         exit(EXIT_FAILURE);
     }
@@ -9323,7 +9335,7 @@ write_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
                                     CmEmulSys::search_buffer(surfIndex.get_data());
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        fprintf(stderr, "write_typed error: cannot read surface %d !\n", surfIndex.get_data());
+        GFX_EMU_ERROR_MESSAGE("write_typed error: cannot read surface %d !\n", surfIndex.get_data());
         exit(EXIT_FAILURE);
     }
 
@@ -9337,7 +9349,7 @@ write_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
         (surfFormat == R32_FLOAT)) {
 
         if(channelMask != CM_R_ENABLE) {
-            fprintf(stderr, "write_typed error: only CM_R_ENABLE is supported for R32_SINT/R32_UINT/R32_FLOAT surface format.\n");
+            GFX_EMU_ERROR_MESSAGE("write_typed error: only CM_R_ENABLE is supported for R32_SINT/R32_UINT/R32_FLOAT surface format.\n");
             exit(EXIT_FAILURE);
         }
 
@@ -9345,7 +9357,7 @@ write_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     } else if (surfFormat == R8G8B8A8_UINT) {
         data_size = 1;
     } else {
-        fprintf(stderr, "write_typed error: only R32_SINT/R32_UINT/R32_FLOAT/R8G8B8A8_UINT surface formats are supported.\n");
+        GFX_EMU_ERROR_MESSAGE("write_typed error: only R32_SINT/R32_UINT/R32_FLOAT/R8G8B8A8_UINT surface formats are supported.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -9449,19 +9461,19 @@ read_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     if ((channelMask >> 3) & 0x1) {color[3]=1; numColors++;}
 
     if (numColors == 0) {
-        fprintf(stderr, "read_untyped error: At least one "
+        GFX_EMU_ERROR_MESSAGE("read_untyped error: At least one "
                 "destination channel has to be read.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N1 < numColors) {
-        fprintf(stderr, "read_untyped error: destination matrix "
+        GFX_EMU_ERROR_MESSAGE("read_untyped error: destination matrix "
                 "does not have enough space to hold data.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N2 != 8 && N2 != 16) {
-        fprintf(stderr, "read_untyped error: offset vector size "
+        GFX_EMU_ERROR_MESSAGE("read_untyped error: offset vector size "
                 "must be 8 or 16.\n");
         exit(EXIT_FAILURE);
     }
@@ -9470,7 +9482,7 @@ read_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
                                     CmEmulSys::search_buffer(surfIndex.get_data());
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        fprintf(stderr, "read_untyped error: cannot read surface %d !\n", surfIndex.get_data());
+        GFX_EMU_ERROR_MESSAGE("read_untyped error: cannot read surface %d !\n", surfIndex.get_data());
         exit(EXIT_FAILURE);
     }
 
@@ -9482,7 +9494,7 @@ read_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     depth = buff_iter->depth;
 
     if (height != 1 || depth != 1) {
-        fprintf(stderr, "read_untyped error: invalid input surface type.\n");
+        GFX_EMU_ERROR_MESSAGE("read_untyped error: invalid input surface type.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -9532,7 +9544,7 @@ write_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
        channelMask != CM_GR_ENABLE &&
        channelMask != CM_BGR_ENABLE &&
        channelMask != CM_ABGR_ENABLE) {
-        fprintf(stderr, "write_untyped error: Invalid channel mask.\n");
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: Invalid channel mask.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -9542,19 +9554,19 @@ write_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     if ((channelMask >> 3) & 0x1) {color[3]=1; numColors++;}
 
     if (numColors == 0) {
-        fprintf(stderr, "write_untyped error: At least one "
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: At least one "
                 "destination channel has to be read.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N1 < numColors) {
-        fprintf(stderr, "write_untyped error: source matrix "
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: source matrix "
                 "does not have enough space to hold data.\n");
         exit(EXIT_FAILURE);
     }
 
     if (N2 != 8 && N2 != 16) {
-        fprintf(stderr, "write_untyped error: offset vector size "
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: offset vector size "
                 "must be 8 or 16.\n");
         exit(EXIT_FAILURE);
     }
@@ -9563,7 +9575,7 @@ write_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
                                     CmEmulSys::search_buffer(surfIndex.get_data());
 
     if(buff_iter == CmEmulSys::iobuffers.end()) {
-        fprintf(stderr, "write_untyped error: cannot read surface %d !\n", surfIndex.get_data());
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: cannot read surface %d !\n", surfIndex.get_data());
         exit(EXIT_FAILURE);
     }
 
@@ -9575,7 +9587,7 @@ write_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
     depth = buff_iter->depth;
 
     if (height != 1 || depth != 1) {
-        fprintf(stderr, "write_untyped error: invalid input surface type.\n");
+        GFX_EMU_ERROR_MESSAGE("write_untyped error: invalid input surface type.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -9634,7 +9646,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     vector_ref<T, N> ret, vector<T, N> src0, vector<T, N> src1,
     vector<uint, N> u, vector<uint, N> v, vector<uint, N> r, vector<uint, N> LOD)
 {
-    fprintf(stderr, "Error: write typed atomic is not supported in emulation mode.\n");
+    GFX_EMU_ERROR_MESSAGE("Error: write typed atomic is not supported in emulation mode.\n");
 }
 
 template <typename T, uint N>
@@ -9642,7 +9654,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     vector_ref<T, N> ret, vector<T, N> src0,int src1,
     vector<uint, N> u, vector<uint, N> v, vector<uint, N> r, vector<uint, N> LOD)
 {
-    fprintf(stderr, "Error: write typed atomic is not supported in emulation mode.\n");
+    GFX_EMU_ERROR_MESSAGE("Error: write typed atomic is not supported in emulation mode.\n");
 }
 
 template <typename T, uint N>
@@ -9650,7 +9662,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     vector_ref<T, N> ret,int src0, int src1,
     vector<uint, N> u, vector<uint, N> v, vector<uint, N> r, vector<uint, N> LOD)
 {
-    fprintf(stderr, "Error: write typed atomic is not supported in emulation mode.\n");
+    GFX_EMU_ERROR_MESSAGE("Error: write typed atomic is not supported in emulation mode.\n");
 }
 
 template <typename T, uint N>
@@ -9662,21 +9674,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -9689,7 +9701,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -9710,7 +9722,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ((ret(i) == src1(i)) ? src0(i) : ret(i));
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -9726,21 +9738,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -9753,7 +9765,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -9805,7 +9817,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -9821,7 +9833,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -9837,7 +9849,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -9874,7 +9886,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -9890,21 +9902,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -9917,7 +9929,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -9942,7 +9954,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ret(i) - 1;
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -9958,21 +9970,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -9985,7 +9997,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10006,7 +10018,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ((ret(i) == src1(i)) ? src0(i) : ret(i));
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -10023,21 +10035,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -10050,7 +10062,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10102,7 +10114,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10118,7 +10130,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10134,7 +10146,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10171,7 +10183,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -10188,21 +10200,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -10215,7 +10227,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10240,7 +10252,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ret(i) - 1;
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -10257,21 +10269,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -10284,7 +10296,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10305,7 +10317,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ((ret(i) == src1(i)) ? src0(i) : ret(i));
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -10321,21 +10333,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -10348,7 +10360,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10400,7 +10412,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10416,7 +10428,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10432,7 +10444,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 else
                 {
-                    printf("Error writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
+                    GFX_EMU_ERROR_MESSAGE("writing buffer %d: unsupported opcode/type for DWord atomic write!\n", buf_id.get_data() & 0xFF);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -10469,7 +10481,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 }
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }
@@ -10485,21 +10497,21 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
     if (buff_iter == CmEmulSys::iobuffers.end()) {
-        printf("Error reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("reading buffer %d: buffer %d is not registered!\n", buf_id.get_data() & 0xFF, buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (buff_iter->bclass != GEN4_INPUT_OUTPUT_BUFFER) {
-        printf("Error writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: the buffer type must be GEN4_INPUT_OUTPUT_BUFFER for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
     if (op > ATOMIC_FMAX) {
-        printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
     if (N != 1 && N != 2 && N != 4 && N != 8) {
-        printf("Error writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
+        GFX_EMU_ERROR_MESSAGE("writing buffer %d: src length must be 1,2,4,8 for typed atomic write!\n", buf_id.get_data() & 0xFF);
         exit(EXIT_FAILURE);
     }
 
@@ -10512,7 +10524,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
     data_size = 4;
     }
     else {
-    fprintf(stderr, "typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
+    GFX_EMU_ERROR_MESSAGE("typed atomic write error: only R32_SINT/R32_UINT surface formats are supported.\n");
     exit(EXIT_FAILURE);
     }*/
 
@@ -10537,7 +10549,7 @@ CM_API void __write_typed_atomic_impl(SurfaceIndex & buf_id, CmAtomicOpType op,
                 *((T*)((char*)buff_iter->p_volatile + pos)) = ret(i) - 1;
                 break;
             default:
-                printf("Error writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
+                GFX_EMU_ERROR_MESSAGE("writing buffer %d: invalid opcode for typed atomic write!\n", buf_id.get_data() & 0xFF);
                 exit(EXIT_FAILURE);
             }
         }

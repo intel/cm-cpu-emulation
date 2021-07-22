@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,7 @@ int32_t CmEventEmu::Create( uint32_t index, CmEventEmu* & pEvent )
     }
     else
     {
-        CmAssert( 0 );
+        GFX_EMU_ASSERT( 0 );
         result = CM_OUT_OF_HOST_MEMORY;
     }
     return result;

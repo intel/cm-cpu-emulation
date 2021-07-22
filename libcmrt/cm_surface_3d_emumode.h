@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 #include "cm_memory_object_control.h"
 #include "cm_surface_3d_base.h"
 #include "cm_surface_emumode.h"
-#include "cm_debug.h"
+#include "emu_log.h"
 
 class CmSurface3D;
 class CmSurfaceEmu;

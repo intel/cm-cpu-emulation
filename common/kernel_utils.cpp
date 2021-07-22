@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,8 @@
 #include "kernel_utils.h"
 #include "shim_support.h"
 
+#include "emu_utils.h"
+
 using namespace std::string_literals;
 
 // compiler-dependent functionality
@@ -36,6 +38,9 @@ namespace compiler
     // clang and GCC
     constexpr char KERNEL_SIG_REGEX[] = "^[^=]+=[^(]+\\(([^)]+)\\).*$";
     constexpr char SURFACE_INDEX_TYPE[] = "SurfaceIndex";
+    constexpr char FLOAT_TYPE[] = "float";
+    constexpr char DOUBLE_TYPE[] = "double";
+    constexpr char LONG_DOUBLE_TYPE[] = "long double";
 }
 
 constexpr int MAX_KERNELS_PER_PROGRAM = 20;
@@ -44,6 +49,9 @@ CmArgumentType CmArgumentTypeFromString(const std::string& s)
 {
     static const std::unordered_map<std::string, CmArgumentType> mapping = {
         {compiler::SURFACE_INDEX_TYPE, CmArgumentType::SurfaceIndex},
+        {compiler::FLOAT_TYPE, CmArgumentType::Fp},
+        {compiler::DOUBLE_TYPE, CmArgumentType::Fp},
+        {compiler::LONG_DOUBLE_TYPE, CmArgumentType::Fp},
     };
 
     auto t = mapping.find(s);
@@ -175,7 +183,7 @@ ProgramManager::ProgramManager()
 {
 }
 
-ProgramManager::~ProgramManager()
+void ProgramManager::Complete()
 {
     for (auto p : m_programs)
     {

@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,7 +59,7 @@ CM_RT_API int32_t CreateCmDevice(CmDevice* &pD, uint32_t& version, VADisplay va_
     {
         version = 0;
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
         CmStatistics::Create();
 #endif
 
@@ -85,7 +85,7 @@ CM_RT_API int32_t DestroyCmDevice(CmDevice* &pD)
     {
         pD = nullptr;
     }
-#if defined(_DEBUG) || !defined(NDEBUG)
+#ifdef GFX_EMU_DEBUG_ENABLED
     CmStatistics::Destroy();
 #endif
     return result;

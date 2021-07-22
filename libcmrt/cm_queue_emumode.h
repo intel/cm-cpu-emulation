@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -129,7 +129,7 @@ protected:
 
     int32_t Initialize( void );
 
-    int32_t Execute(uint32_t numMaxArgs, std::vector<CmEmuArg>& argsVecRef, void (*fncPt)(), uint32_t threadCount );
+    int32_t Execute(const CmKernelEmu&, uint32_t threadId);
     int32_t ExecuteScoreBoard(CmThreadSpaceEmu * threadSpace, bool be_walker);
     bool inner_loop_iteration(int last_x, int last_y, int bound_x, int bound_y, int x_stride, int y_stride, int &x, int &y);
     bool outer_loop_iteration(int last_x, int last_y,

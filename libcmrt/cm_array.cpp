@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,7 +128,7 @@ void* CmDynamicArray::GetElement( const uint32_t index )
     }
     else
     {
-        CmErrorMessage("Failed to get the element at the index in the array.");
+        GfxEmu::ErrorMessage("Failed to get the element at the index in the array.");
         CmSafeMemSet( &element, 0, sizeof(void*) );
     }
     return element;
@@ -167,7 +167,7 @@ bool CmDynamicArray::SetElement( const uint32_t index, const void* element )
         success = true;
     }
 
-    CmAssert(success);
+    GFX_EMU_ASSERT(success);
     return success;
 }
 
@@ -284,8 +284,8 @@ void CmDynamicArray::CreateArray( const uint32_t size )
                 actualSize = (uint32_t)Round( Max( size, 32 ), 32 );
             }
 
-            CmAssert( actualSize >= size );
-            CmAssert( actualSize > m_ActualSize );
+            GFX_EMU_ASSERT( actualSize >= size );
+            GFX_EMU_ASSERT( actualSize > m_ActualSize );
 
             const uint32_t allocSize = actualSize * sizeof(void*);
 
@@ -311,7 +311,7 @@ void CmDynamicArray::CreateArray( const uint32_t size )
             }
             else
             {
-                CmErrorMessage("Failed to create the internal array structure of the specified size.");
+                GfxEmu::ErrorMessage("Failed to create the internal array structure of the specified size.");
                 return;
             }
         }

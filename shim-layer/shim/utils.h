@@ -1,6 +1,6 @@
 /*===================== begin_copyright_notice ==================================
 
- Copyright (c) 2020, Intel Corporation
+ Copyright (c) 2021, Intel Corporation
 
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,23 +22,14 @@
  OTHER DEALINGS IN THE SOFTWARE.
 ======================= end_copyright_notice ==================================*/
 
-#pragma once
+#ifndef CM_EMU_SHIM_UTILS_H
+#define CM_EMU_SHIM_UTILS_H
 
-#include <string>
+namespace shim {
 
-// os-dependent functionality
-namespace os
-{
+template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
-using SharedLibHandle = void*;
+} // namespace shim
 
-bool IsLibHandleValid(SharedLibHandle h);
-SharedLibHandle LoadSharedLib(const std::string& name);
-bool FreeSharedLib(SharedLibHandle h);
-void *GetSharedSymbolAddress(SharedLibHandle h, const std::string& name);
-std::string GetSharedLibLocation(SharedLibHandle h);
-/// Create a temporary file and write "bytes" to it. Return filename.
-std::string CreateTempFile(const unsigned char* const bytes, size_t num_bytes);
-bool DeleteFile(const std::string& name);
-std::string GetEnvVarValue(const std::string& name);
-}
+#endif // CM_EMU_SHIM_UTILS_H
