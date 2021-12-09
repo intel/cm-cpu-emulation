@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #define CM_EMU
 
@@ -35,7 +19,11 @@
 
 using namespace std;
 
+#if defined(_WIN32)
+#define CM_GETENV(dst, name) {size_t length; _dupenv_s(&dst, &length, name);}
+#else /* _WIN32 */
 #define CM_GETENV(dst, name) dst = getenv(name)
+#endif /* _WIN32 */
 
 #define GLOBAL_SURFACE_INDEX_NUMBER 4
  const int maxbsize = 255;
@@ -118,14 +106,14 @@ CM_API ushort get_color()
 
 CM_API ushort get_thread_origin_x()
 {
-    if(GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if(GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
         return cm_group_id(0);
     return thread_origin_x;
 }
 
 CM_API ushort get_thread_origin_y()
 {
-    if(GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if(GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
         return cm_group_id(1);
     return thread_origin_y;
 }
@@ -139,7 +127,6 @@ CM_unregister_buffer_emu(int buf_id)
     if (buff_iter != CmEmulSys::iobuffers.end()) {
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //if(buff_iter->bclass == GEN4_INPUT_OUTPUT_BUFFER) {
         //    memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
         //    free(buff_iter->p_volatile);
@@ -184,7 +171,6 @@ CM_register_buffer_emu(int buf_id, CmBufferType bclass, void *src, uint width, u
     if(bclass == GEN4_INPUT_OUTPUT_BUFFER) {
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
         //if(new_buff.p_volatile != NULL)
         //{
@@ -242,7 +228,6 @@ CM_unregister_buffer_emu(SurfaceIndex buf_id, bool copy)
         if(buff_iter->bclass == GEN4_INPUT_OUTPUT_BUFFER) {
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //if(copy)
             //{
             //    memcpy(buff_iter->p, buff_iter->p_volatile, (buff_iter->width)*(buff_iter->height)*(buff_iter->depth));
@@ -282,7 +267,6 @@ CM_register_buffer_emu(SurfaceIndex buf_id, CmBufferType bclass, void *src, uint
     if(bclass == GEN4_INPUT_OUTPUT_BUFFER) {
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //new_buff.p_volatile = (unsigned char*) malloc(width*height*depth);
         //if(new_buff.p_volatile != NULL)
         //{
@@ -339,7 +323,6 @@ cm_fence()
     {
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //if (it->p_volatile != 0)
         //{
         //    memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
@@ -356,7 +339,6 @@ cm_fence(unsigned char bit_mask)
     {
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //if (it->p_volatile != 0)
         //{
         //    memcpy(it->p, it->p_volatile, it->width * it->height * it->depth);
@@ -369,4 +351,3 @@ CM_API void
 cm_wait(uchar mask)
 {
 }
-

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 
@@ -34,23 +18,22 @@
 #include "emu_log.h"
 #include "emu_utils.h"
 #include "emu_api_export.h"
+#include "emu_cfg_platform.h"
 
 namespace GfxEmu {
 
-GFX_EMU_API_IMPORT struct Cfg_& Cfg();
-
 namespace CfgCache {
-    inline std::atomic<bool> IsCoopFibersMode {false};
     inline std::atomic<int64_t> LogChannels   {GfxEmu::Log::Flags::kDefaultLogFlagsMask};
     inline std::atomic<int64_t> MinimalLevel  {GfxEmu::Log::Flags::kDefaultLogLevel};
     inline std::string LogFileMode = "w+";
 };
 
-struct Cfg_ {
+namespace Cfg {
 
-GFX_EMU_API_IMPORT Cfg_();
-GFX_EMU_API_IMPORT ~Cfg_();
+GFX_EMU_API_IMPORT void* init ();
 GFX_EMU_API_IMPORT void printSummary ();
+
+inline void* init__ = init();
 
 class Param {
 public:
@@ -195,14 +178,14 @@ private:
 
         if constexpr (!fromCallback) {
             if(!valueCallback(*this)) {
-                GFX_EMU_FAIL_WITH_MESSAGE(fCfg | fSticky,
+                GFX_EMU_FAIL_WITH_MESSAGE(fCfg,
                     "%s\n", valueCallbackErrStr.c_str ()
                 );
             }
 
             if(!setDefaults) {
                 if(actualV != prevV) {
-                    GFX_EMU_MESSAGE(fCfg | fSticky,
+                    GFX_EMU_MESSAGE(fCfg,
                         "%s <- %s (old: %s)\n",
                             name.c_str(),
                             getDbgStr ().c_str (),
@@ -224,7 +207,7 @@ private:
             if(envValPtr) {
                 isUserDefined_ = true;
                 const auto envVal = std::string {envValPtr};
-                GFX_EMU_MESSAGE(fCfg | fSticky,
+                GFX_EMU_MESSAGE(fCfg,
                     "ENV: %s = %s\n",
                         srcSpec.env.c_str (), envVal.c_str ());
                 if(envVal != "") {
@@ -292,6 +275,12 @@ public:
     bool isBool() const { return type == Type::Bool; }
     bool isString() const { return type == Type::String; }
 
+    template<class T>
+    Param& operator=(const T& v) {
+        set(v);
+        return *this;
+    }
+
     Param() = default;
 
     template<class T>
@@ -316,18 +305,10 @@ public:
 
 }; // class Param
 
-GFX_EMU_API_IMPORT const std::vector<const class Param*>& getParamsRegistry() const;
+#define CFG_PARAM(n,...) GFX_EMU_API GfxEmu::Cfg::Param& n();
+#include "emu_cfg_params.h"
+#undef CFG_PARAM
 
-Param
-    LogFile
-    ,LogChannels
-    ,LogLevel
-    ,Platform
-    ,Sku
-    ,ParallelThreads
-    ,ResidentGroups
-;
-
-}; // struct Cfg_
+}; // namespace Cfg
 
 }; // namespace GfxEmu

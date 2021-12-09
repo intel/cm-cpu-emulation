@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2020 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef GUARD_common_type_queue_base_h
 #define GUARD_common_type_queue_base_h
@@ -35,7 +19,6 @@ class CmThreadGroupSpace;
 class CmBuffer;
 class CmSurface2D;
 class CmKernel;
-
 //!
 //! \brief CM task queue management.
 //!
@@ -300,7 +283,7 @@ public:
     //!           reference to pointer of event generated. If it is set as CM_NO_EVENT,
     //!           its value returned by runtime is NULL.
     //! \retval   CM_SUCCESS if the task is successfully enqueued
-    //! \retval   CM_GPUCOPY_INVALID_STRIDE if stride is not 16-Byte aligned or less than surfaces width in bytes.
+    //! \retval   CM_GPUCOPY_INVALID_STRIDE if stride is not 16-Byte aligned or less than surface's width in bytes.
     //! \retval   CM_GPUCOPY_INVALID_SYSMEM if sysMem is not 16-Byte aligned.
     //! \retval   CM_GPUCOPY_INVALID_SIZE if surface's height is more than CM_MAX_GPUCOPY_SURFACE_HEIGHT
     //! \retval   CM_GPUCOPY_OUT_OF_RESOURCE if runtime runs out of resources
@@ -375,7 +358,7 @@ public:
     //!           reference to pointer of event generated. If it is set as CM_NO_EVENT,
     //!           its value returned by runtime is NULL.
     //! \retval   CM_SUCCESS if the task is successfully enqueued
-    //! \retval   CM_GPUCOPY_INVALID_STRIDE if stride is not 16-Byte aligned or less than surfaces width in bytes.
+    //! \retval   CM_GPUCOPY_INVALID_STRIDE if stride is not 16-Byte aligned or less than surface's width in bytes.
     //! \retval   CM_GPUCOPY_INVALID_SYSMEM if sysMem is not 16-Byte aligned.
     //! \retval   CM_GPUCOPY_INVALID_SIZE if surface's height is more than CM_MAX_GPUCOPY_SURFACE_HEIGHT
     //! \retval   CM_GPUCOPY_OUT_OF_RESOURCE if runtime runs out of resources

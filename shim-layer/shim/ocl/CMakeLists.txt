@@ -21,6 +21,9 @@ set_target_properties(shim PROPERTIES CXX_STANDARD 17)
 target_include_directories(shim PRIVATE ${CMAKE_SOURCE_DIR}/common
                                         ${CMAKE_SOURCE_DIR}/libcmrt)
 
+if (MSVC)
+  target_include_directories(shim PRIVATE ${CMAKE_SOURCE_DIR}/libcmrt/windows)
+endif()
 
 if (UNIX)
   target_include_directories(shim PRIVATE ${CMAKE_SOURCE_DIR}/libcmrt/linux)

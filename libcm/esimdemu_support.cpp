@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2020 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <cm_kernel_base.h>
 
@@ -29,10 +13,10 @@
 #include "cm_list.h"
 #include "emu_log.h"
 #include "cm_common_macros.h"
-#include "dataport_common.h"
+#include "genx_dataport.h"
 
 #include "rt.h"
-#include "esimdcpu_support.h"
+#include "esimdemu_support.h"
 #include "emu_cfg.h"
 
 /// Imported from rt.h : Begin
@@ -45,7 +29,7 @@ constexpr size_t
 /// Imported from rt.h : End
 
 ESIMD_API
-ESimdCPUKernel::ESimdCPUKernel(const fptrVoid entryPoint,
+EsimdemuKernel::EsimdemuKernel(const fptrVoid entryPoint,
                                const std::vector<uint32_t> &groupDim,
                                const std::vector<uint32_t> &localDim)
   : m_entryPoint(entryPoint), m_groupDim(groupDim), m_localDim(localDim)
@@ -58,13 +42,13 @@ ESimdCPUKernel::ESimdCPUKernel(const fptrVoid entryPoint,
 }
 
 ESIMD_API
-void ESimdCPUKernel::launchMT(const uint32_t argSize,
+void EsimdemuKernel::launchMT(const uint32_t argSize,
                               const void* argPtr)
 {
   assert(m_groupDim.size() != 0);
   assert(m_localDim.size() != 0);
 
-  uint32_t residentGrp = GfxEmu::Cfg ().ResidentGroups.getInt();
+  uint32_t residentGrp = GfxEmu::Cfg::ResidentGroups ().getInt();
 
   cmrt::CmEmuMt_Kernel kernel(
     m_groupDim, /// groupSpaceWidth, groupSpaceHeight, groupSpaceDepth
@@ -78,7 +62,7 @@ void ESimdCPUKernel::launchMT(const uint32_t argSize,
     }
   );
 
-  if (getenv("ESIMDCPU_DEBUG")){
+  if (getenv("ESIMDEMU_DEBUG")){
     kernel.run_debug();
   }
   else {
@@ -139,7 +123,7 @@ void barrier()
 }
 
 ESIMD_API
-void split_barrier(uint mask)
+void split_barrier(uint32_t mask)
 {
   cm_sbarrier(mask);
 }
@@ -169,4 +153,3 @@ void fence(void)
 }
 
 } // namespace cm_support
-

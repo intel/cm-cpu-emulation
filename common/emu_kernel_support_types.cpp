@@ -1,32 +1,15 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <fstream>
 #include <sstream>
 
-#include <sstream>
-#if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+#if defined(_WIN32) || __clang__ || __GNUC__ > 7
     #include <filesystem>
     namespace fs = std::filesystem;
 #else
@@ -34,8 +17,12 @@
     namespace fs = std::experimental::filesystem;
 #endif
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
     #include <link.h>
     #include <dlfcn.h>
+#endif
 
 #include "emu_kernel_support.h"
 #include "emu_log.h"
@@ -43,6 +30,7 @@
 #include "emu_dbgsymb.h"
 #endif
 #include "emu_utils.h"
+#include "emu_cfg.h"
 
 namespace GfxEmu {
 namespace KernelSupport {
@@ -52,6 +40,7 @@ using namespace GfxEmu::Log::Flags;
 //------------------------------------------------------------------------
 namespace details {
 
+#ifndef _WIN32
 //-------------------------------------------------------------------
 struct setLoadedProgramModuleInfo_callback_data{
     void *queryAddr {nullptr};
@@ -72,7 +61,7 @@ int setLoadedProgramModuleInfo_callback(struct dl_phdr_info *info, size_t size, 
     std::string curModuleName = info->dlpi_name;
     if (curModuleName == "") curModuleName = "/proc/self/exe";
 
-    GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+    GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
         "inspecting segments in %s (%d segments)\n", curModuleName.c_str(),
         info->dlpi_phnum);
 
@@ -93,14 +82,14 @@ int setLoadedProgramModuleInfo_callback(struct dl_phdr_info *info, size_t size, 
             const auto hi = reinterpret_cast<void*>((uint64_t)lo + info->dlpi_phdr[j].p_memsz);
             //data.descPtr->setModuleEndAddr(hi);
             if(data.queryAddr >= lo && data.queryAddr < hi) {
-                GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+                GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
                     "success: address %p found in header %2d: address=%10p, size %u. cur lib name: %s\n",
                     data.queryAddr, j, lo, info->dlpi_phdr[j].p_memsz, curModuleName.c_str());
 
                 data.found = true;
                 // we do not break; need to get moduleEndAddr.
             } else if (!data.found) {
-                GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+                GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
                     "checking if %p matches elf header %2d: address=%10p of size %u\n",
                     data.queryAddr, j, lo, info->dlpi_phdr[j].p_memsz);
             }
@@ -112,25 +101,36 @@ int setLoadedProgramModuleInfo_callback(struct dl_phdr_info *info, size_t size, 
         data.descPtr->setModuleAddr(reinterpret_cast<void *>(info->dlpi_addr));
     } else {
         //data.descPtr->setModuleEndAddr(0);
-        if (data.queryAddr)
-            GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+        if (data.queryAddr) {
+            GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
                 "address %p is not found in %s.\n", data.queryAddr, curModuleName.c_str ()
             );
-        else
-            GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+        } else {
+            GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
                 "module name %s is not found in %s.\n", data.queryModuleName.c_str (), curModuleName.c_str ()
             );
+        }
     }
 
     return 0;
 }
+#endif
 
 bool setLoadedProgramModuleInfo (void *addr, const std::string& moduleName, ProgramModule& desc) {
+#ifdef _WIN32
+    #ifdef GFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED
+        return GfxEmu::DbgSymb::obj().setLoadedProgramModuleInfo (addr, moduleName, desc);
+    #else
+        GFX_EMU_WARNING_MESSAGE("Getting module info is only supported if debug symbols access enabled.\n");
+        return false;
+    #endif
+#else
     setLoadedProgramModuleInfo_callback_data cbData;
     cbData.queryAddr = addr;
     cbData.queryModuleName = moduleName;
     cbData.descPtr = &desc;
     dl_iterate_phdr(setLoadedProgramModuleInfo_callback, &cbData);
+#endif
 
     if (desc.getModuleAddr () != nullptr)
         return true;
@@ -168,11 +168,19 @@ std::string ProgramModule::toStr () const {
 }
 
 void ProgramModule::initModuleHandle() {
+#ifdef _WIN32
+    if(!GetModuleHandleExA(
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                NULL,&moduleHandle)) {
+        GFX_EMU_FAIL_WITH_MESSAGE("can't init handle for main program: %s\n", GfxEmu::Utils::lastErrorStr ().c_str ());
+    }
+#else
 
     moduleHandle = dlopen(NULL, RTLD_NOW | RTLD_NOLOAD);
     if(!moduleHandle) {
         GFX_EMU_FAIL_WITH_MESSAGE("can't init handle for main program: %s\n", dlerror());
     }
+#endif
     ;
 }
 
@@ -186,7 +194,8 @@ ProgramModule::ProgramModule ()
 ProgramModule::~ProgramModule () {
     GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fExtraDetail,
         "(x) destruct %s\n", toStr ().c_str ());
-    unloadIfOwning ();
+
+    terminateOwning ();
 }
 
 ProgramModule::operator bool () const {
@@ -197,8 +206,7 @@ ProgramModule::operator bool () const {
 };
 
 void ProgramModule::moveFrom(ProgramModule&& other) {
-    if(!unloadIfOwning ())
-        return;
+    terminateOwning ();
 
     moduleHandle = std::move(other.moduleHandle);
     isOwning_ = other.isOwning_;
@@ -265,9 +273,9 @@ bool ProgramModule::isOwning() const {
     return isOwning_;
 };
 
-bool ProgramModule::unloadIfOwning () {
+void ProgramModule::terminateOwning () {
 
-    if(!isOwning()) return true;
+    if(!isOwning()) return;
 
     GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fInfo,
         "unloading shared library for program module %s\n", toStr ().c_str ());
@@ -275,16 +283,26 @@ bool ProgramModule::unloadIfOwning () {
     details::invalidateProgramModuleAssociatedData(*this);
 
     if(
+#ifdef _WIN32
+        ::FreeLibrary(moduleHandle) == 0
+#else
         dlclose(moduleHandle) != 0
+#endif
+
     ) {
 
-        GfxEmu::FailWithMessage(
+        const char* err =
+#ifdef _WIN32
+                GfxEmu::Utils::lastErrorStr ().c_str ()
+#else
+                dlerror()
+#endif
+        ;
+
+        GFX_EMU_FAIL_WITH_MESSAGE(
             fKernelSupport,
             "failed to unload shared library for program module %s: %s\n",
-                toStr ().c_str (),
-                dlerror()
-        );
-
+                toStr ().c_str (), err);
     }
 
     isOwning_ = false;
@@ -292,7 +310,16 @@ bool ProgramModule::unloadIfOwning () {
     moduleAddr = kGlobalKernelSearch;
     moduleEndAddr = nullptr;
 
-    return true;
+    if(isCreator && !GfxEmu::Cfg::RetainTmpFiles ().getInt ()) {
+        if(std::remove(getModuleFileName().c_str()) != 0) {
+            GFX_EMU_FAIL_WITH_MESSAGE(fKernelSupport, "failed to delete program module file %s\n",
+                getModuleFileName().c_str());
+        }
+    }
+
+    isCreator = false;
+
+    return;
 }
 
 bool ProgramModule::isGlobalKernelSearch () const {
@@ -344,12 +371,21 @@ bool ProgramModule::load(std::string fileName) {
         return true;
     }
 
+#ifdef _WIN32
+    moduleHandle = LoadLibraryA(moduleFileName.c_str ());
+    if (!moduleHandle) {
+        GFX_EMU_FAIL_WITH_MESSAGE(fKernelSupport, "can't init handle for program %s: %s.\n",
+            moduleFileName.c_str (),
+            GfxEmu::Utils::lastErrorStr ().c_str ());
+    }
+#else
     moduleHandle = dlopen(moduleFileName.c_str (), RTLD_NOW | RTLD_GLOBAL);
     if (!moduleHandle) {
         GFX_EMU_FAIL_WITH_MESSAGE(fKernelSupport, "can't init handle for program %s: %s.\n",
             moduleFileName.c_str (),
             dlerror());
     }
+#endif
 
     setThisLoadedProgramInfo ();
 
@@ -401,7 +437,7 @@ ProgramModule::ProgramModule(void *addr, size_t size) {
 
         fs::permissions(fileName,
                         fs::perms::owner_all | fs::perms::group_all
-    #if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+    #if defined(_WIN32) || __clang__ || __GNUC__ > 7
                         ,
                         fs::perm_options::add
     #endif
@@ -410,6 +446,8 @@ ProgramModule::ProgramModule(void *addr, size_t size) {
         if(!load (fileName)) {
             GFX_EMU_FAIL_WITH_MESSAGE(fKernelSupport, "can't load %s program.\n", getModuleFileName ().c_str());
         }
+
+        isCreator = true;
 
         return;
     }

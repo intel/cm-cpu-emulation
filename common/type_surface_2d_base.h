@@ -1,33 +1,17 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef GUARD_common_type_surface_2d_base_h
 #define GUARD_common_type_surface_2d_base_h
-
 //! \brief      CmSurface2D represents a 2D surface in video memory.
 //! \details    CmSurface2D represents a 2D surface in video memory. It is a
 //!             wrapper around
+//!             a D3D 2D surface in Windows or a
 //!             VA 2D surface in Linux. Each CmSurface2D object is associated with a
 //!             SurfaceIndex object containing a unique index value the
 //!             surface is mapped to when created by the CmDevice.The CmDevice
@@ -45,6 +29,29 @@ public:
     //! \retval CM_SUECCESS.
     //!
     CM_RT_API virtual int32_t GetIndex(SurfaceIndex* &pIndex) = 0;
+
+#ifdef CM_DX9
+    //!
+    //! \brief Retrieves internal D3D9 surface.
+    //! \details In HW mode, the D3D surface underlying this CmSurface2D is
+    //!          returned in pD3DSurface.
+    //! \param [out] pD3DSurface
+    //!        Reference to a D3DSurface pointer.
+    //! \retval CM_SUECCESS.
+    //!
+    CM_RT_API virtual int32_t GetD3DSurface(IDirect3DSurface9* &pD3DSurface) = 0;
+#elif defined(CM_DX11)
+    //!
+    //! \brief Retrieves internal D3D11 surface.
+    //! \details In HW mode, the D3D surface underlying this CmSurface2D is
+	//! \details In HW mode, the D3D surface underlying this CmSurface2D is
+	//!          returned in pD3DSurface.
+	//! \param [out] pD3D11Texture2D
+    //!        Reference to a D3DSurface pointer.
+    //! \retval CM_SUECCESS.
+    //!
+    CM_RT_API virtual int32_t GetD3DSurface(ID3D11Texture2D* &pD3D11Texture2D) = 0;
+#endif
 
     //!
     //! \brief Copies data in this CmSurface2D to system memory.
@@ -183,6 +190,23 @@ public:
     CM_RT_API virtual int32_t InitSurface(const unsigned long initValue,
                                       CmEvent *pEvent) = 0;
 
+#ifdef CM_DX11
+    //!
+    //! \brief Queries the sub-resource index for this CmSurface2D.
+    //! \note This function works only if DX11 is enabled.
+    //! \param [out] FirstArraySlice
+    //!        Index of array slice.
+    //! \param [out] FirstMipSlice
+    //!        Index of mip slice. It is always 0 for now since we only a single
+    //!        mip level is supported.
+    //! \retval CM_SUCCESS.
+    //!
+    CM_RT_API virtual int32_t
+    QuerySubresourceIndex(unsigned int &FirstArraySlice,
+                          unsigned int &FirstMipSlice) = 0;
+#endif
+
+#ifndef _WIN32
     //!
     //! \brief Retrieves libva surface ID.
     //! \note This function is a Linux-only API.
@@ -191,6 +215,7 @@ public:
     //! \retval CM_SUCCESS.
     //!
     CM_RT_API virtual int32_t GetVaSurfaceID(VASurfaceID &iVASurface) = 0;
+#endif
     //!
     //! \brief Hybrid memory copy from this CmSurface2D to system memory with
     //!        system memory strides.

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 
@@ -70,6 +54,10 @@ public:
 
     int32_t GetArrayIndex( uint32_t& arrayIndex );
     int32_t SetArrayIndex( uint32_t arrayIndex );
+#if defined(_WIN32)
+    CM_RT_API int32_t GetD3DSurface(CM_IDIRECT3DSURFACE*& pD3DSurface);
+    int32_t SetD3DSurface(CM_IDIRECT3DSURFACE *pD3DSurf);
+#endif
     uint32_t GetWidth(){return m_width;}
     uint32_t GetHeight() const {return m_height;}
     uint32_t GetSizeperPixel(){return m_sizeperPixel;}
@@ -77,13 +65,21 @@ public:
     void GetSurfaceFormat(CmSurfaceFormatID &surfFormat){ surfFormat =  m_surfFormat;}
     int32_t DoCopy();
     int32_t DoGPUCopy(
+bool doD3DCopy=true
 );
     int32_t setInternalBuffer(void * buffer);
+    void GetD3DFormat(CM_SURFACE_FORMAT &D3DFormat){ D3DFormat =  m_osApiSurfaceFormat;}
+
+#ifdef CM_DX11
+    CM_RT_API int32_t QuerySubresourceIndex(uint32_t& FirstArraySlice, uint32_t& FirstMipSlice) {return CmNotImplemented(__PRETTY_FUNCTION__);};
+#endif
 
     CM_RT_API int32_t ReadSurfaceHybridStrides( unsigned char* pSysMem, CmEvent* pEvent, const uint32_t iWidthStride, const uint32_t iHeightStride, uint64_t sysMemSize = 0xFFFFFFFFFFFFFFFFULL, uint32_t uiOption = 0 ) {return CmNotImplemented(__PRETTY_FUNCTION__);}
     CM_RT_API int32_t WriteSurfaceHybridStrides( const unsigned char* pSysMem, CmEvent* pEvent, const uint32_t iWidthStride, const uint32_t iHeightStride, uint64_t sysMemSize = 0xFFFFFFFFFFFFFFFFULL, uint32_t uiOption = 0 ) {return CmNotImplemented(__PRETTY_FUNCTION__);}
 
+#ifndef _WIN32
     CM_RT_API  int32_t GetVaSurfaceID( VASurfaceID  &iVASurface) {return CmNotImplemented(__PRETTY_FUNCTION__);}
+#endif
 
     CM_RT_API int32_t SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL mem_ctrl) { return CmNotImplemented(__PRETTY_FUNCTION__); }
 
@@ -104,6 +100,11 @@ protected:
 
     int m_nBuffUsed;
     uint32_t m_arrayIndex;
+#if defined(_WIN32)
+    CM_IDIRECT3DSURFACE *m_pD3DSurf;
+#else
+    void *m_pD3DSurf;
+#endif
     bool m_dummySurf;
     uint32_t m_sizeperPixel;
 

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2019 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <chrono>
 
@@ -36,8 +20,10 @@
 
 using namespace GfxEmu::Log::Flags;
 
+#ifdef LIBFFI_FOUND
 #define FFI_BUILDING
 #include <ffi.h>
+#endif
 
 namespace cmrt
 {
@@ -76,23 +62,24 @@ CmEmu_KernelLauncher::CmEmu_KernelLauncher(
     }
 
 #ifdef GFX_EMU_KERNEL_SUPPORT_ENABLED
-    const auto& argSymbData =
+    const auto& paramsDesc =
         GfxEmu::KernelSupport::getKernelDesc(
                         m_kernelName,
                         m_programModule,
-                        m_kernel_func_ptr).args;
+                        m_kernel_func_ptr).params;
 
-    if (argSymbData.size () != m_args.size ()) {
-        if (argSymbData.size ())
+    if (paramsDesc.size () != m_args.size ()) {
+        if (paramsDesc.size ())
             GFX_EMU_FAIL_WITH_MESSAGE(
                 "kernel %s arguments count (%u) doesn't match "
-                "with the one from kernel debug data (%u)\n",
+                "with parameters count from kernel debug data (%u)\n",
                 m_kernelName.c_str(),
-                argSymbData.size (),
-                m_args.size ());
+                m_args.size (),
+                paramsDesc.size ()
+            );
     } else {
         int i = 0;
-        for(const auto& a: argSymbData)
+        for(const auto& a: paramsDesc)
             m_args.at(i++).annotate(a);
     }
 #endif
@@ -102,8 +89,17 @@ CmEmu_KernelLauncher::~CmEmu_KernelLauncher()
 {
 }
 
+void CmEmuMt_Thread::execute() {
+    GFX_EMU_MESSAGE_SCOPE_PREFIX(
+        std::string{""} +
+            "<gid:" + std::to_string(m_group_idx) + ",lid:" + std::to_string(m_local_idx) + "> ");
+    m_kernel_launcher.launch();
+}
+
 void CmEmu_KernelLauncher::launch()
 {
+#ifdef LIBFFI_FOUND
+
     if(m_thread_linear_id == kThreadIdUnset) {
          m_thread_linear_id = cmrt::thread_linear_id ();
     }
@@ -131,9 +127,22 @@ void CmEmu_KernelLauncher::launch()
             isClass |= size > sizeof(uint64_t); // Fallback in case no kernel arguments metadata.
 
             if(isClass) {
+#if defined(_WIN32)
+                classTypeDesc.size = classTypeDesc.alignment = 0;
+                classTypeDesc.type = FFI_TYPE_STRUCT;
+                while (size--) classMemberDescPtrs.push_back(&ffi_type_uchar);
+                classMemberDescPtrs.push_back(nullptr);
+
+                classTypeDesc.elements =
+                    (ffi_type**)classMemberDescPtrs.data();
+
+                typeDescPtr = &classTypeDesc;
+                argPtr = argPtr_;
+#else
                 argPtr__ = argPtr_;
                 argPtr = &argPtr__;
                 typeDescPtr = &ffi_type_pointer;
+#endif
             } else {
                 argPtr = argPtr_;
                 typeDescPtr =
@@ -161,7 +170,7 @@ void CmEmu_KernelLauncher::launch()
 
         auto& ffiArgData = ffiArgsData[argIdx++];
 
-        GFX_EMU_DEBUG_MESSAGE(fKernelLaunch | fExtraDetail,
+        GFX_EMU_MESSAGE(fKernelLaunch | fDetail,
                 "arg %s of type %s info: isPtr: %u, isFloat: %u, isClass: %u, size: %u\n",
             arg.name.c_str (),
             arg.typeName.c_str (),
@@ -182,8 +191,8 @@ void CmEmu_KernelLauncher::launch()
         argsLibFfiV.emplace_back(ffiArgData.argPtr);
     }
 
-    GfxEmu::DebugMessage<fKernelLaunch | fExtraDetail>("calling kernel at %p\n",
-        m_kernel_func_ptr);
+    GFX_EMU_DEBUG_MESSAGE(fKernelLaunch | fInfo, "calling kernel %s at %p\n",
+        m_kernelName.c_str (), m_kernel_func_ptr);
 
     ffi_cif cif;
     if(ffi_prep_cif(&cif, FFI_DEFAULT_ABI, argsLibFfiT.size (), &ffi_type_void, argsLibFfiT.data ())
@@ -198,6 +207,8 @@ void CmEmu_KernelLauncher::launch()
         GFX_EMU_FAIL_WITH_MESSAGE(fKernelLaunch,
             "ffi_prep_cif returned not FFI_OK. Unable to prepare data for and call kernel at %p\n",
                 m_kernel_func_ptr);
+
+#endif // LIBFFI_FOUND
 }
 
 //=============================================================================
@@ -258,7 +269,7 @@ void CmEmuMt_Thread::suspend() {
 }
 
 void CmEmuMt_Thread::resume() {
-    GFX_EMU_DEBUG_MESSAGE(fSched | fExtraDetail, "resuming thread with local idx %u\n", local_idx());
+    GFX_EMU_DEBUG_MESSAGE(fSched | fDetail, "resuming thread with local idx %u\n", local_idx());
 
         if(m_state.load() == State::UNSPAWNED) {
             m_os_thread_ptr.reset(new std::thread(&CmEmuMt_Thread::wrapper, this));
@@ -266,7 +277,7 @@ void CmEmuMt_Thread::resume() {
 
             g_stat_current_os_threads.fetch_add(1);
             GfxEmu::Utils::atomicUpdateMax(g_stat_max_os_threads, g_stat_current_os_threads.load ());
-            GFX_EMU_DEBUG_MESSAGE(fSched | fExtraDetail, "OS threads stat: current: %u, max: %u\n",
+            GFX_EMU_DEBUG_MESSAGE(fSched | fDetail, "OS threads stat: current: %u, max: %u\n",
                 g_stat_current_os_threads.load(),
                 g_stat_max_os_threads.load());
 
@@ -288,7 +299,7 @@ bool CmEmuMt_Thread::next_group() {
 
 //-----------------------------------------------------------------------------
 void CmEmuMt_Thread::complete() {
-    GFX_EMU_MESSAGE(fSched | fExtraDetail,
+    GFX_EMU_MESSAGE(fSched | fDetail,
         "completing thread with local idx %u\n", local_idx());
     m_state.store(CmEmuMt_Thread::State::COMPLETED);
     g_stat_current_os_threads.fetch_sub(1, std::memory_order_relaxed);
@@ -336,12 +347,12 @@ CmEmuMt_Kernel::CmEmuMt_Kernel(
       m_resident_groups_limit(resident_groups_limit),
       m_parallel_threads_limit(parallel_threads_limit) {
 
-      if(GfxEmu::Cfg ().ParallelThreads.isNotDefault ()) {
-        m_parallel_threads_limit = GfxEmu::Cfg ().ParallelThreads.getInt ();
+      if(GfxEmu::Cfg::ParallelThreads ().isNotDefault ()) {
+        m_parallel_threads_limit = GfxEmu::Cfg::ParallelThreads ().getInt ();
       }
 
-      if(GfxEmu::Cfg ().ResidentGroups.isNotDefault ()) {
-        m_resident_groups_limit = GfxEmu::Cfg ().ResidentGroups.getInt ();
+      if(GfxEmu::Cfg::ResidentGroups ().isNotDefault ()) {
+        m_resident_groups_limit = GfxEmu::Cfg::ResidentGroups ().getInt ();
       }
 
       auto get_strides =
@@ -422,14 +433,14 @@ uint32_t CmEmuMt_Kernel::group_count(uint32_t dim) {
 //-----------------------------------------------------------------------------
 bool CmEmuMt_Kernel::run_debug()
 {
-    GFX_EMU_MESSAGE(fSched | fSticky, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "RUNNING IN SINGLE-THREAD NON-FIBERS WORK-ITEMS SCHEDULING MODE.\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Kernels with synchronization will not work in this mode.\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Use only for debugging purposes on simple kernels!\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "NB: Alternative modes for debugging kernels with synchronization are:\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "NB: 1) CM_RT_PARALLEL_THREADS=1\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "NB: See README_CONFIG.md for details.\n");
-    GFX_EMU_MESSAGE(fSched | fSticky, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
+    GFX_EMU_MESSAGE(fSched, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
+    GFX_EMU_MESSAGE(fSched, "RUNNING IN SINGLE-THREAD NON-FIBERS WORK-ITEMS SCHEDULING MODE.\n");
+    GFX_EMU_MESSAGE(fSched, "NB: Kernels with synchronization will not work in this mode.\n");
+    GFX_EMU_MESSAGE(fSched, "NB: Use only for debugging purposes on simple kernels!\n");
+    GFX_EMU_MESSAGE(fSched, "NB: Alternative modes for debugging kernels with synchronization are:\n");
+    GFX_EMU_MESSAGE(fSched, "NB: 1) CM_RT_PARALLEL_THREADS=1\n");
+    GFX_EMU_MESSAGE(fSched, "NB: See README_CONFIG.md for details.\n");
+    GFX_EMU_MESSAGE(fSched, "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--\n");
     CmEmuMt_Thread { m_kernel_launcher, this };
     return true;
 }
@@ -440,7 +451,7 @@ bool CmEmuMt_Kernel::run(double timeout)
     //-----------------------------------------------------------------
     static auto once = 0;
     if(!once++) {
-        GFX_EMU_MESSAGE(fSched | fSticky, "work-items scheduling mode: multi-thread work-items.\n");
+        GFX_EMU_MESSAGE(fSched, "work-items scheduling mode: multi-thread work-items.\n");
         GfxEmu::Log::adviceToEnable(fSched, "for more info on scheduling.\n");
     }
     GFX_EMU_MESSAGE(fSched, "work-groups: %d\n", m_group_count);

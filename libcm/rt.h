@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2019 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 #ifndef CM_MT_RT_INCLUDED
@@ -242,7 +226,7 @@ public:
     uint32_t            local_idx() const { return m_local_idx; }
     uint32_t            group_idx() const { return m_group_idx; }
     bool                next_group();
-    void                execute() { m_kernel_launcher.launch(); }
+    void                execute();
 
     CmEmuMt_Kernel* kernel() const { return m_kernel; }
     CmEmuMt_GroupBarrier* simple_barrier() const { return m_resources->simple_barrier.get(); }
@@ -327,7 +311,7 @@ void         set_slm_size(unsigned int size);
 size_t       get_slm_size();
 unsigned int alloc_slm(unsigned int bufferSize);
 
-void this_thread_yield();
+CM_API void this_thread_yield();
 
 }  // namespace cmrt
 

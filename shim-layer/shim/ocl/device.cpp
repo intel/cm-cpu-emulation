@@ -1,31 +1,15 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <cassert>
 #include <unordered_map>
 
-#if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+#if defined(_WIN32) || __clang__ || __GNUC__ > 7
 # include <filesystem>
 namespace fs = std::filesystem;
 #else
@@ -33,7 +17,9 @@ namespace fs = std::filesystem;
 namespace fs = std::experimental::filesystem;
 #endif
 
+#if !defined(_WIN32)
 #include <dlfcn.h>
+#endif // !defined(_WIN32)
 
 #include "device.h"
 #include "platform.h"
@@ -43,6 +29,10 @@ namespace shim {
 namespace cl {
 
 static std::vector<std::string> IncludePath() {
+#if defined(_WIN32)
+  assert(!"Online compilation is not implemented on Windows");
+  return {};
+#else // defined(_WIN32)
   Dl_info info;
   if (!dladdr(reinterpret_cast<void*>(IncludePath), &info)) {
     throw std::runtime_error("Cannot get CM EMU headers");
@@ -64,9 +54,14 @@ static std::vector<std::string> IncludePath() {
   }
 
   return result;
+#endif // defined(_WIN32)
 }
 
 static std::vector<std::string> LibPath() {
+#if defined(_WIN32)
+  assert(!"Online compilation is not implemented on Windows");
+  return {};
+#else // defined(_WIN32)
   Dl_info info;
   if (!dladdr(reinterpret_cast<void*>(IncludePath), &info)) {
     throw std::runtime_error("Cannot get CM EMU headers");
@@ -77,6 +72,7 @@ static std::vector<std::string> LibPath() {
 
   result.push_back(emudir);
   return result;
+#endif // defined(_WIN32)
 }
 
 Device::Device(cl_icd_dispatch *dispatch) {
@@ -124,6 +120,10 @@ std::string_view Device::Name() const {
 }
 
 std::string Device::CompilerCommand() const {
+#if defined(_WIN32)
+  assert(!"Online compilation is not implemented on Windows");
+  return {};
+#else // defined(_WIN32)
   using namespace std::literals;
 #define P(platform, flags) { PLATFORM_INTEL_ ## platform, flags }
   static const std::unordered_map<int, std::string_view> platforms = {
@@ -134,7 +134,6 @@ std::string Device::CompilerCommand() const {
     P(XEHP_SDV, "-DCM_GEN12_5 -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
   };
 #undef P
-
   std::string result = "g++ -c -g2 -fPIC -rdynamic -x c++ -std=c++17 -Wno-attributes -DCMRT_EMU";
 
   for (auto &inc: IncludePath()) {
@@ -149,9 +148,14 @@ std::string Device::CompilerCommand() const {
   }
 
   return result;
+#endif // defined(_WIN32)
 }
 
 std::string Device::LinkerCommand() const {
+#if defined(_WIN32)
+  assert(!"Online compilation is not implemented on Windows");
+  return {};
+#else // defined(_WIN32)
   std::string result = "g++ -g2 -Wl,--no-as-needed -shared -rdynamic -lcm";
 
   for (auto &lib: LibPath()) {
@@ -160,6 +164,7 @@ std::string Device::LinkerCommand() const {
   }
 
   return result;
+#endif // defined(_WIN32)
 }
 
 } // namespace cl
@@ -285,8 +290,13 @@ SHIM_CALL(clGetDeviceInfo)(cl_device_id    device,
       return SetResult<cl_bool>(CL_TRUE, param_value_size,
                                 param_value, param_value_size_ret);
     case CL_DEVICE_COMPILER_AVAILABLE:
+#if defined(_WIN32)
+      return SetResult<cl_bool>(CL_FALSE, param_value_size,
+                                param_value, param_value_size_ret);
+#else // defined(_WIN32)
       return SetResult<cl_bool>(CL_TRUE, param_value_size,
                                 param_value, param_value_size_ret);
+#endif // defined(_WIN32)
     case CL_DEVICE_EXECUTION_CAPABILITIES:
 
     // case CL_DEVICE_QUEUE_ON_HOST_PROPERTIES:
@@ -300,7 +310,6 @@ SHIM_CALL(clGetDeviceInfo)(cl_device_id    device,
                                           param_value_size, param_value,
                                           param_value_size_ret);
     case CL_DRIVER_VERSION:
-
       return SetResult("1.0"sv, param_value_size,
                        param_value, param_value_size_ret);
     case CL_DEVICE_PROFILE:
@@ -327,8 +336,13 @@ SHIM_CALL(clGetDeviceInfo)(cl_device_id    device,
       return SetResult(s, param_value_size, param_value, param_value_size_ret);
     }
     case CL_DEVICE_LINKER_AVAILABLE:
+#if defined(_WIN32)
+      return SetResult<cl_bool>(CL_FALSE, param_value_size,
+                                param_value, param_value_size_ret);
+#else // defined(_WIN32)
       return SetResult<cl_bool>(CL_TRUE, param_value_size,
                                 param_value, param_value_size_ret);
+#endif // defined(_WIN32)
     case CL_DEVICE_BUILT_IN_KERNELS:
     case CL_DEVICE_IMAGE_MAX_BUFFER_SIZE:
     case CL_DEVICE_IMAGE_MAX_ARRAY_SIZE:

@@ -1,53 +1,15 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CMRTLIB____SHARE_CM_PRIV_DEF_H_
 #define CMRTLIB____SHARE_CM_PRIV_DEF_H_
 
 #define CM_ALIGN_CEIL(_a, _alignment) (((_a) + ((_alignment)-1)) & (~((_alignment)-1)))
-
-static const int skl_max_threads[5] = {0, 98, 161, 329, 497};
-static const int bxt_max_threads[8] = {0, -1, -1, -1, -1, 108, 72, 144};
-static const int kbl_max_threads[8] = { 0, -1, 161, 329 };
-static const int icllp_max_threads[3] = {0, 224, 448};
-static const int tgllp_max_threads[] = {0, 224, 672};
-static const int xehp_sdv_max_threads[] = {0, 1024, 2048, 4096};
-
-static const int skl_threads_per_eu[5] = {0, 7, 7, 7, 7};
-static const int bxt_threads_per_eu[8] = {0, -1, -1, -1, -1, 6, 6, 6}; //gt1,gt2,gt3,gt4 not defined
-static const int kbl_threads_per_eu[8] = { 0, -1, 7, 7}; //gt1,gt4 not defined
-static const int icllp_threads_per_eu[3] = { 0, 7, 7};
-static const int tgllp_threads_per_eu[] = {0, 7, 7};
-static const int xehp_sdv_threads_per_eu[] = {0, 8, 8, 8};
-
-static const int skl_eu_per_subslice[5] = {0, 8, 8, 8, 8};
-static const int bxt_eu_per_subslice[8] = {0, -1, -1, -1, -1, 6, 6, 8}; //gt1,gt2,gt3,gt4 not defined
-static const int kbl_eu_per_subslice[8] = { 0, -1, 8, 8 }; //gt1, gt4 not defined
-static const int icllp_eu_per_subslice[3] = { 0, 8, 8};
-static const int tgllp_eu_per_subslice[]  = {0, 16, 16};
-static const int xehp_sdv_eu_per_subslice[]    = {0, 16, 16, 16};
-static const int xehp_sdv_max_ccs_index[] = {0, 1, 2, 4};
 
 // 2047x2047 (max TS size) * 256 bytes(color bits)  per walker, platform GEN11+(gen11+)
 #define CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS  256

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "emu_log.h"
 #ifdef GFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED
@@ -36,11 +20,13 @@
 #include <sstream>
 #include <string>
 
+#ifndef _WIN32
+
 #include <dlfcn.h>
 #include <cxxabi.h>
 #include <execinfo.h>
-//#include <unistd.h>
-//#include <stdio.h>
+
+#endif
 
 #include <csignal>
 
@@ -49,6 +35,16 @@
 
 namespace GfxEmu {
 namespace Log {
+
+    MessagePrefixGuard::MessagePrefixGuard(const std::string& p) {
+        prevPrefix.push (curPrefix);
+        curPrefix = prevPrefix.top() + p;
+    }
+
+    MessagePrefixGuard::~MessagePrefixGuard() {
+        curPrefix = prevPrefix.top ();
+        prevPrefix.pop ();
+    }
 
 void setLogFile(const std::string& file) {
     if(LogFile_ != stdout)
@@ -62,7 +58,7 @@ void setLogFile(const std::string& file) {
 
 void adviceToEnable(Flags::Type flag, const std::string& msg) {
     if(!Flags::isEnabled(flag)) {
-        GFX_EMU_MESSAGE(Flags::fCfg | flag | Flags::fSticky,
+        GFX_EMU_MESSAGE(Flags::fCfg | flag,
             std::string{"Enable %s logging channel "} + msg,
                 Flags::toStr(flag));
     }
@@ -70,13 +66,12 @@ void adviceToEnable(Flags::Type flag, const std::string& msg) {
 
 namespace Flags {
 
-// --> static data wrappers to ensure initialization.
-auto StaticData_thread_local_enabledFlags = []()->auto& {
-    thread_local static std::map <Type,bool> map_;
-    return map_;
+std::map<Type,bool>& StaticData_thread_local_enabledFlags () {
+    thread_local static auto& enabledFlags = *(new std::map <Type,bool>);
+    return enabledFlags;
 };
 
-auto StaticData_msgToFlagMap = []()-> const auto& {
+const std::vector<std::pair<const char*,Flags::Type>>& StaticData_msgToFlagMap () {
     static const std::vector<std::pair<const char*,Flags::Type>> msgToFlag = {
 #define GFX_EMU_DEBUG_MINIMAL_LEVEL(...)
 #define GFX_EMU_DEBUG_LEVEL(msg,constant,num) { msg, Flags:: constant },
@@ -95,14 +90,12 @@ GFX_EMU_API bool isEnabled (Type f) {
     try { return cache.at(f); }
     catch (...) {
         cache[f] =
-               (f & (fSticky | fCritical)) || ( // Sticky and Critical messages are always displayed.
-                   (f & GfxEmu::CfgCache::LogChannels) &&
-                   (!(f & fLevelsMask) ||
-                        (
-                            (f & fLevelsMask) >= GfxEmu::CfgCache::MinimalLevel
-                        )
-                    )
-               );
+           (f & GfxEmu::CfgCache::LogChannels) &&
+           (!(f & fLevelsMask) ||
+                (
+                    (f & fLevelsMask) >= GfxEmu::CfgCache::MinimalLevel
+                )
+           );
         return cache[f];
     }
 }
@@ -138,35 +131,33 @@ GFX_EMU_API const char* toStr(const GfxEmu::Log::Flags::Type flags) {
     if(!flags) return "";
 
     static_assert(std::is_same_v<GfxEmu::Log::Flags::Type,uint64_t>);
+
 #define GFX_EMU_DEBUG_MINIMAL_LEVEL(...)
 #define GFX_EMU_DEBUG_LEVEL(msg,constant,num) { Flags:: constant , msg },
 #define GFX_EMU_DEBUG_FLAG(msg,constant,shift,enabled) { Flags:: constant , msg },
-        static std::map<Flags::Type, std::string>
-            flagsToStr_ {
+        static const auto& flagsToStr_ = *(new std::map<Flags::Type, std::string>
+           {
 #include "emu_log_flags.h"
-       };
+           }
+        );
 #undef GFX_EMU_DEBUG_MINIMAL_LEVEL
 #undef GFX_EMU_DEBUG_LEVEL
 #undef GFX_EMU_DEBUG_FLAG
-    static std::unordered_map<
+
+    thread_local static auto& cache_ = *(new std::unordered_map<
         GfxEmu::Log::Flags::Type,
         std::string
-    > cache_ = {{0, ""}};
+    > ({{0, ""}}));
 
     try { return cache_.at(flags).c_str(); }
     catch (...) {
-        static std::mutex cacheLock;
-        std::lock_guard guard {cacheLock};
         const auto it = cache_.find(flags);
         if(it != cache_.end ()) return it->second.c_str ();
         auto& out = cache_[flags];
         for(const auto& fl: flagsToStr_) {
             if(flags & fl.first)
                 out += out.size () ?
-                    ( fl.first == fSticky ?
-                        "*" :
-                        std::string(",") + fl.second
-                    ) :
+                    std::string(",") + fl.second :
                     fl.second;
         }
         return out.c_str ();
@@ -175,11 +166,17 @@ GFX_EMU_API const char* toStr(const GfxEmu::Log::Flags::Type flags) {
 
 };
 
+GFX_EMU_API bool warningsEnabled__ ( ) {
+    return !GfxEmu::Cfg::LogWarnings();
+}
+
 #define SIG_AND_NAME(v) {v, #v}
 const static std::unordered_map<int,const char*> signals = {
         SIG_AND_NAME(SIGABRT),
         SIG_AND_NAME(SIGSEGV),
+#ifndef _WIN32
         SIG_AND_NAME(SIGBUS),
+#endif
         SIG_AND_NAME(SIGILL),
         SIG_AND_NAME(SIGFPE)
     };
@@ -187,29 +184,38 @@ const static std::unordered_map<int,const char*> signals = {
 
 static std::atomic_flag backtraceOnAbortsFlag;
 
+#ifndef _WIN32
 void SigHandler_(int signum, siginfo_t* si, void* unused )
+#else
+void SigHandler_(int signum)
+#endif
 {
     if(backtraceOnAbortsFlag.test_and_set ()) return; // only first failed thread, or the below shall hang.
-
-    GfxEmu::ErrorMessage("--------------------------------------------------------------------------\n");
-    GfxEmu::FailWithMessage<true>(
-        signum,
-        "Received signal %u %s. Printing backtrace and terminating.\n\n",
+    GFX_EMU_ERROR_MESSAGE(
+        "--------------------------------------------------------------------------\n"
+        "Received signal %u %s. Terminating.\n\n",
         signum,
         signals.at(signum)
     );
+    GfxEmu::Utils::terminate(signum,true);
 }
 
 struct HandleAborts_ {
     HandleAborts_ ()
     {
+#ifndef _WIN32
         struct sigaction sa;
         sa.sa_flags = SA_SIGINFO;
         sa.sa_sigaction = SigHandler_;
         sigemptyset( &sa.sa_mask );
+#endif
 
         for (const auto& signal: signals) {
+#ifdef _WIN32
+            ::signal(signal.first, SigHandler_);
+#else
             sigaction(signal.first, &sa, NULL);
+#endif
         }
     }
 };
@@ -225,6 +231,27 @@ void printBacktrace() {
     GFX_EMU_MESSAGE("------------------- begin backtrace -------------------\n");
 
 #ifdef GFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED
+#if defined(_WIN32)
+    const ULONG framesToSkip = 0;
+    const ULONG framesToCapture = 128;
+    void* backTrace[framesToCapture] {};
+    ULONG backTraceHash = 0;
+
+    const USHORT nFrame = CaptureStackBackTrace(
+        framesToSkip,
+        framesToCapture,
+        backTrace,
+        &backTraceHash
+    );
+
+    for(auto iFrame = 0; iFrame < nFrame; iFrame++)
+        PrintMessage("[%3d] = %s\n",
+            iFrame,
+            GfxEmu::DbgSymb::obj().addrToSymbDesc(backTrace[iFrame]).name.c_str ()
+        );
+
+    PrintMessage("backTraceHash = %08x\n", backTraceHash);
+#else
 
     void *callstack[128];
     const int nMaxFrames = sizeof(callstack) / sizeof(callstack[0]);
@@ -274,8 +301,8 @@ void printBacktrace() {
 
     GFX_EMU_MESSAGE(traceStream.str());
     GFX_EMU_MESSAGE("------------------- end backtrace -------------------\n");
+#endif
 #endif // GFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED
 }
 };
 };
-

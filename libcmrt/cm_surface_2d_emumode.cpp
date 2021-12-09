@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 #include "cm_surface_2d_emumode.h"
@@ -28,16 +12,20 @@
 #include "cm.h"
 #include "cm_mem_fast_copy.h"
 
+#ifdef __GNUC__
 extern void
 CM_unregister_buffer_emu(SurfaceIndex buf_id, bool copy);
 extern void
 CM_register_buffer_emu(SurfaceIndex buf_id, CmBufferType bclass, void *src, uint width, uint height,
                        CmSurfaceFormatID surfFormat, uint depth, uint pitch);
 
+#endif
+
 CmSurface2DEmu::CmSurface2DEmu( uint32_t width, uint32_t height,CM_SURFACE_FORMAT osApiSurfaceFmt,
                                CmSurfaceFormatID surfFormat , bool isCmCreated, uint32_t sizePerPixel,
                                CmSurfaceManagerEmu* surfaceManager):
     CmSurfaceEmu(isCmCreated, surfaceManager),
+    m_pD3DSurf(nullptr),
     m_sizeperPixel(sizePerPixel)
 {
     m_width = width;
@@ -62,8 +50,20 @@ int32_t CmSurface2DEmu::Initialize( uint32_t index, void* &pSysMem, bool dummySu
     switch( this->m_osApiSurfaceFormat )
     {
     case CM_SURFACE_FORMAT_NV12:
+#if 0
+        temp=(int)ceil((double)m_width/64);
+        m_width=temp*64*m_sizeperPixel;
+#endif
+        //set UV plane's height to roundup(m_height/2) for supporting NV12 format with odd height(DX9 only)
         m_height += (m_height + 1)/2;
         break;
+#if defined(_WIN32)
+    case CM_SURFACE_FORMAT_P016:
+    case CM_SURFACE_FORMAT_P010:
+         m_width *= m_sizeperPixel;
+         m_height += m_height/2;
+         break;
+#endif
     default:
         m_width *= m_sizeperPixel;
     }
@@ -107,7 +107,21 @@ int32_t CmSurface2DEmu::RegisterSurface(uint32_t index)
     switch( this->m_osApiSurfaceFormat )
     {
     case CM_SURFACE_FORMAT_NV12:
+#if defined(_WIN32)
+    case CM_SURFACE_FORMAT_P016:
+    case CM_SURFACE_FORMAT_P010:
+#endif
         {
+#if 0
+        CM_register_buffer_emu(*pind1, GEN4_INPUT_OUTPUT_BUFFER, m_buffer, m_width, m_height*2/3, this->m_surfFormat);
+        if(CheckStatus(pind1->get_data())==CM_FAILURE)
+            return CM_OUT_OF_HOST_MEMORY;
+        pind2 = new SurfaceIndex(index+GENX_SURFACE_UV_PLANE);
+        CM_register_buffer_emu(index+GENX_SURFACE_UV_PLANE, GEN4_INPUT_OUTPUT_BUFFER, (char *)m_buffer+m_width*m_height*2/3, m_width, m_height-m_height*2/3, this->m_surfFormat);
+        if(CheckStatus(pind2->get_data())==CM_FAILURE)
+            return CM_OUT_OF_HOST_MEMORY;
+        delete pind2;
+#else
         cm_list<CmEmulSys::iobuffer>::iterator buff_iter = nullptr;
         CM_register_buffer_emu(*pind1, GEN4_INPUT_OUTPUT_BUFFER, m_buffer, m_width, m_height, this->m_surfFormat, 1, 0);
         if (CheckStatus(pind1->get_data()) == CM_FAILURE)
@@ -126,7 +140,6 @@ int32_t CmSurface2DEmu::RegisterSurface(uint32_t index)
 
         // Let's consider the pre/post execution copy as legacy
         // and comment it out for now.
-
         //CmFastMemCopyFromWC((char *)buff_iter->p_volatile + m_width * buff_iter->height, (char *)m_buffer + m_width * buff_iter->height,
         //    this->m_width, GetCpuInstructionLevel());
 
@@ -145,6 +158,7 @@ int32_t CmSurface2DEmu::RegisterSurface(uint32_t index)
         new_buff.p_volatile = (char *) buff_iter->p_volatile + m_width * buff_iter->height;
         CmEmulSys::iobuffers.add(new_buff);
 
+#endif
         m_nBuffUsed=2;
         break;
         }
@@ -169,6 +183,73 @@ int32_t CmSurface2DEmu::RegisterSurface(uint32_t index)
     delete pind1;
     return CM_SUCCESS;
 }
+
+#if defined(_WIN32)
+#ifdef CM_DX9
+int32_t CmSurface2DEmu::SetD3DSurface(IDirect3DSurface9 *pD3DSurf)
+{
+    int32_t result = CM_SUCCESS;
+    D3DSURFACE_DESC desc;
+    HRESULT hRes = pD3DSurf->GetDesc( &desc );
+    this->m_pD3DSurf = pD3DSurf;
+    D3DLOCKED_RECT rect;
+    hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_READONLY );
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_FAILURE;
+    }
+    this->m_SMUPSurface=true;
+    uint32_t pitch = rect.Pitch;
+
+    uint8_t *pSurf = ( uint8_t *)rect.pBits;
+    uint8_t *pDst = ( uint8_t *)this->m_buffer;
+    for (uint32_t i=0; i < this->m_height; i++)
+    {
+        CmFastMemCopyFromWC(pDst, pSurf, this->m_width, GetCpuInstructionLevel());
+        pSurf += pitch;
+        pDst += this->m_width;
+    }
+
+    hRes = m_pD3DSurf->UnlockRect();
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_FAILURE;
+    }
+
+    return result;
+}
+#elif defined CM_DX11
+int32_t CmSurface2DEmu::SetD3DSurface(ID3D11Texture2D *pD3DSurf)
+{
+    if (this->m_pD3DSurf == nullptr)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_NULL_POINTER;
+    }
+    ID3D11Device *pD3D11Device = nullptr;
+    ID3D11DeviceContext* pD3D11DeviceContext = nullptr;
+    pD3D11Device->GetImmediateContext(&pD3D11DeviceContext);
+    D3D11_MAPPED_SUBRESOURCE MappedResource;
+    HRESULT hRes = pD3D11DeviceContext->Map((ID3D11Resource*)m_pD3DSurf, 0, D3D11_MAP_READ, 0, &MappedResource);
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to map a surface!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_LOCK_SURFACE_FAIL;
+    }
+    uint8_t *pSurf = ( uint8_t *)MappedResource.pData;
+    uint8_t *pDst = ( uint8_t *)this->m_buffer;
+    CmFastMemCopyFromWC(pDst, pSurf, this->m_width * this->m_height, GetCpuInstructionLevel());
+    pD3D11DeviceContext->Unmap((ID3D11Resource*)m_pD3DSurf, 0);
+    return CM_SUCCESS;
+
+}
+#endif
+#endif
 
 int32_t CmSurface2DEmu::Create( uint32_t index, uint32_t sizePerPixel, uint32_t width, uint32_t height, CM_SURFACE_FORMAT osApiSurfaceFmt, CmSurfaceFormatID surfFormat , bool isCmCreated, CmSurface2DEmu* &pSurface, void* &pSysMem, bool dummySurf, CmSurfaceManagerEmu* surfaceManager)
 {
@@ -209,7 +290,6 @@ CM_RT_API int32_t CmSurface2DEmu::WriteSurface( const unsigned char* pSysMem, Cm
     {
         for (uint32_t i=0; i < this->m_height; i++)
         {
-            // this is for argb
             CmSafeMemCopy( temp_buffer, pSysMem, this->m_OriginalWidth );
             temp_buffer += m_width;
             pSysMem += this->m_OriginalWidth;
@@ -217,7 +297,64 @@ CM_RT_API int32_t CmSurface2DEmu::WriteSurface( const unsigned char* pSysMem, Cm
     }else
     CmSafeMemCopy( this->m_buffer, pSysMem, this->m_height*this->m_width );
 
+#if defined(_WIN32)
+#ifdef CM_DX9
+    if(this->m_pD3DSurf != nullptr)
+    {
+        D3DSURFACE_DESC desc;
+        HRESULT hRes = m_pD3DSurf->GetDesc( &desc );
+        D3DLOCKED_RECT rect;
+        hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_DISCARD );
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+        this->m_SMUPSurface=true;
+        uint32_t pitch = rect.Pitch;
+
+        uint8_t *pSurf = ( uint8_t *)rect.pBits;
+        uint8_t *pSrc = ( uint8_t *)this->m_buffer;
+        for (uint32_t i=0; i < this->m_height; i++)
+        {
+            CmFastMemCopyFromWC(pSurf, pSrc, m_width, GetCpuInstructionLevel());
+            pSurf += pitch;
+            pSrc += this->m_width;
+        }
+
+        hRes = m_pD3DSurf->UnlockRect();
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+    }
+#elif defined CM_DX11
+    if(this->m_pD3DSurf != nullptr)
+    {
+        ID3D11Device *pD3D11Device = nullptr;
+        ID3D11DeviceContext* pD3D11DeviceContext = nullptr;
+        pD3D11Device->GetImmediateContext(&pD3D11DeviceContext);
+        D3D11_MAPPED_SUBRESOURCE MappedResource;
+        HRESULT hRes = pD3D11DeviceContext->Map((ID3D11Resource*)m_pD3DSurf, 0, D3D11_MAP_READ, 0, &MappedResource);
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to map a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_LOCK_SURFACE_FAIL;
+        }
+        uint8_t *pSurf = ( uint8_t *)MappedResource.pData;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        CmFastMemCopyFromWC(pSurf, pDst, this->m_width * this->m_height, GetCpuInstructionLevel());
+        pD3D11DeviceContext->Unmap((ID3D11Resource*)m_pD3DSurf, 0);
+    }
+#endif
+#endif
+
     return DoGPUCopy(
+        false
     );
 }
 
@@ -270,6 +407,18 @@ CM_RT_API int32_t CmSurface2DEmu::GetIndex( SurfaceIndex*& pIndex )
     return CM_SUCCESS;
 }
 
+#if defined(_WIN32)
+CM_RT_API int32_t CmSurface2DEmu::GetD3DSurface(CM_IDIRECT3DSURFACE* &pD3DSurface)
+{
+    if(!this->m_IsCmCreated)
+        pD3DSurface =  this->m_pD3DSurf;
+    else
+    {
+        pD3DSurface = nullptr;
+    }
+    return CM_SUCCESS;
+}
+#endif
 CmSurface2DEmu::~CmSurface2DEmu(){
     int index=0;
     SurfaceIndex* pIndex;
@@ -277,6 +426,10 @@ CmSurface2DEmu::~CmSurface2DEmu(){
     index = pIndex->get_data();
 
     if(CM_SURFACE_FORMAT_NV12 == this->m_osApiSurfaceFormat
+#if defined(_WIN32)
+       || CM_SURFACE_FORMAT_P010 == this->m_osApiSurfaceFormat ||
+       CM_SURFACE_FORMAT_P016 == this->m_osApiSurfaceFormat
+#endif
        )
     {
         cm_list<CmEmulSys::iobuffer>::iterator buff_iter = CmEmulSys::search_buffer(index + GENX_SURFACE_UV_PLANE);
@@ -315,6 +468,14 @@ CM_RT_API int32_t CmSurface2DEmu::ReadSurfaceStride( unsigned char* pSysMem, CmE
     }
     this->GetIndex(pIndex);
     index = pIndex->get_data();
+#if 0
+    for(int i=0;i<m_nBuffUsed;i++)
+    {
+        SurfaceIndex *pIndex = new SurfaceIndex(index+i);
+        CM_unregister_buffer_emu(*pIndex);
+        delete pIndex;
+    }
+#endif
     unsigned char* tempSrc = (unsigned char *)this->m_buffer;
     if(stride != this->m_width)
     {
@@ -388,7 +549,6 @@ int32_t CmSurface2DEmu::DoCopy()
         case CM_SURFACE_FORMAT_P016:
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight; i++)
             //{
             //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
@@ -403,7 +563,6 @@ int32_t CmSurface2DEmu::DoCopy()
 
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight/2; i++)
             //{
             //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width + m_width*m_height*2/3,
@@ -413,9 +572,10 @@ int32_t CmSurface2DEmu::DoCopy()
             //}
             break;
         default:
+            //gets around issue when two surfaces share the same src surface or d3d surface, and only one is used in the kernel.
+            //so value is not over written with stale data.
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //if(!memcmp(m_buffer, buff_iter->p_volatile, this->m_width*this->m_height))
             //{
                 return CM_SUCCESS;
@@ -423,7 +583,6 @@ int32_t CmSurface2DEmu::DoCopy()
 
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight; i++)
             //{
             //    CmFastMemCopyFromWC((char*)m_buffer + m_XOffset + m_YOffset* m_width + i*m_width,
@@ -434,10 +593,73 @@ int32_t CmSurface2DEmu::DoCopy()
             break;
     }
 
+    //Incase surface was created with D3D surface
+#if defined(_WIN32)
+#ifdef CM_DX9
+    if(this->m_pD3DSurf != nullptr)
+    {
+        D3DSURFACE_DESC desc;
+        HRESULT hRes = m_pD3DSurf->GetDesc( &desc );
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to get Descriptor!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+        D3DLOCKED_RECT rect;
+        hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_READONLY );
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+
+        uint32_t pitch = rect.Pitch;
+
+        uint8_t *pSurf = ( uint8_t *)rect.pBits;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        for (uint32_t i=0; i < this->m_height; i++)
+        {
+            CmFastMemCopyFromWC(pSurf, pDst,  this->m_width, GetCpuInstructionLevel());
+            pSurf += pitch;
+            pDst += this->m_width;
+        }
+
+        hRes = m_pD3DSurf->UnlockRect();
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+    }
+#elif defined CM_DX11
+    if(this->m_pD3DSurf != nullptr)
+    {
+        ID3D11Device *pD3D11Device = nullptr;
+        ID3D11DeviceContext* pD3D11DeviceContext = nullptr;
+        pD3D11Device->GetImmediateContext(&pD3D11DeviceContext);
+        D3D11_MAPPED_SUBRESOURCE MappedResource;
+        HRESULT hRes = pD3D11DeviceContext->Map((ID3D11Resource*)m_pD3DSurf, 0, D3D11_MAP_READ, 0, &MappedResource);
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to map a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_LOCK_SURFACE_FAIL;
+        }
+        uint8_t *pSurf = ( uint8_t *)MappedResource.pData;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        CmFastMemCopyFromWC( pSurf, pDst, this->m_width * this->m_height, GetCpuInstructionLevel());
+        pD3D11DeviceContext->Unmap((ID3D11Resource*)m_pD3DSurf, 0);
+    }
+#endif
+#endif
     return CM_SUCCESS;
 }
 
 int32_t CmSurface2DEmu::DoGPUCopy(
+    bool doD3DCopy
 )
 {
     if(m_dummySurf)
@@ -449,6 +671,62 @@ int32_t CmSurface2DEmu::DoGPUCopy(
     if(buff_iter->p_volatile == nullptr)
         return CM_FAILURE;
 
+#if defined(_WIN32)
+#ifdef CM_DX9
+    if(this->m_pD3DSurf != nullptr && doD3DCopy)
+    {
+        D3DSURFACE_DESC desc;
+        HRESULT hRes = m_pD3DSurf->GetDesc( &desc );
+        D3DLOCKED_RECT rect;
+        hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_READONLY );
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+        this->m_SMUPSurface=true;
+        uint32_t pitch = rect.Pitch;
+
+        uint8_t *pSurf = ( uint8_t *)rect.pBits;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        for (uint32_t i=0; i < this->m_height; i++)
+        {
+            CmFastMemCopyFromWC(pDst, pSurf, this->m_width, GetCpuInstructionLevel());
+            pSurf += pitch;
+            pDst += this->m_width;
+        }
+
+        hRes = m_pD3DSurf->UnlockRect();
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+    }
+#elif CM_DX11
+    if(this->m_pD3DSurf != nullptr && doD3DCopy)
+    {
+        ID3D11Device *pD3D11Device = nullptr;
+        ID3D11DeviceContext* pD3D11DeviceContext = nullptr;
+        pD3D11Device->GetImmediateContext(&pD3D11DeviceContext);
+        D3D11_MAPPED_SUBRESOURCE MappedResource;
+        HRESULT hRes = pD3D11DeviceContext->Map((ID3D11Resource*)m_pD3DSurf, 0, D3D11_MAP_READ, 0, &MappedResource);
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to map a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_LOCK_SURFACE_FAIL;
+        }
+        uint8_t *pSurf = ( uint8_t *)MappedResource.pData;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        CmFastMemCopyFromWC( pDst, pSurf, this->m_width * this->m_height, GetCpuInstructionLevel());
+        pD3D11DeviceContext->Unmap((ID3D11Resource*)m_pD3DSurf, 0);
+    }
+#endif
+#endif
+
     switch( m_newFormat)
     {
         case CM_SURFACE_FORMAT_NV12:
@@ -456,7 +734,6 @@ int32_t CmSurface2DEmu::DoGPUCopy(
         case CM_SURFACE_FORMAT_P016:
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
@@ -471,7 +748,6 @@ int32_t CmSurface2DEmu::DoGPUCopy(
 
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight / 2; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*m_newWidth,
@@ -483,7 +759,6 @@ int32_t CmSurface2DEmu::DoGPUCopy(
         default:
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint32_t i = 0; i < m_newHeight; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*m_newWidth,
@@ -526,7 +801,47 @@ CM_RT_API int32_t CmSurface2DEmu::InitSurface(const unsigned long initValue, CmE
         CmDwordMemSet( m_buffer, initValue, m_height*m_width );
     }
 
+#if defined(_WIN32)
+#ifdef CM_DX9
+    if(this->m_pD3DSurf != nullptr)
+    {
+        D3DSURFACE_DESC desc;
+        HRESULT hRes = m_pD3DSurf->GetDesc( &desc );
+        D3DLOCKED_RECT rect;
+        hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_DISCARD );
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+        this->m_SMUPSurface=true;
+        uint32_t pitch = rect.Pitch;
+
+        uint8_t *pSurf = ( uint8_t *)rect.pBits;
+        uint8_t *pSrc = ( uint8_t *)m_buffer;
+        for (uint32_t i=0; i < m_height; i++)
+        {
+            CmFastMemCopyFromWC(pSurf, pSrc, m_width, GetCpuInstructionLevel());
+            pSurf += pitch;
+            pSrc += m_width;
+        }
+
+        hRes = m_pD3DSurf->UnlockRect();
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_FAILURE;
+        }
+    }
+#elif defined CM_DX11
+    //To Do: Fill this in when DX11 Write Surface is complete
+#endif
+#endif // _WIN32
+
     return DoGPUCopy(
+false
     );
 }
 
@@ -611,7 +926,6 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
 
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint i = 0; i < surfStateParam->height; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
@@ -632,7 +946,6 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
 
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint i = 0; i < surfStateParam->height/2; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iterUV->p_volatile + i*surfStateParam->width*bytesPerPixel,
@@ -653,7 +966,6 @@ int32_t CmSurface2DEmu::RegisterAliasSurface(SurfaceIndex* & aliasIndex,
             buff_iter->p = buff_iter->p_volatile;
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //for (uint i = 0; i < surfStateParam->height; i++)
             //{
             //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*surfStateParam->width*bytesPerPixel,
@@ -703,7 +1015,6 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
                 case CM_SURFACE_FORMAT_P016:
                     // Let's consider the pre/post execution copy as legacy
                     // and comment it out for now.
-
                     //for (uint32_t i = 0; i < iter->second.height; i++)
                     //{
                     //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
@@ -718,7 +1029,6 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
 
                     // Let's consider the pre/post execution copy as legacy
                     // and comment it out for now.
-
                     //for (uint32_t i = 0; i < iter->second.height/2; i++)
                     //{
                     //    CmFastMemCopyFromWC((char *)buff_iter2->p_volatile + i*iter->second.width,
@@ -730,7 +1040,6 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
                 default:
                     // Let's consider the pre/post execution copy as legacy
                     // and comment it out for now.
-
                     //for (uint32_t i = 0; i < iter->second.height; i++)
                     //{
                     //    CmFastMemCopyFromWC((char *)buff_iter->p_volatile + i*iter->second.width,
@@ -746,4 +1055,3 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
     }
     return CM_SUCCESS;
 }
-

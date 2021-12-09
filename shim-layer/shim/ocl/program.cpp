@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "program.h"
 
@@ -84,7 +68,6 @@ SHIM_CALL(clCreateProgramWithBinary)(cl_context                     context,
   shim::IntrusivePtr<shim::cl::Context> ctx(static_cast<shim::cl::Context*>(context));
 
   ERRCODE(CL_SUCCESS);
-
   if(binary_status)
     binary_status[0] = CL_INVALID_VALUE;
 
@@ -213,6 +196,10 @@ SHIM_CALL(clCompileProgram)(cl_program           program,
                             void (CL_CALLBACK *  pfn_notify)(cl_program program,
                                                              void * user_data),
                             void *               user_data) CL_API_SUFFIX__VERSION_1_2 {
+#if defined(_WIN32)
+  // Online compilation is not implemented on Windows
+  return CL_COMPILER_NOT_AVAILABLE;
+#else // defined(_WIN32)
   using namespace std::literals;
   shim::IntrusivePtr<shim::cl::Program> prog(static_cast<shim::cl::Program*>(program));
 
@@ -276,6 +263,7 @@ SHIM_CALL(clCompileProgram)(cl_program           program,
   }
 
   return CL_SUCCESS;
+#endif // defined(_WIN32)
 }
 
 CL_API_ENTRY cl_program CL_API_CALL
@@ -289,6 +277,11 @@ SHIM_CALL(clLinkProgram)(cl_context           context,
                                                           void * user_data),
                          void *               user_data,
                          cl_int *             errcode_ret) CL_API_SUFFIX__VERSION_1_2 {
+#if defined(_WIN32)
+  // Online compilation is not implemented on Windows
+  ERRCODE(CL_LINKER_NOT_AVAILABLE);
+  return nullptr;
+#else // defined(_WIN32)
   shim::IntrusivePtr<shim::cl::Context> ctx(static_cast<shim::cl::Context*>(context));
   ERRCODE(CL_SUCCESS);
 
@@ -362,6 +355,7 @@ SHIM_CALL(clLinkProgram)(cl_context           context,
   }
 
   return prog.get();
+#endif // defined(_WIN32)
 }
 
 CL_API_ENTRY CL_API_PREFIX__VERSION_2_2_DEPRECATED cl_int CL_API_CALL
@@ -423,7 +417,6 @@ SHIM_CALL(clGetProgramInfo)(cl_program         program,
     case CL_PROGRAM_BINARIES:
     case CL_PROGRAM_NUM_KERNELS:
     case CL_PROGRAM_KERNEL_NAMES:
-
       return CL_INVALID_OPERATION;
 
     case CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT:

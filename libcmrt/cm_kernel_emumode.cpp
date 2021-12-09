@@ -1,26 +1,12 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
+============================= end_copyright_notice ===========================*/
 
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+#include <cstddef>
 
 #include <memory>
 
@@ -42,9 +28,11 @@
 CmKernelEmu::CmKernelEmu(
     CmDeviceEmu *device,
     const void * fncPt,
-    const GfxEmu::KernelSupport::ProgramModule& programModule
+    const GfxEmu::KernelSupport::ProgramModule& programModule,
+    const GfxEmu::KernelSupport::FunctionDesc& functionDesc
 ) :
-    m_programModule(programModule)
+    m_programModule(programModule),
+    m_functionDesc(functionDesc)
 {
     funcPt = fncPt;
     m_pCmDev = device;
@@ -74,7 +62,11 @@ int32_t CmKernelEmu::Create(
     pKernel = new CmKernelEmu(
         device,
         funcPt,
-        static_cast<CmProgramEmu*>(pProgram)->GetProgramModule ()
+        static_cast<CmProgramEmu*>(pProgram)->GetProgramModule (),
+        GfxEmu::KernelSupport::getKernelDesc (
+            kernelName,
+            static_cast<CmProgramEmu*>(pProgram)->GetProgramModule ()
+        )
     );
 
     if( pKernel )
@@ -172,12 +164,50 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
 
     this->m_ArgCount++;
 
-    if (!m_Args[index].setValueFrom (pValue, size))
-    {
-        GFX_EMU_ASSERT( 0 );
-        return CM_KERNEL_ARG_SETTING_FAILED;
+    GFX_EMU_MESSAGE_SCOPE_PREFIX(std::string{"kernel "} + GetFunctionDesc ().name +
+        " argument "  + std::to_string(index) + ": ");
+
+    if(m_Args[index].getBufferPtr ()) {
+        GFX_EMU_WARNING_MESSAGE(fCmAPI, "argument already set, resetting.\n");
+        m_Args[index].reset ();
     }
 
+    try {
+        const auto& param = GetFunctionDesc ().params.at (index);
+        if(param.isVectorOrMatrix) {
+            if(param.size) {
+                if(param.size != size) {
+                    if(param.paramInitFunctionAddr) {
+                        m_Args[index].reset (param.size);
+                        reinterpret_cast<void(*)(void*,void*,size_t)> (param.paramInitFunctionAddr)
+                        (
+                            m_Args[index].getBufferPtr (),
+                            const_cast<void*>(pValue),
+                            size
+                        );
+                    } else {
+                        GFX_EMU_WARNING_MESSAGE(fCmAPI | fKernelSupport,
+                            "can't find vector or matrix parameter init function address.\n"
+                        );
+                    }
+                }
+            } else {
+                GFX_EMU_WARNING_MESSAGE(fCmAPI | fKernelSupport,
+                    "size for kernel parameter is not known.\n");
+            }
+        }
+    } catch (std::out_of_range) {
+        GFX_EMU_MESSAGE(fKernelSupport,
+            "can't find metadata.\n");
+    };
+
+    if (!m_Args[index].isSet ()) {
+        if(!m_Args[index].setValueFrom (pValue, size))
+        {
+            GFX_EMU_ASSERT( 0 );
+            return CM_KERNEL_ARG_SETTING_FAILED;
+        }
+    }
     m_argSizeTotal += size;
     return CM_SUCCESS;
 }
@@ -204,7 +234,7 @@ CM_RT_API int32_t CmKernelEmu::SetThreadArg(uint32_t threadId, uint32_t index, s
 {
     if(m_ThreadCount > this->m_pMaxVhalVals-> maxUserThreadsPerTask || (int)m_ThreadCount <=0)
     {
-        GfxEmu::ErrorMessage("Minimum or Maximum number of threads exceeded.");
+        GFX_EMU_ERROR_MESSAGE("Minimum or Maximum number of threads exceeded.");
         GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
@@ -540,7 +570,7 @@ CM_RT_API int32_t CmKernelEmu::AssociateThreadSpace(CmThreadSpace *&threadSpace)
 {
     int32_t ret;
 
-    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if (GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadSpaceEmu * threadSpace_h = dynamic_cast<CmThreadSpaceEmu *>(threadSpace);
         CmThreadGroupSpace *thread_group_space_h = threadSpace_h ?
@@ -596,7 +626,7 @@ CM_RT_API int32_t CmKernelEmu::DeAssociateThreadSpace(CmThreadSpace *&threadSpac
 {
     int32_t ret;
 
-    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if (GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadSpaceEmu * threadSpace_h = dynamic_cast<CmThreadSpaceEmu *>(threadSpace);
         CmThreadGroupSpace *thread_group_space_h = threadSpace_h ?
@@ -657,8 +687,5 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArgPointer(uint32_t index,
     uint64_t gfxAddress = 0;
     CmSafeMemCopy(&gfxAddress, pValue, size);
 
-
     return SetKernelArg(index, size, &gfxAddress);
 }
-
-

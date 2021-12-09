@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 #include "cm.h"
@@ -48,6 +32,7 @@ using namespace std;
 #define CM_MAX_THREADSPACE_WIDTH_FOR_MO 512
 #define CM_MAX_THREADSPACE_HEIGHT_FOR_MO 512
 
+//////////////////////////////////////////////////////////////////////////////////
 int32_t CmQueueEmu::Create(CmDeviceEmu *pDevice, CmQueueEmu *&pQueue)
 {
     int32_t result = CM_SUCCESS;
@@ -73,6 +58,13 @@ int32_t CmQueueEmu::Destroy(CmQueueEmu *&pQueue)
     CmSafeRelease(pQueue);
     return CM_SUCCESS;
 }
+
+#if 0
+int32_t CmQueueEmu::Flush( void )
+{
+    return CM_SUCCESS;
+}
+#endif
 
 CM_RT_API int32_t CmQueueEmu::DestroyEvent(CmEvent *&pEvent)
 {
@@ -155,9 +147,9 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (pKernelArray == nullptr)
     {
-        GfxEmu::ErrorMessage("Kernel array is NULL.");
+        GFX_EMU_ERROR_MESSAGE("Kernel array is NULL.");
         GFX_EMU_ASSERT(0);
-        //GfxEmu::PrintMessage( ("Kernel array is NULL.") );
+        //GFX_EMU_MESSAGE(("Kernel array is NULL.") );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -168,9 +160,9 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (kernelCount > this->m_pMaxVhalVals->maxKernelsPerTask)
     {
-        GfxEmu::ErrorMessage("Maximum number of Kernels per task exceeded.");
+        GFX_EMU_ERROR_MESSAGE("Maximum number of Kernels per task exceeded.");
         GFX_EMU_ASSERT(0);
-        //GfxEmu::PrintMessage( ("Maximum number of Kernels per task exceeded.") );
+        //GFX_EMU_MESSAGE(("Maximum number of Kernels per task exceeded.") );
         return CM_EXCEED_MAX_KERNEL_PER_ENQUEUE;
     }
 
@@ -259,7 +251,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
 
     if (kernelCount == 0)
     {
-        GfxEmu::ErrorMessage("There are no valid kernels!");
+        GFX_EMU_ERROR_MESSAGE("There are no valid kernels!");
         GFX_EMU_ASSERT(0);
         return CM_FAILURE;
     }
@@ -280,7 +272,7 @@ int32_t CmQueueEmu::Enqueue_preG12(
         pEvent = nullptr;
     }
 #ifdef GFX_EMU_DEBUG_ENABLED
-
+    //////////////////////////////////////////////////////////////////////////////////////
     if (CmStatistics::Get() != nullptr)
     {
         CmStatistics::Get()->TrackRunnedKernels(pKernelArray);
@@ -298,7 +290,7 @@ CM_RT_API int32_t CmQueueEmu::Enqueue(
     int32_t           ret;
     CmThreadSpaceEmu *threadSpace = dynamic_cast<CmThreadSpaceEmu *>(const_cast<CmThreadSpace *>(pTS));
 
-    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if (GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         CmThreadGroupSpace *thread_group_space_h = threadSpace ? threadSpace->GetThreadGroupSpace() : nullptr;
         if (!thread_group_space_h)
@@ -386,9 +378,9 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
 
     if (pKernelArray == nullptr)
     {
-        GfxEmu::ErrorMessage("Kernel array is NULL.");
+        GFX_EMU_ERROR_MESSAGE("Kernel array is NULL.");
         GFX_EMU_ASSERT(0);
-        //GfxEmu::PrintMessage( ("Kernel array is NULL.") );
+        //GFX_EMU_MESSAGE(("Kernel array is NULL.") );
         return CM_INVALID_ARG_VALUE;
     }
 
@@ -398,9 +390,9 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
 
     if (kernelCount > this->m_pMaxVhalVals->maxKernelsPerTask)
     {
-        GfxEmu::ErrorMessage("Maximum number of Kernels per task exceeded.");
+        GFX_EMU_ERROR_MESSAGE("Maximum number of Kernels per task exceeded.");
         GFX_EMU_ASSERT(0);
-        //GfxEmu::PrintMessage( ("Maximum number of Kernels per task exceeded.") );
+        //GFX_EMU_MESSAGE(("Maximum number of Kernels per task exceeded.") );
         return CM_EXCEED_MAX_KERNEL_PER_ENQUEUE;
     }
 
@@ -437,7 +429,7 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
 
         if (threadArgCount)
         {
-            GfxEmu::ErrorMessage("No thread Args allowed when using group space");
+            GFX_EMU_ERROR_MESSAGE("No thread Args allowed when using group space");
             GFX_EMU_ASSERT(0);
             return CM_THREAD_ARG_NOT_ALLOWED;
         }
@@ -454,10 +446,10 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
                 kernel->GetProgramModule (),
                 kernel->GetArgsVecRef (),
                 cmrt::CmEmu_KernelLauncher::kThreadIdUnset,
-                reinterpret_cast<void(*)()> (kernel->GetFuncPnt ())
+                reinterpret_cast<void(*)()> (const_cast<void*>(kernel->GetFuncPnt ()))
             }}.run ())
         {
-            GfxEmu::ErrorMessage("Kernel group execution timeout.");
+            GFX_EMU_ERROR_MESSAGE("Kernel group execution timeout.");
             return CM_FAILURE;
         }
 
@@ -481,7 +473,7 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
         pEvent = nullptr;
     }
 #ifdef GFX_EMU_DEBUG_ENABLED
-
+    //////////////////////////////////////////////////////////////////////////////////////
     if (CmStatistics::Get() != nullptr)
     {
         CmStatistics::Get()->TrackRunnedKernels(pKernelArray);
@@ -600,10 +592,10 @@ int32_t CmQueueEmu::Execute(const CmKernelEmu& kernel, uint32_t threadId)
             kernel.GetProgramModule (),
             kernel.GetArgsVecRef (),
             threadId,
-            reinterpret_cast<void(*)()> (kernel.GetFuncPnt ())
+            reinterpret_cast<void(*)()> (const_cast<void*>(kernel.GetFuncPnt ()))
         }}.run()
     ) {
-        GfxEmu::ErrorMessage("Kernel execution timeout.");
+        GFX_EMU_ERROR_MESSAGE("Kernel execution timeout.");
         return CM_FAILURE;
     }
     else
@@ -923,7 +915,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
 
     if (be_walker)
     {
-        if (GfxEmu::Cfg ().Platform.getInt () < GfxEmu::Platform::SKL)
+        if (GfxEmu::Cfg::Platform ().getInt () < GfxEmu::Platform::SKL)
         {
             if (width > CM_MAX_THREADSPACE_WIDTH_FOR_MW)
             {

@@ -21,7 +21,6 @@
 
 
 
-
 ## Build instructions
 ### Linux
 1. Get the source code and put to \<PATH TO SOURCE>
@@ -43,6 +42,10 @@
 > cmake -D**LevelZero_INCLUDE_DIR**=\<PATH CONTAINING level_zero subdir with headers>
 >
 > cmake -D**LevelZero_LIBRARY**=\<PATH TO>libze_loader.so
+>
+> - ### Local building for ESIMD_EMULATION support for DPCPP/esimd (https://github.com/intel/llvm) without dependency on OpenCL/LevelZero. This option suppresses shim-layer build.
+>
+> cmake -D **\_\_SYCL_EXPLICIT_SIMD_PLUGIN\_\_**=true
 >
 > - ### Custom installation path can be set with 
 >
@@ -75,5 +78,4 @@
 This project is licensed under the MIT License. You may obtain a copy of the License at:
 
 https://opensource.org/licenses/MIT
-
 

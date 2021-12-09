@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 
@@ -56,17 +40,34 @@ class CmThreadGroupSpace;
 class CmDeviceEmu : public CmDevice
 {
 public:
+#ifdef CM_DX9
+    static int32_t Create( IDirect3DDeviceManager9* pD3DDeviceMgr, CmDeviceEmu* &pDevice );
+#elif defined CM_DX11
+    static int32_t Create( ID3D11Device* pD3DDeviceMgr, CmDeviceEmu* &pDevice );
+#elif defined __GNUC__
     static int32_t Create( CmDeviceEmu* &pDevice );
+#endif
     static int32_t Destroy( CmDeviceEmu* &pDevice );
 
     int32_t Acquire();
     int32_t SafeRelease();
 
+#ifdef CM_DX9
+    CM_RT_API int32_t GetD3DDeviceManager( IDirect3DDeviceManager9* & pDeviceManager );
+#elif defined CM_DX11
+    CM_RT_API int32_t GetD3D11Device(ID3D11Device* &pD3D11Device);
+#endif
+
     CM_RT_API int32_t CreateBuffer(uint32_t size, CmBuffer* & pSurface ) override;
     CM_RT_API int32_t CreateSurface2D(uint32_t width, uint32_t height, CM_SURFACE_FORMAT format, CmSurface2D* & pSurface ) override;
     CM_RT_API int32_t CreateSurface3D(uint32_t width, uint32_t height, uint32_t depth, CM_SURFACE_FORMAT format, CmSurface3D* & pSurface ) override;
+#if defined(_WIN32)
+    CM_RT_API int32_t CreateSurface2D( CM_IDIRECT3DSURFACE* pD3DSurf, CmSurface2D* & pSurface );
+    CM_RT_API int32_t CreateSurface2D( CM_IDIRECT3DSURFACE** ppD3DSurf, const uint32_t surfaceCount, CmSurface2D**  ppSurface );
+#else
     CM_RT_API int32_t CreateSurface2D( VASurfaceID iVASurface, CmSurface2D* & pSurface ) override;
     CM_RT_API int32_t CreateSurface2D( VASurfaceID* iVASurface, const uint32_t surfaceCount, CmSurface2D** pSurface ) override;
+#endif
     CM_RT_API int32_t DestroySurface( CmBuffer* & pSurface) override;
     CM_RT_API int32_t DestroySurface( CmSurface2D* & pSurface) override;
     CM_RT_API int32_t DestroySurface( CmSurface3D* & pSurface) override;
@@ -111,11 +112,18 @@ public:
     CM_RT_API int32_t InitPrintBuffer(size_t size = CM_DEFAULT_PRINT_BUFFER_SIZE ) override {return CM_SUCCESS; };
     CM_RT_API int32_t FlushPrintBuffer() override { return CM_SUCCESS; };
 
+#ifdef CM_DX11
+    CM_RT_API int32_t CreateSurface2DSubresource( ID3D11Texture2D* pD3D11Texture2D, uint32_t subresourceCount, CmSurface2D** ppSurfaces, uint32_t& createdSurfaceCount, uint32_t option ) {return CmNotImplemented(__PRETTY_FUNCTION__);};
+    CM_RT_API int32_t CreateSurface2DbySubresourceIndex( ID3D11Texture2D* pD3D11Texture2D, uint32_t FirstArraySlice, uint32_t FirstMipSlice, CmSurface2D* &pSurface){return CmNotImplemented(__PRETTY_FUNCTION__);};
+#endif
+
     CM_RT_API int32_t CreateBufferSVM( uint32_t size, void* & pSystMem, uint32_t access_flag, CmBufferSVM* & pSurface ) override;
     CM_RT_API int32_t DestroyBufferSVM( CmBufferSVM* & pSurface) override;
 
+#ifdef __GNUC__
     CM_RT_API int32_t GetVaDpy(VADisplay* & pva_dpy) override { return CmNotImplemented(__PRETTY_FUNCTION__);};
     CM_RT_API int32_t CreateVaSurface2D( uint32_t width, uint32_t height, CM_SURFACE_FORMAT format, VASurfaceID & iVASurface, CmSurface2D* & pSurface) override{ return CmNotImplemented(__PRETTY_FUNCTION__);};
+#endif
 
     CM_RT_API int32_t CloneKernel( CmKernel * &pKernelDest, CmKernel *pKernelSrc ) override;
 
@@ -130,12 +138,24 @@ public:
     CM_RT_API int32_t DispatchTask() override { return CM_SUCCESS; };
 
 protected:
+#ifdef CM_DX9
+    int32_t Initialize( IDirect3DDeviceManager9* pD3DDeviceMgr );
+#elif defined CM_DX11
+    int32_t Initialize( ID3D11Device* pD3DDeviceMgr );
+#elif defined __GNUC__
     int32_t Initialize( );
+#endif
 
     std::vector<CmQueueEmu*> m_queueArray;
 
     CmQueueEmu* m_pQueue;
     CmSurfaceManagerEmu* m_pSurfaceMgr;
+
+#ifdef CM_DX9
+    IDirect3DDeviceManager9* m_pD3DDeviceMgr;
+#elif defined CM_DX11
+    ID3D11Device* m_pD3DDeviceMgr;
+#endif
 
     CmDynamicArray m_ProgramArray;
     uint32_t m_ProgramCount;

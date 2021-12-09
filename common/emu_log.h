@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 /*
     See README_LOGGING.md for API usage doc.
@@ -52,11 +36,15 @@
 
 #endif
 
+#define CONCAT__(X,Y) X##Y
+#define CONCAT(X,Y) CONCAT__(X,Y)
+
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
 
-#define GFX_EMU_MESSAGE_SCOPE_PREFIX(v) GfxEmu::Log::MessagePrefixGuard __LINE__ ## _msgGuard {v}
+#define GFX_EMU_MESSAGE_SCOPE_PREFIX(v) \
+    GfxEmu::Log::MessagePrefixGuard CONCAT(msgGuard,__LINE__) {v}
 
 #ifdef GFX_EMU_DEBUG_ENABLED
 
@@ -86,10 +74,9 @@
 #define GFX_EMU_WARNING_MESSAGE(...) {GFX_EMU_WITH_FLAGS_; GfxEmu::WarningMessage(__VA_ARGS__);}
 #define GFX_EMU_WARNING_MESSAGE_AT(...) {GFX_EMU_WITH_FLAGS_; static const char* m = "(at " AT ") "; GfxEmu::WarningMessage<GfxEmu::Log::Flags::fUnset,&m>(__VA_ARGS__);}
 
-// Always provides AT string.
-#define GFX_EMU_ERROR_MESSAGE(...) {GFX_EMU_WITH_FLAGS_; static const char* m = "(at " AT ") "; GfxEmu::ErrorMessage<GfxEmu::Log::Flags::fUnset,&m>(__VA_ARGS__);}
-#define GFX_EMU_FAIL_WITH_MESSAGE(...) {GFX_EMU_WITH_FLAGS_; static const char* m = "(at " AT ") "; GfxEmu::FailWithMessage<false,&m>(__VA_ARGS__);}
-//#define GFX_EMU_ERROR_MESSAGE(...) GfxEmu::ErrorMessage( "(at " AT ") " __VA_ARGS__)
+#define GFX_EMU_ERROR_MESSAGE(...) {GFX_EMU_WITH_FLAGS_; GfxEmu::ErrorMessage<GfxEmu::Log::Flags::fUnset,nullptr>(__VA_ARGS__);}
+#define GFX_EMU_ERROR_MESSAGE_AT(...) {GFX_EMU_WITH_FLAGS_; static const char* m = "(at " AT ") "; GfxEmu::ErrorMessage<GfxEmu::Log::Flags::fUnset,&m>(__VA_ARGS__);}
+#define GFX_EMU_FAIL_WITH_MESSAGE(...) {GFX_EMU_WITH_FLAGS_; static const char* m = "(at " AT ") "; GfxEmu::FailWithMessage<&m>(__VA_ARGS__);}
 
 #define GFX_EMU_MESSAGE(...) { GFX_EMU_WITH_FLAGS_; GfxEmu::PrintMessage (__VA_ARGS__); }
 #define GFX_EMU_MESSAGE_AT(...) { GFX_EMU_WITH_FLAGS_; static const char* m = AT; GfxEmu::PrintMessage<GfxEmu::Log::LogFile, &m> (__VA_ARGS__);}
@@ -129,6 +116,10 @@ namespace Log {
     constexpr auto LogFile = &LogFile_;
 
     void setLogFile(const std::string& file);
+    GFX_EMU_API inline void flush() {
+        std::fflush(*ErrFile);
+        std::fflush(*LogFile);
+    }
 
     namespace Flags {
         using Type = uint64_t;
@@ -185,7 +176,6 @@ namespace Log {
         constexpr auto kDefaultLogFlagsMask {
             Flags::fUnset
 #include "emu_log_flags.h"
-            & ~Flags::fSticky
         };
 #undef GFX_EMU_DEBUG_MINIMAL_LEVEL
 #undef GFX_EMU_DEBUG_LEVEL
@@ -198,36 +188,41 @@ namespace Log {
 
     struct MessagePrefixGuard {
     private:
-        inline static thread_local const char* prefix {nullptr};
-        inline static thread_local std::stack<const char*> prevPrefix;
+        inline static thread_local std::stack<std::string> prevPrefix;
+        inline static thread_local std::string curPrefix;
     public:
-        static const char* getPrefix () { return prefix; }
-        MessagePrefixGuard(const char *p) { prevPrefix.push (prefix); prefix = p; }
-        ~MessagePrefixGuard() {
-            prefix = prevPrefix.top ();
-            prevPrefix.pop ();
-        }
+        GFX_EMU_API static const std::string& getPrefix () { return curPrefix; }
+        GFX_EMU_API MessagePrefixGuard(const std::string& p);
+        GFX_EMU_API ~MessagePrefixGuard();
     };
 
     GFX_EMU_API_IMPORT void printBacktrace();
+    GFX_EMU_API_IMPORT bool warningsEnabled__ ();
 }; // namespace Log
+
+#define GFX_EMU_LOG_PREFIX "EMU: "
 
 template <std::FILE** out = Log::LogFile,
           const char** at = nullptr,
           bool noFlagsChk = false,
           class FlagsT,
-
           std::enable_if_t<
             std::is_same_v<typename std::decay<FlagsT>::type, Log::Flags::Type>,bool> = true,
           class ... ArgsT>
 inline void PrintMessage(const FlagsT flags, const std::string m, ArgsT&& ... args) {
-    if (flags) {
-        if (!noFlagsChk && !Log::Flags::isEnabled (flags)) return;
-        else std::fprintf(*out, "EMU: [%s] ", Log::Flags::toStr(flags));
-    }
-    if (const auto prefix = Log::MessagePrefixGuard::getPrefix ()) std::fprintf(*out, "%s", prefix);
+    if (!noFlagsChk && flags && !Log::Flags::isEnabled (flags))
+        return;
+
+    std::fputs(GFX_EMU_LOG_PREFIX, *out);
+
+    if(flags)
+        std::fprintf(*out, "[%s] ", Log::Flags::toStr(flags));
+
+    if (!Log::MessagePrefixGuard::getPrefix ().empty())
+        std::fprintf(*out, "%s", Log::MessagePrefixGuard::getPrefix ().c_str());
     if
-#if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+
+#if defined(_WIN32) || __clang__ || __GNUC__ > 7
         constexpr
 #endif
     (static_cast<bool> (at)) std::fprintf(*out, "(at %s) ", *at);
@@ -242,7 +237,6 @@ template <std::FILE** out = Log::LogFile,
           const char** at = nullptr,
           bool noFlagsChk = false,
           class MsgT,
-
           std::enable_if_t<
                 std::is_same_v<typename std::decay<MsgT>::type, std::string> ||
                 std::is_same_v<typename std::decay<MsgT>::type, const char*>
@@ -277,10 +271,11 @@ inline void DebugMessage(const char *msg, ArgsT&& ... args) {
 template <Log::Flags::Type = Log::Flags::fUnset,
           const char** at = nullptr,
           class ... ArgsT>
-inline void WarningMessage(const Log::Flags::Type flags, const char *msg, ArgsT&& ... args) {
+void WarningMessage(const Log::Flags::Type flags, const char *msg, ArgsT&& ... args) {
+    if(!GfxEmu::Log::warningsEnabled__()) return;
     auto prefix = std::string("*** Warning ");
     if
-#if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+#if defined(_WIN32) || __clang__ || __GNUC__ > 7
         constexpr
 #endif
     (static_cast<bool>(at)) prefix += *at;
@@ -300,7 +295,7 @@ template <Log::Flags::Type = Log::Flags::fUnset,
 inline void ErrorMessage(const Log::Flags::Type flags, const char *msg, ArgsT&& ... args) {
     auto prefix = std::string("*** Error ");
     if
-#if !defined(__GNUC__) || __clang__ || __GNUC__ > 7
+#if defined(_WIN32) || __clang__ || __GNUC__ > 7
         constexpr
 #endif
     (static_cast<bool>(at)) prefix += *at;
@@ -340,13 +335,11 @@ inline void AssertMsgOverride_(
     ArgsT&& ... args) { Assert_(cond, mOverride, std::forward<ArgsT>(args)...); }
 
 template<
-    bool printBacktrace = false,
     const char **at = nullptr,
     class MsgOrFlagsT,
     class ... T>
 [[ noreturn ]] inline void FailWithMessage(int code, MsgOrFlagsT arg, T ... args) {
     ErrorMessage<Log::Flags::fUnset
-
 #ifndef __clang__
         , at
 #endif
@@ -362,17 +355,12 @@ template<
                 Log::Flags::toStr(arg));
     }
 
-    if(printBacktrace)
-        Log::printBacktrace ();
-
-    std::fflush(*Log::ErrFile);
-    std::fflush(*Log::LogFile);
-    _Exit(code);
+    GfxEmu::Utils::terminate(code);
 }
 
-template<bool printBacktrace = false, const char **at = nullptr, class ... T>
+template<const char **at = nullptr, class ... T>
 [[ noreturn ]] inline void FailWithMessage(T ... args) {
-    FailWithMessage<printBacktrace, at>(EXIT_FAILURE,std::forward<T>(args)...);
+    FailWithMessage<at>(EXIT_FAILURE,std::forward<T>(args)...);
 }
 
 inline void api_compile_test_ () {

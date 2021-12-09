@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 /* Make this file idempotent - use pragma and standard macro guards in case pragma not recognised */
 #pragma once
@@ -51,7 +35,7 @@ namespace cmtl {
     // below) and duplication-to-the-left do work as expected and are not handled by
     // this function.
     // This function is used internally and is not expected to be used by the end user
-
+    //
     // Parameters:
     //   MAT_TYPE:
     //      A type whose size is the same as the size of a single surface pixel.
@@ -88,9 +72,9 @@ namespace cmtl {
     // Read a pixel block of size HEIGHT x WIDTH  from surface, all input are in pixel sizes. HEIGHT and WIDTH can be any integer
     // Note: to enable efficient IO segmentation set the following define (default is disabled due
     // to CM Compiler bug when using multiple select)
-
+    //
     // #define IOBLOCK_ENABLE_MULTI_STRIDE
-
+    //
     // Parameters:
     // h_pix_pos    - horizontal offset in pixel size
     // v_pix_pos    - vertical offset in pixel size
@@ -105,9 +89,9 @@ namespace cmtl {
 
     // Write a pixel block of size HEIGHT x WIDTH from surface, all inputs are in pixel sizes. HEIGHT and WIDTH can be any integer
     // Note: to enable efficient IO segmentation set the following define (default is disabled due to CM Compiler bug when using multiple select)
-
+    //
     // #define IOBLOCK_ENABLE_MULTI_STRIDE
-
+    //
     // Parameters:
     // h_pix_pos - horizontal offset in pixel size
     // v_pix_pos - vertical offset in pixel size
@@ -159,10 +143,8 @@ namespace cmtl {
        size  - number of bytes to dump
     */
     void DumpSLM(uint slmX, SurfaceIndex slmDebugSurface, uint size);
-
     template <uint N>
     void TransposeFromSLM(vector_ref<uint, N*4> dst, vector_ref<uint, N*4> src);
-
     template <uint N>
     void TransposeToSLM(vector_ref<uint, N*4> dst, vector_ref<uint, N*4> src);
 
@@ -544,7 +526,7 @@ namespace cmtl {
     // isn't d-word aligned (i.e., a multiple of 4). Vertical duplication (above and
     // below) and duplication-to-the-left do work as expected and are not handled by
     // this function.
-
+    //
     // Parameters:
     //   MAT_TYPE:
     //      A type whose size is the same as the size of a single surface pixel.
@@ -714,7 +696,6 @@ namespace cmtl {
             }
         }
     }
-
     template<typename T, uint HEIGHT, uint WIDTH, int OP_TYPE>
     _GENX_ void
     inline IoBlock(SurfaceIndex iobuf, CmBufferAttrib buf_attrib, int h_pos, int v_pos, matrix_ref<T, HEIGHT, WIDTH> block,
@@ -1115,7 +1096,6 @@ namespace cmtl {
         vector<short, W> empty;
         CachedStackEmpty<W, STACKCOUNT>(context, context_ii, empty);
         cm_assert(empty.any() == false);
-
     }
 
     template<typename T, uint W, uint CACHESIZE, uint STACKCOUNT>
@@ -1836,10 +1816,16 @@ namespace cmtl {
         vector<int,R*C>       v_quot;
         matrix<float,R,C>  fmod;
 
+    #ifndef __GNUC__
+        v_quot    = vector<int, v_quot.ELEMS>(y/x);
+        fmod    = y - x * matrix<float, fmod.ROWS, fmod.COLS>(v_quot);
+        fmod    = matrix<float, fmod.ROWS, fmod.COLS>(fmod, (flags & SAT));
+    #else
         //g++ report: error: cannot appear in a constant-expression
         v_quot    = vector<int, R*C>(y/x);
         fmod    = y - x * matrix<float, R, C>(v_quot);
         fmod    = matrix<float, R, C>(fmod, (flags & SAT));
+    #endif
         return fmod;
     }
 
@@ -1852,10 +1838,16 @@ namespace cmtl {
         vector<int,R*C>       v_quot;
         matrix<float,R,C>  fmod;
 
+    #ifndef __GNUC__
+        v_quot    = vector<int, v_quot.ELEMS>(y/x);
+        fmod    = y - x * matrix<float, fmod.ROWS, fmod.COLS>(v_quot);
+        fmod    = matrix<float, fmod.ROWS, fmod.COLS>(fmod, (flags & SAT));
+    #else
         //g++ report: error: cannot appear in a constant-expression
         v_quot    = vector<int, R*C>(y/x);
         fmod    = y - x * matrix<float, R, C>(v_quot);
         fmod    = matrix<float, R, C>(fmod, (flags & SAT));
+    #endif
         return fmod;
     }
 
@@ -1868,9 +1860,15 @@ namespace cmtl {
         vector<int,N>       v_quot;
         vector<float,N>       fmod;
 
+    #ifndef __GNUC__
+        v_quot    = vector<int, v_quot.ELEMS>(y/x);
+        fmod    = y - x * vector<float, fmod.ELEMS>(v_quot);
+        fmod    = vector<float, fmod.ELEMS>(fmod, (flags & SAT));
+    #else
         v_quot    = vector<int, N>(y/x);
         fmod    = y - x * vector<float, N>(v_quot);
         fmod    = vector<float, N>(fmod, (flags & SAT));
+    #endif
         return fmod;
     }
 
@@ -1883,9 +1881,15 @@ namespace cmtl {
         vector<int,N>       v_quot;
         vector<float,N>       fmod;
 
+    #ifndef __GNUC__
+        v_quot    = vector<int, v_quot.ELEMS>(y/x);
+        fmod    = y - x * vector<float, fmod.ELEMS>(v_quot);
+        fmod    = vector<float, fmod.ELEMS>(fmod, (flags & SAT));
+    #else
         v_quot    = vector<int, N>(y/x);
         fmod    = y - x * vector<float, N>(v_quot);
         fmod    = vector<float, N>(fmod, (flags & SAT));
+    #endif
         return fmod;
     }
 
@@ -1901,8 +1905,12 @@ namespace cmtl {
 
         v_quot    = (int) y/x;
         fmod(0) = y - x * v_quot;
+    #ifndef __GNUC__
+        fmod    = vector<float, fmod.ELEMS>(fmod, (flags & SAT));
+    #else
         //g++ report: error: cannot appear in a constant-expression
         fmod    = vector<float, 1>(fmod, (flags & SAT));
+    #endif
         return fmod(0);
     }
 

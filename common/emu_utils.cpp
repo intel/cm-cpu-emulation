@@ -1,46 +1,60 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
-
-#include "emu_utils.h"
-#include "emu_log.h"
+============================= end_copyright_notice ===========================*/
 
 #include <iostream>
 #include <string>
 #include <codecvt>
 
+#ifdef _WIN32
+    #include <windows.h>
+    #include <psapi.h>
+    #include <libloaderapi.h>
+#else
     #include <dlfcn.h>
     #include <unistd.h>
     #include <errno.h>
     #include <string.h>
+#endif
+
+#include "emu_utils.h"
+#include "emu_log.h"
+#include "emu_cfg.h"
 
 namespace GfxEmu {
 namespace Utils {
 
 using namespace GfxEmu::Log::Flags;
 
+void terminate(int code, bool printBacktrace) {
+    if(printBacktrace || GfxEmu::Cfg::BacktraceOnTermination ()) {
+        GfxEmu::Log::printBacktrace ();
+    }
+    GfxEmu::Log::flush ();
+    _Exit(code);
+}
+
 void* symbolNameToAddr (const char *moduleName, const std::string& linkageName, const std::string& name) {
-    auto dlSession = dlopen(moduleName, RTLD_NOW | RTLD_GLOBAL);
+#ifdef _WIN32
+    HMODULE moduleHandle;
+    if(!GetModuleHandleExA(
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                moduleName,&moduleHandle)) {
+        GFX_EMU_WARNING_MESSAGE("GetModuleHandleExA failed: %s\n", lastErrorStr ().c_str ());
+        return nullptr;
+    }
+
+    const auto addr = GetProcAddress(moduleHandle, linkageName.c_str());
+
+    if(!addr)
+        GFX_EMU_WARNING_MESSAGE("GetProcAddr failed: %s\n", lastErrorStr ().c_str ());
+
+#else
+    auto dlSession = dlopen(!strcmp(moduleName,"/proc/self/exe") ? 0 : moduleName, RTLD_NOW | RTLD_GLOBAL);
 
     if(!dlSession) {
         GFX_EMU_WARNING_MESSAGE("dlopen returned error: %s\n", dlerror());
@@ -53,34 +67,72 @@ void* symbolNameToAddr (const char *moduleName, const std::string& linkageName, 
         return nullptr;
     }
 
-    GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fExtraDetail,
-        "symbolNameToAddr: lookup for symbol name %s, linkage name: %s\n",
-            name.c_str(), linkageName.c_str());
-
     const auto addr = dlsym(dlSession, linkageName.c_str());
     if (!addr) {
         GFX_EMU_WARNING_MESSAGE(fDbgSymb | fCritical, "symbolNameToAddr: \n"
             "\tunable to lookup symbol %s (linkage name: %s) with dlsym().\n"
-            "\tmay recompile kernel source with -rdynamic or -Wl,--export-dynamic for this to work.\n\n",
+            "\tmay recompile with -rdynamic or -Wl,--export-dynamic for this to work.\n\n",
                 name.c_str (),
                 linkageName.c_str()
         );
     }
-    else {
-        GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fExtraDetail, "symbolNameToAddr: kernel %s address is found at %p\n",
-            name.c_str (),
-            reinterpret_cast<uint64_t>(addr));
-    }
 
     dlclose(dlSession);
+#endif
+
+    GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fDetail,
+        "lookup in module %s for function %s -> address: %p\n",
+            moduleName, linkageName.c_str (), addr);
+
     return addr;
 }
 
 // Create a string with last error message
 std::string lastErrorStr()
 {
+#ifdef _WIN32
+    DWORD error = GetLastError();
+    if (error) {
+        LPVOID lpMsgBuf;
+        DWORD bufLen = FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            error,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            reinterpret_cast<LPTSTR>(&lpMsgBuf),
+            0, NULL
+        );
+
+        if (bufLen) {
+            auto lpMsgStr = reinterpret_cast<LPCSTR>(lpMsgBuf);
+            std::string result(lpMsgStr, lpMsgStr+bufLen);
+            LocalFree(lpMsgBuf);
+            return result;
+        }
+    }
+
+    return {};
+#else
     return strerror(errno);
+#endif
 }
+
+#ifdef _WIN32
+std::string wstringToString(std::wstring ws) {
+    return std::wstring_convert<std::codecvt_utf8<wchar_t>>{}.to_bytes( ws );
+}
+
+std::string getCurrentProcessBaseName () {
+    char buf[1024];
+    ::GetModuleBaseNameA(
+        GetCurrentProcess (),
+        NULL,
+        buf, 1024);
+    return buf;
+}
+#endif
 
 bool stringToBool(const std::string& v) {
     static std::regex rx {"^\\s*[1-9]|true|yes", std::regex::icase};
@@ -89,10 +141,14 @@ bool stringToBool(const std::string& v) {
 
 bool isNotAKernelProgram(const char *moduleFileName) {
     static std::regex systemLibsFilter {
+#ifdef _WIN32
+        "(shim.dll|shim_l0.dll|libcm.dll|igfx(11)?cmrt|system32|c:\\windows)"
+#else
         "^(linux-vdso|/(usr|lib))|libcm|cmrt_emu|libshim"
+#endif
         , std::regex::ECMAScript | std::regex::icase};
     if(std::regex_search(moduleFileName, systemLibsFilter)) {
-        //GfxEmu::DebugMessage<fDbgSymb | fExtraDetail>(
+        //GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fExtraDetail,
         //    "skipping non-kernel program %s\n", moduleName);
         return true;
     }
@@ -101,7 +157,11 @@ bool isNotAKernelProgram(const char *moduleFileName) {
 
 bool deleteFile (const char *file) {
     bool status = false;
+#ifdef _WIN32
+    status = ::DeleteFileA(file);
+#else
     status = unlink(file) == 0;
+#endif
 
     if(!status)
         GFX_EMU_ERROR_MESSAGE("failed to delete file %s: %s\n",
@@ -111,7 +171,11 @@ bool deleteFile (const char *file) {
 }
 
 uint64_t getCurrentProcessId () {
+#ifdef _WIN32
+    return ::GetCurrentProcessId();
+#else
     return ::getpid();
+#endif
 }
 
 };

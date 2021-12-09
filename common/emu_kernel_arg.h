@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2021 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 
@@ -56,7 +40,7 @@ private:
     bool allocateBuffer (size_t size, size_t count) {
         if (m_bufPtr) {
             if (m_unitSize != size || m_unitCount != count) {
-                GfxEmu::ErrorMessage ("Argment buffer of %u elements of size %u already allocated."
+                GFX_EMU_ERROR_MESSAGE("Argment buffer of %u elements of size %u already allocated."
                     "Requested to allocate again with count %u of elements of size %u.",
                         m_unitSize, m_unitCount, size, count);
                 return false;
@@ -91,7 +75,7 @@ public:
 
     size_t getUnitCount () const { return m_unitCount; }
     size_t getUnitSize () const { return m_unitSize; }
-    void reset () {
+    void reset (size_t newSize = 0, size_t newCount = 1) {
         GfxEmu::DebugMessage(GfxEmu::Log::Flags::fExtraDetail, "GfxEmu::KernelArg: resetting!\n");
         m_bufPtr.reset ();
         m_unitCount = 0;
@@ -101,6 +85,9 @@ public:
         isFloat = false;
         isClass = false;
         isPointer = false;
+        if(newSize) {
+            allocateBuffer(newSize, newCount);
+        }
     }
 
     // Letting raw in-buffer pointers out for the low-level stuff of libffi.
@@ -118,21 +105,9 @@ public:
 
     bool setValueFrom (
         const void* fromPtr,
-        size_t size)
-    {
-        if (allocateBuffer (size, 1)) {
-            std::memcpy(getBufferPtr (), fromPtr, size);
-            return true;
-        }
-
-        return false;
-    }
-
-    bool setValueFrom (
-        const void* fromPtr,
         size_t size,
-        size_t tid,
-        size_t count)
+        size_t tid = 0,
+        size_t count = 1)
     {
         if (allocateBuffer (size, count)) {
             std::memcpy(getBufferPtr (tid), fromPtr, size);
@@ -152,4 +127,3 @@ public:
 };
 
 }; // namespace GfxEmu
-

@@ -8,6 +8,7 @@
       - [ENV: EMU_LOG_FILE](#env-emu_log_file)
       - [ENV: EMU_LOG_CHANNELS](#env-emu_log_channels)
       - [ENV: EMU_LOG_LEVEL](#env-emu_log_level)
+      - [ENV: EMU_LOG_WARNINGS](#env-emu_log_warnings)
     - [HW configuration choice.](#hw-configuration-choice)
       - [ENV: CM_RT_PLATFORM (string)](#env-cm_rt_platform-string)
       - [ENV: CM_RT_SKU (string)](#env-cm_rt_sku-string)
@@ -39,7 +40,7 @@ The list of logging channel names:
 - kernel support
 - kernel launch
 - dbg symb
-- [see here for more](common/emu_debug_flags.h)
+- [see here for more](common/emu_log_flags.h)
 
 > E.g. export EMU_LOG_CHANNELS="sched|kernel|dbg symb|~support" 
 > will match the following debug channels: "sched", "kernel launch", "dbg symb".
@@ -61,9 +62,13 @@ The list of logging levels:
 - detail
 - info
 - critical
-- [see here for more](common/emu_debug_flags.h)
+- [see here for more](common/emu_log_flags.h)
 
-NB: this setting will not affect sticky messages display.
+#### ENV: EMU_LOG_WARNINGS
+
+(bool, default: false)
+
+> Enables warnings output.
 
 ### HW configuration choice.
 
@@ -91,14 +96,14 @@ EMU provides the following modes of operation:
 
 During kernel run there shall be created up to **CM_RT_RESIDENT_GROUPS * \<TASK-SPECIFIC WORKGROUP SIZE>** operating system threads. **CM_RT_PARALLEL_THREADS** controls how many shall be allowed to be in running state simultaneously (=1 mode is specifically for debugging, see below). Operating system threads are being spawned in **lazy mode** (when first chosen by scheduler for execution) and run in detached state to occupy only the necessary amount of system resources, freeing those as soon as thread is complete.
 
-#### ENV: CM_RT_PARALLEL_THREADS
+#### ENV: CM_RT_PARALLEL_THREADS        // OS-threads mode semantics
 
 (int, default: max hardware concurrency)
 
 > Override the number of kernel threads allowed to be in running state simultaneously.
 > **CM_RT_PARALLEL_THREADS=1** is a special case used **primarily for debugging purposes**. Kernel threads run (or resumed after barrier recycle) **in predefined sequential order in this mode**.
 
-#### ENV: CM_RT_RESIDENT_GROUPS
+#### ENV: CM_RT_RESIDENT_GROUPS         // OS-threads mode semantics
 
 (int, default: 1)
 

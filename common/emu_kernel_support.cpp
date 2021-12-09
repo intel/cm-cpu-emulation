@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 //#define TESTING_SWITCH_GLOBAL_KSEARCH_TO_MAIN_KSEARCH_
 #define LEGACY_ENABLE_USER_SUPPLIED_KERNEL_ADDRESS_
@@ -65,13 +49,13 @@ const DbgSymb::FunctionDesc& getKernelDesc_ (
         VoidFuncPtr addr
     )
 {
-    GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>("-------------------\n");
-    GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+    GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fDetail, "-------------------\n");
+    GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fDetail,
         "looking up info about kernel addr:%p name:%s.\n",
             addr, kernelName.c_str());
-    GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>("-------------------\n");
+    GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fDetail, "-------------------\n");
 
-    GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+    GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fDetail,
         "associated program desc dump: %s\n", programModule.toStr ().c_str ()
     );
 
@@ -84,14 +68,14 @@ const DbgSymb::FunctionDesc& getKernelDesc_ (
         if(k != addrToKernel.end ())
             return *(k->second);
 
-        GfxEmu::DebugMessage<fKernelSupport | fExtraDetail>(
+        GFX_EMU_DEBUG_MESSAGE(fKernelSupport | fDetail,
             "explicit kernel address provided. "
             "Checking for overriding program descriptor for kernel %s, addr %p.\n",
             kernelName.c_str(), addr);
 
 #ifndef LEGACY_ENABLE_USER_SUPPLIED_KERNEL_ADDRESS_OVERRIDE_GLOBAL_SEARCH_
         if (programModule.isGlobalKernelSearch ()) {
-            GFX_EMU_DEBUG_MESSAGE_AT(fKernelSupport | fExtraDetail, "supplied program descriptor is a global kernel search,"
+            GFX_EMU_DEBUG_MESSAGE_AT(fKernelSupport | fDetail, "supplied program descriptor is a global kernel search,"
                 " will not override with a more restrictive one."
                 " Define LEGACY_ENABLE_USER_SUPPLIED_KERNEL_ADDRESS_OVERRIDE_GLOBAL_SEARCH_ to always override.\n");
         }
@@ -135,20 +119,14 @@ const DbgSymb::FunctionDesc& getKernelDesc_ (
             GFX_EMU_FAIL_WITH_MESSAGE("can't find any data for a kernel "
                 "when no name and address provided\n");
         }
-
 #ifdef GFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED
         const auto symbDesc = DbgSymb::obj().addrToSymbDesc(
             reinterpret_cast<void*>(addr)
         );
 
-        if (!symbDesc.name.size () || symbDesc.addr == nullptr)
-            GFX_EMU_FAIL_WITH_MESSAGE("can't find any data for a kernel "
-                "at address %p: no name (%s) or address (%p) found.\n",
-                addr, symbDesc.name.c_str(), symbDesc.addr);
-
         kernelName = symbDesc.name;
 #else
-        GfxEmu::WarningMessage("no kernel information query method is supported in current build.\n");
+        GFX_EMU_WARNING_MESSAGE("no kernel information query method is supported in current build.\n");
 #endif
     }
 
@@ -188,17 +166,17 @@ const DbgSymb::FunctionDesc& getKernelDesc_ (
         kernelName.c_str ()
     );
 
-    if(!k.addr && addr) {
-        GFX_EMU_MESSAGE(fKernelSupport, "setting kernel %s address to user-defined value of %p\n",
-            kernelName.c_str (), addr);
-        k.addr = (void*)addr;
-    }
-
     const auto shimKernelInfoFound = fallback_getKernelDataFromShim(k, kernelModuleApplied);
     if(!shimKernelInfoFound)
         GFX_EMU_WARNING_MESSAGE(fKernelSupport, "kernel %s arguments data is not found.\n",
             kernelName.c_str ());
 #endif
+
+    if(!k.addr && addr) {
+        GFX_EMU_MESSAGE(fKernelSupport | fDbgSymb, "setting kernel %s address to user-defined value of %p\n",
+            kernelName.c_str (), addr);
+        k.addr = reinterpret_cast<void*>(addr);
+    }
 
     if (k.addr)
         addrToKernel[reinterpret_cast<void(*)()>(k.addr)] = &k;
@@ -221,21 +199,20 @@ bool fallback_getKernelDataFromShim(GfxEmu::DbgSymb::FunctionDesc& k, const Prog
             shimKernelInfoFound = true;
 
             if(!k.addr) {
-                GFX_EMU_MESSAGE(fKernelSupport | fSticky,
+                GFX_EMU_MESSAGE(fKernelSupport,
                     "getting kernel %s address from shim layer.\n",
                         k.name.c_str ());
                 k.addr = info.func;
             }
 
-            if(!k.args.size ()) {
-                GFX_EMU_MESSAGE(fKernelSupport | fSticky,
-                    "getting kernel %s arguments data via shim signature parse.\n",
+            if(!k.params.size ()) {
+                GFX_EMU_MESSAGE(fKernelSupport,
+                    "getting kernel %s parameters data via shim signature parse.\n",
                         k.name.c_str ());
 
                 for (const auto& shimArgType: ParseKernelSignature(info.signature)) {
-                    GfxEmu::DbgSymb::ArgDesc argDesc;
+                    GfxEmu::DbgSymb::ParamDesc argDesc;
                     switch(shimArgType) {
-
                         case CmArgumentType::Fp:
                             argDesc.isFloat = true;
                             break;
@@ -244,10 +221,10 @@ bool fallback_getKernelDataFromShim(GfxEmu::DbgSymb::FunctionDesc& k, const Prog
                             break;
                         case CmArgumentType::Invalid:
                             GFX_EMU_FAIL_WITH_MESSAGE(fShim | fKernelSupport, "argument type is not"
-                                " determined for kernel %s argument %u", k.name.c_str (), k.args.size ());
+                                " determined for kernel %s argument %u", k.name.c_str (), k.params.size ());
                         default: break;
                     }
-                    k.args.push_back(argDesc);
+                    k.params.push_back(argDesc);
                 }
             }
         }

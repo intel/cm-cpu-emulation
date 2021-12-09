@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2020 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <vector>
 #include <string.h>
@@ -37,9 +21,15 @@
 #include "emu_cfg.h"
 #include "emu_utils.h"
 
+#if defined(_WIN32)
+#define SHIM_CALL(x) shim_ ## x
+#undef ZE_APIEXPORT
+#define ZE_APIEXPORT extern "C"
+#else /* _WIN32 */
 #define SHIM_CALL(x) x
 #undef ZE_APIEXPORT
 #define ZE_APIEXPORT extern "C"
+#endif /* _WIN32 */
 
 //#define ZE_APIEXPORT
 //#define ZE_APICALL
@@ -189,7 +179,6 @@ typedef struct _ze_device_mem_alloc
     {
         SharedBuffer, Buffer, Image2d, Image3d
     } type = Buffer;
-
     union
     {
         CmBuffer *cm_buf = nullptr;
@@ -262,8 +251,9 @@ typedef struct _ze_device_mem_alloc
 
 struct _ze_image_handle_t : public _ze_device_mem_alloc {};
 
-/// functions
+/// functions ///
 bool ExecuteCommand(ze_command_queue_handle_t hCommandQueue, const ZeCommand& command);
+///
 
 ZE_APIEXPORT ze_result_t ZE_APICALL
 SHIM_CALL(zeInit)(
@@ -280,7 +270,6 @@ SHIM_CALL(zeInit)(
     CM_COPY_ENGINE.cm_device = device;
     CM_COPY_ENGINE.isSubdevice = true;
     CM_COPY_ENGINE.subdeviceId = 2;
-
     if ((result != CM_SUCCESS) || (version < CM_1_0))
     {
         return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
@@ -362,7 +351,6 @@ SHIM_CALL(zeDeviceGetProperties)(
     pDeviceProperties->maxHardwareContexts = 1;
 
     pDeviceProperties->maxCommandQueuePriority = 1;
-
     pDeviceProperties->numThreadsPerEU = 7;
     pDeviceProperties->physicalEUSimdWidth = 8;
     pDeviceProperties->numEUsPerSubslice = 8;
@@ -372,8 +360,32 @@ SHIM_CALL(zeDeviceGetProperties)(
     pDeviceProperties->timerResolution = 1000;
     pDeviceProperties->timestampValidBits = 60;
     pDeviceProperties->kernelTimestampValidBits = 60;
-    strcpy(pDeviceProperties->name, GfxEmu::Utils::toUpper(GfxEmu::Cfg ().Platform.getStr ()).c_str());
+    strcpy(pDeviceProperties->name, GfxEmu::Utils::toUpper(GfxEmu::Cfg::Platform ().getStr ()).c_str());
     return ZE_RESULT_SUCCESS;
+}
+
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetComputeProperties)(
+    ze_device_handle_t hDevice,                         ///< [in] handle of the device
+    ze_device_compute_properties_t* pComputeProperties  ///< [in,out] query result for compute properties
+    )
+{
+    if (pComputeProperties) {
+        pComputeProperties->maxTotalGroupSize = 0xffu;
+        pComputeProperties->maxGroupSizeX = 0xffu;
+        pComputeProperties->maxGroupSizeY = 0xffu;
+        pComputeProperties->maxGroupSizeZ = 0xffu;
+        pComputeProperties->maxGroupCountX = 0xffffffffu;
+        pComputeProperties->maxGroupCountY = 0xffffffffu;
+        pComputeProperties->maxGroupCountZ = 0xffffffffu;
+        pComputeProperties->maxSharedLocalMemory = 0x1000u;
+        pComputeProperties->numSubGroupSizes = 3;
+        pComputeProperties->subGroupSizes[0] = 8;
+        pComputeProperties->subGroupSizes[1] = 16;
+        pComputeProperties->subGroupSizes[2] = 32;
+        return ZE_RESULT_SUCCESS;
+    }
+    return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL
@@ -570,8 +582,13 @@ SHIM_CALL(zeModuleBuildLogGetString)(
     char* pBuildLog
     )
 {
+    if(hModuleBuildLog == nullptr)
+        return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
+
+    if(pSize == nullptr)
+        return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
+
     *pSize = 0;
-    if (pBuildLog) std::strcpy(pBuildLog,"");
     return ZE_RESULT_SUCCESS;
 }
 
@@ -741,7 +758,7 @@ bool ExecuteLaunchKernel(ze_command_queue_handle_t hCommandQueue, ZeLaunchKernel
     if ((args->hKernel->sizeZ > 1) || (args->groupCount.groupCountZ > 1))
     {
         // do not support 3-dimensional enqueue yet
-        GfxEmu::ErrorMessage("SHIM layer doesn't yet support 3-dimentional enqueue, "
+        GFX_EMU_ERROR_MESSAGE("SHIM layer doesn't yet support 3-dimentional enqueue, "
             "while was asked for z == %u", args->groupCount.groupCountZ);
         return false;
     }
@@ -764,7 +781,6 @@ bool ExecuteLaunchKernel(ze_command_queue_handle_t hCommandQueue, ZeLaunchKernel
     }
     CmEvent *e = nullptr;
     status = hCommandQueue->cm_queue->EnqueueWithGroup(t, e, tgs);
-
     return status == CM_SUCCESS;
 }
 
@@ -798,7 +814,6 @@ bool ExecuteMemoryCopy(ze_command_queue_handle_t hCommandQueue, ZeMemoryCopyArgs
     }
     else
     {
-
         if (dstIsDevice)
         {
             ze_device_mem_alloc deviceMem = reinterpret_cast<ze_device_mem_alloc>(args->dstptr);
@@ -888,7 +903,6 @@ SHIM_CALL(zeCommandQueueExecuteCommandLists)(
     ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
     )
 {
-
     for (auto& command : phCommandLists[0]->commands)
     {
         ExecuteCommand(hCommandQueue, command);
@@ -940,7 +954,7 @@ CM_SURFACE_FORMAT zeImageFormatToCmFormat(const ze_image_format_t& format)
     // ->layout = various
     // ->type = SINT/unsigned int/UNORM/SNORM/FLOAT
     // ->x/y/z/w = swizzling channels
-
+    //
     switch(format.layout)
     {
     case ZE_IMAGE_FORMAT_LAYOUT_32:
@@ -1145,7 +1159,6 @@ SHIM_CALL(zeEventQueryKernelTimestamp)(
     {
         return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
     }
-
     dstptr->global.kernelStart = 0;
     dstptr->global.kernelEnd = 100;
     dstptr->context.kernelStart = 0;
@@ -1351,7 +1364,6 @@ SHIM_CALL(zeDeviceGetModuleProperties)(
     if (pModuleProperties)
     {
         pModuleProperties->spirvVersionSupported = 0; // Shim will never support spirv
-
         pModuleProperties->flags = ZE_DEVICE_MODULE_FLAG_FP16
                                  | ZE_DEVICE_MODULE_FLAG_FP64
                                  | ZE_DEVICE_MODULE_FLAG_INT64_ATOMICS
@@ -1443,7 +1455,7 @@ SHIM_CALL(zeDeviceGetCommandQueueGroupProperties)(
         return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
     }
 
-    if (pCommandQueueGroupProperties)
+	if (pCommandQueueGroupProperties)
     {
         constexpr int numQueues = 2;
         for (int i = 0; i < numQueues; i++) {

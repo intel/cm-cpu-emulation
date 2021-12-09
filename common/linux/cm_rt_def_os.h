@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 //!
 //! \file      cm_rt_def_os.h
@@ -34,8 +18,6 @@
 #include <va/va.h>
 #include <malloc.h>
 
-#ifndef __SYCL_EXPLICIT_SIMD_PLUGIN__
-
 #define _tmain main
 
 #include <stdio.h>
@@ -47,8 +29,6 @@
 #include <pthread.h>
 #include <x86intrin.h>
 #include <iostream>
-
-#endif // __SYCL_EXPLICIT_SIMD_PLUGIN__
 
 #define EXTERN_C extern "C"
 
@@ -126,7 +106,6 @@ typedef enum _VA_CM_FORMAT {
     VA_CM_FMT_A16B16G16R16F        = 113,
     VA_CM_FMT_R32F                 = 114,
     VA_CM_FMT_R32G32B32A32F        = 115,
-#ifndef __SYCL_EXPLICIT_SIMD_PLUGIN__
     VA_CM_FMT_I420                 =  VA_FOURCC('I','4','2','0'),
     VA_CM_FMT_P216                 =  VA_FOURCC('P','2','1','6'),
     VA_CM_FMT_400P                 =  VA_FOURCC('4','0','0','P'),
@@ -147,12 +126,7 @@ typedef enum _VA_CM_FORMAT {
     VA_CM_FMT_P016                 =  VA_FOURCC_P016,
     VA_CM_FMT_P208                 =  VA_FOURCC_P208,
     VA_CM_FMT_AYUV                 =  VA_FOURCC_AYUV,
-    VA_CM_FMT_Y210                 =  VA_FOURCC_Y210,
-    VA_CM_FMT_Y410                 =  VA_FOURCC_Y410,
-    VA_CM_FMT_Y216                 =  VA_FOURCC_Y216,
-    VA_CM_FMT_Y416                 =  VA_FOURCC_Y416,
     VA_CM_FMT_AI44                 =  VA_FOURCC_AI44,
-#endif // __SYCL_EXPLICIT_SIMD_PLUGIN__
 
     VA_CM_FMT_MAX                  =  0xFFFFFFFF
 } VA_CM_FORMAT;
@@ -247,10 +221,6 @@ inline int CM_THREAD_JOIN(THREAD_HANDLE *handle_array, int thread_cnt)
 #define CM_SURFACE_FORMAT_P016                  VA_CM_FMT_P016
 #define CM_SURFACE_FORMAT_P208                  VA_CM_FMT_P208
 #define CM_SURFACE_FORMAT_AYUV                  VA_CM_FMT_AYUV
-#define CM_SURFACE_FORMAT_Y210                  VA_CM_FMT_Y210
-#define CM_SURFACE_FORMAT_Y410                  VA_CM_FMT_Y410
-#define CM_SURFACE_FORMAT_Y216                  VA_CM_FMT_Y216
-#define CM_SURFACE_FORMAT_Y416                  VA_CM_FMT_Y416
 
 #define CM_SURFACE_FORMAT_IA44                  VA_CM_FMT_IA44
 #define CM_SURFACE_FORMAT_AI44                  VA_CM_FMT_AI44
@@ -272,7 +242,6 @@ inline int CM_THREAD_JOIN(THREAD_HANDLE *handle_array, int thread_cnt)
 //Performance
 EXTERN_C INT QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
 EXTERN_C INT QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
-
     #define CM_KERNEL_FUNCTION2(...) #__VA_ARGS__, (void *)(void (__cdecl *) (void))__VA_ARGS__
 
     #define _NAME(...) #__VA_ARGS__, (void (__cdecl *)(void))__VA_ARGS__

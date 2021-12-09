@@ -26,10 +26,24 @@ set(CMRT_SOURCE
   cm_thread_space_emumode.cpp)
 
 
+if (WIN32)
+  set(LIBCMRT_OS_HEADERS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/windows)
+else()
   set(LIBCMRT_OS_HEADERS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/linux)
+endif()
 
 # Library name
+if (WIN32)
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(_name igfxcmrt64_emu)
+    set(_name11 igfx11cmrt64_emu)
+  else()
+    set(_name igfxcmrt32_emu)
+    set(_name11 igfx11cmrt32_emu)
+  endif()
+else()
   set(_name igfxcmrt_emu)
+endif()
 
 add_library(igfxcmrt SHARED ${CMRT_SOURCE})
 set_target_properties(igfxcmrt PROPERTIES
@@ -39,6 +53,9 @@ set_target_properties(igfxcmrt PROPERTIES
   OUTPUT_NAME ${_name}
   PUBLIC_HEADER "${COMMON_HEADERS}")
 
+if (WIN32)
+  target_compile_definitions(igfxcmrt PUBLIC CM_DX9)
+endif()
 
 target_compile_definitions(igfxcmrt PRIVATE CM_RT_EXPORTS)
 target_compile_definitions(igfxcmrt PUBLIC CMRT)
@@ -61,3 +78,31 @@ install(TARGETS igfxcmrt
   RUNTIME DESTINATION bin
   PUBLIC_HEADER DESTINATION include/igfxcmrt_emu)
 
+if (WIN32) # DX11
+  add_library(igfx11cmrt SHARED ${CMRT_SOURCE})
+  set_target_properties(igfx11cmrt PROPERTIES
+    CXX_STANDARD ${_cxx}
+    CXX_STANDARD_REQUIRED ON
+    CXX_VISIBILITY_PRESET default
+    OUTPUT_NAME ${_name11})
+
+  target_compile_definitions(igfx11cmrt PRIVATE CM_RT_EXPORTS)
+  target_compile_definitions(igfx11cmrt PUBLIC CMRT CM_DX11)
+
+  target_include_directories(igfx11cmrt 
+    PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${LIBCMRT_OS_HEADERS_PATH}>
+    PUBLIC
+        $<BUILD_INTERFACE:${COMMON_HEADERS_PATH}>
+        $<BUILD_INTERFACE:${COMMON_OS_HEADERS_PATH}>
+        $<INSTALL_INTERFACE:include/igfxcmrt_emu>)
+
+  target_link_libraries(igfx11cmrt PUBLIC libcm)
+  ## target_link_libraries(igfx11cmrt PRIVATE emu_common)
+
+  install(TARGETS igfx11cmrt
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
+endif()
