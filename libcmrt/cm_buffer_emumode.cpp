@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 #include "cm_memory_object_control.h"
@@ -31,18 +15,20 @@
 #include "cm.h"
 #include "cm_mem_fast_copy.h"
 
+#ifdef __GNUC__
 extern void
 CM_unregister_buffer_emu(SurfaceIndex buf_id, bool copy);
 
 extern void
 CM_register_buffer_emu(int buf_id, CmBufferType bclass, void *src, uint width) ;
+#endif
 
 CmBufferEmu::CmBufferEmu(uint32_t width,
                          CmSurfaceFormatID surfFormat,
                          bool isCmCreated,
                          CmSurfaceManagerEmu* surfaceManager):
                          CmSurfaceEmu(isCmCreated, surfaceManager),
-                         m_gfxAddress(0),
+						 m_gfxAddress(0),
                          m_sysAddress(nullptr)
 {
     m_surfFormat = surfFormat;
@@ -58,7 +44,11 @@ CmBufferEmu::~CmBufferEmu(){
     CM_unregister_buffer_emu(*pIndex,false);
     if(this->m_buffer != nullptr && this->alloc_dummy)
     {
+#if defined(_WIN32)
+        _aligned_free(this->m_buffer);
+#else
         free(this->m_buffer);
+#endif
     }
 }
 
@@ -67,7 +57,11 @@ int32_t CmBufferEmu::Initialize( uint32_t index, uint32_t arrayIndex, void *&sys
     m_arrayIndex=arrayIndex;
     if(sysMem == nullptr)
     {
+#if defined(_WIN32)
+        m_buffer = _aligned_malloc(m_width, 16); // oword aligned
+#else
         posix_memalign(&m_buffer, 16, m_width); // oword aligned
+#endif
         if (m_buffer == nullptr) {
             GFX_EMU_ERROR_MESSAGE("Out of memory (%d) - 1dEmu\n", m_width);
             fflush(stderr);
@@ -184,12 +178,12 @@ int32_t CmBufferEmu::DoCopy()
         return CM_FAILURE;
     // Let's consider the pre/post execution copy as legacy
     // and comment it out for now.
-
     //CmFastMemCopyFromWC((int8_t*)m_buffer+m_baseAddressOffset, buff_iter->p_volatile, m_newSize, GetCpuInstructionLevel());
     return CM_SUCCESS;
 }
 
 int32_t CmBufferEmu::DoGPUCopy(
+bool doD3DCopy
 )
 {
     cm_list<CmEmulSys::iobuffer>::iterator buff_iter;
@@ -198,7 +192,6 @@ int32_t CmBufferEmu::DoGPUCopy(
         return CM_FAILURE;
     // Let's consider the pre/post execution copy as legacy
     // and comment it out for now.
-
     //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + m_baseAddressOffset, m_newSize, GetCpuInstructionLevel());
 
     GPUCopyForBufferAlias();
@@ -243,13 +236,13 @@ CM_RT_API int32_t CmBufferEmu::SetSurfaceStateParam(SurfaceIndex *surfIndex,
     uint32_t        aliasIndex = 0;
     if (bufferStateParam->uiBaseAddressOffset + bufferStateParam->uiSize > m_width)
     {
-        GfxEmu::ErrorMessage("The offset exceeds the buffer size.");
+        GFX_EMU_ERROR_MESSAGE("The offset exceeds the buffer size.");
         GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
     if (bufferStateParam->uiBaseAddressOffset % 16) // the offset must be 16-aligned, otherwise it will cause a GPU hang
     {
-        GfxEmu::ErrorMessage("The offset must be 16-aligned, otherwise it will cause GPU hang.");
+        GFX_EMU_ERROR_MESSAGE("The offset must be 16-aligned, otherwise it will cause GPU hang.");
         GFX_EMU_ASSERT(0);
         return CM_INVALID_ARG_VALUE;
     }
@@ -288,7 +281,6 @@ CM_RT_API int32_t CmBufferEmu::SetSurfaceStateParam(SurfaceIndex *surfIndex,
 
     // Let's consider the pre/post execution copy as legacy
     // and comment it out for now.
-
     //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + bufferStateParam->uiBaseAddressOffset, newSize, GetCpuInstructionLevel());
 
     return CM_SUCCESS;
@@ -310,7 +302,6 @@ int32_t CmBufferEmu::GPUCopyForBufferAlias()
             buff_iter = CmEmulSys::search_buffer(m_aliasIndices[i]->get_data());
             // Let's consider the pre/post execution copy as legacy
             // and comment it out for now.
-
             //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + iter->second.uiBaseAddressOffset, iter->second.size, GetCpuInstructionLevel());
         }
     }

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 /*
  * xmmintrin.h
@@ -46,13 +30,44 @@
 
 #define _MM_ALIGN16 __declspec(align(16))
 
+#if defined(__INTEL_COMPILER) && defined(_MM_FUNCTIONALITY)
+# include "xmm_func.h"
+#else
+# if defined(_WIN32) && _MSC_FULL_VER >= 140040310
+   typedef union  _MMINTRIN_TYPE(16) __m128 {
+    /*
+     * Although we do not recommend using these directly, they are here
+     * for better MS compatibility.
+     */
+    float               m128_f32[4];
+    unsigned __int64    m128_u64[2];
+    __int8              m128_i8[16];
+    __int16             m128_i16[8];
+    __int32             m128_i32[4];
+    __int64             m128_i64[2];
+    unsigned __int8     m128_u8[16];
+    unsigned __int16    m128_u16[8];
+    unsigned __int32    m128_u32[4];
+
+    /*
+     * This is what we used to have here alone.
+     * Leave for backward compatibility.
+     */
+    float f[4];
+   } __m128;
+# else
    typedef struct _MMINTRIN_TYPE(16) __m128 {
     float               m128_f32[4];
    } __m128;
+# endif
+#endif
 
 /* Try to pick up _mm_malloc() and _mm_free() from malloc.h.  If the version
  * of malloc.h doesn't support these routines, use the functions in libirc.
  */
+#if defined(_WIN32)
+#include <malloc.h>
+#endif
 
 #if defined __cplusplus
 extern "C" { /* Begin "C" */
@@ -446,9 +461,7 @@ extern __m128  __ICL_INTRINCC _mm_cvtsi64_ss(__m128, __int64);
 /*
  * Include the SSE2 definitions for compatibility with gcc.
  */
-#if defined (__linux__) || defined (__QNX__) ||     \
-    defined (__VXWORKS__) || defined(__APPLE__) ||  \
-    defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined (__linux__)
 #include <emmintrin.h>
 #endif
 

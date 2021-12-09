@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 
@@ -67,6 +51,16 @@ int32_t CmSurfaceManagerEmu::CreateBuffer(uint32_t width, CmBufferEmu* & pSurfac
 
     uint32_t index = 0;
 
+#if 0
+    index = m_SurfaceArray.GetFreeIndex();
+
+    if( index >= this->m_maxSurfaceCount )
+    {
+        GFX_EMU_ASSERT( 0 );
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+#endif
+
     this->findFreeIndex(0, index);
 
     if( index >= this->m_maxSurfaceCount )
@@ -103,10 +97,27 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
 {
     uint32_t sizePerPixel = 0;
     if(
+#ifdef CM_DX11
+        ( format != CM_SURFACE_FORMAT_R32_UINT )   &&
+        ( format != CM_SURFACE_FORMAT_R32_SINT )   &&
+        ( format != CM_SURFACE_FORMAT_R8G8_UNORM ) &&
+        ( format != CM_SURFACE_FORMAT_R16_UINT )   &&
+        ( format != CM_SURFACE_FORMAT_R16_SINT )   &&
+#elif defined(CM_DX9)
+        (format != CM_SURFACE_FORMAT_L16) &&
+        (format != CM_SURFACE_FORMAT_IRW0) &&
+        (format != CM_SURFACE_FORMAT_IRW1) &&
+        (format != CM_SURFACE_FORMAT_IRW2) &&
+        (format != CM_SURFACE_FORMAT_IRW3) &&
+#endif
         ( format != CM_SURFACE_FORMAT_X8R8G8B8 ) &&
         ( format != CM_SURFACE_FORMAT_A8R8G8B8 ) &&
         ( format != CM_SURFACE_FORMAT_R32G32B32A32F ) &&
         ( format != CM_SURFACE_FORMAT_NV12 ) &&
+#if defined(_WIN32)
+        ( format != CM_SURFACE_FORMAT_P010 ) &&
+        ( format != CM_SURFACE_FORMAT_P016 ) &&
+#endif
         ( format != CM_SURFACE_FORMAT_YUY2 ) &&
         ( format != CM_SURFACE_FORMAT_UYVY ) &&
         ( format != CM_SURFACE_FORMAT_A8 )&&
@@ -132,13 +143,32 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
     case CM_SURFACE_FORMAT_A8R8G8B8:
     case CM_SURFACE_FORMAT_R32F:
     case CM_SURFACE_FORMAT_R10G10B10A2:
+#ifdef CM_DX11
+    case CM_SURFACE_FORMAT_R32_UINT:
+    case CM_SURFACE_FORMAT_R32_SINT:
+#endif
         sizePerPixel = 4;
         break;
     case CM_SURFACE_FORMAT_YUY2:
     case CM_SURFACE_FORMAT_UYVY:
     case CM_SURFACE_FORMAT_V8U8:
+#ifdef CM_DX11
+    case CM_SURFACE_FORMAT_R8G8_UNORM:
+    case CM_SURFACE_FORMAT_R16_UINT:
+    case CM_SURFACE_FORMAT_R16_SINT:
+#elif defined(CM_DX9)
+    case CM_SURFACE_FORMAT_L16:
+    case CM_SURFACE_FORMAT_IRW0:
+    case CM_SURFACE_FORMAT_IRW1:
+    case CM_SURFACE_FORMAT_IRW2:
+    case CM_SURFACE_FORMAT_IRW3:
+#endif
         sizePerPixel = 2;
         break;
+#if defined(_WIN32)
+    case CM_SURFACE_FORMAT_P010:
+    case CM_SURFACE_FORMAT_P016:
+#endif
         sizePerPixel = 2;
         *additional_increment = 1;
         break;
@@ -152,7 +182,7 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
         break;
 
     default:
-        GfxEmu::ErrorMessage("Fail to get surface description!");
+        GFX_EMU_ERROR_MESSAGE("Fail to get surface description!");
         GFX_EMU_ASSERT( 0 );
         return -1;
     }
@@ -177,6 +207,14 @@ int32_t CmSurfaceManagerEmu::CreateSurface2D(uint32_t width,
     // This loop can be avoided if surface registration function can return a index for
     // runtime to use here
     uint32_t index = 0;
+#if 0
+    index = m_SurfaceArray.GetFreeIndex();
+    if( index >= this->m_maxSurfaceCount )
+    {
+        GFX_EMU_ASSERT( 0 );
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+#endif
     sizePerPixel = this->getBytesPerPixel(format, &additional_increment);
     if(sizePerPixel <=0)
     {
@@ -206,6 +244,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface2D(uint32_t width,
 
     CmSurfaceFormatID surfFormat = ConvertOsFmtToSurfFmt(format);
 
+    // true indicates pD3DSurf is created by CM
     result = CmSurface2DEmu::Create( index,sizePerPixel, width, height,format, surfFormat, true, pCmSurface2D, pSysMem, false, this );
 
     //to handle the requirements of the nv12 and imc1/2/3/4 formats
@@ -277,6 +316,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface2DUP(uint32_t width, uint32_t height, 
 
     CmSurfaceFormatID surfFormat = ConvertOsFmtToSurfFmt(format);
 
+    // true indicates pD3DSurf is created by CM
     result = CmSurface2DEmu::Create( index,sizePerPixel, width, height,format, surfFormat, true, pCmSurface2D, pSysMem, false, this );
 
     //to handle the requirements of the nv12 and imc1/2/3/4 formats
@@ -322,6 +362,14 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
     // This loop can be avoided if surface registration function can return a index for
     // runtime to use here
     uint32_t index = 0;
+#if 0
+    index = m_SurfaceArray.GetFreeIndex();
+    if( index >= this->m_maxSurfaceCount )
+    {
+        GFX_EMU_ASSERT( 0 );
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+#endif
     sizePerPixel = this->getBytesPerPixel(format, &additional_increment);
     if(sizePerPixel <=0)
     {
@@ -360,6 +408,7 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
         return CM_INVALID_ARG_VALUE;
     }
 
+    // true indicates pD3DSurf is created by CM
     int32_t result = CmSurface3DEmu::Create( index,index, width*sizePerPixel, height,depth, format, surfFormat, true, pCmSurface3D );
 
     if( result != CM_SUCCESS )
@@ -376,6 +425,58 @@ int32_t CmSurfaceManagerEmu::CreateSurface3D(uint32_t width, uint32_t height, ui
 
     return CM_SUCCESS;
 }
+
+#if defined(_WIN32)
+#ifdef CM_DX9
+int32_t CmSurfaceManagerEmu::CreateSurface2D(IDirect3DSurface9 *pD3DSurf, CmSurface2DEmu *&pSurface)
+{
+    int status = CM_FAILURE;
+    int width = 0;
+    int height = 0;
+    CM_SURFACE_FORMAT format;
+    D3DSURFACE_DESC desc;
+    HRESULT hRes = pD3DSurf->GetDesc( &desc );
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to get surface description!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_FAILURE;
+    }
+
+    width = desc.Width;
+    height = desc.Height;
+    format = desc.Format;
+    status = this->CreateSurface2D(width, height, format, pSurface, false);
+    if(status == CM_SUCCESS)
+    {
+        status = pSurface->SetD3DSurface(pD3DSurf);
+    }
+
+    return status;
+}
+#elif CM_DX11
+int32_t CmSurfaceManagerEmu::CreateSurface2D(ID3D11Texture2D *pD3D11Texture, CmSurface2DEmu *&pSurface)
+{
+    int status = CM_FAILURE;
+    int width = 0;
+    int height = 0;
+    CM_SURFACE_FORMAT format;
+    D3D11_TEXTURE2D_DESC desc;
+    pD3D11Texture->GetDesc( &desc );
+
+    width = desc.Width;
+    height = desc.Height;
+    format = desc.Format;
+    status = this->CreateSurface2D(width, height, format, pSurface, false);
+    if(status == CM_SUCCESS)
+    {
+        status = pSurface->SetD3DSurface(pD3D11Texture);
+    }
+
+    return status;
+}
+#endif
+#endif  //__GNUC__
 
 int32_t CmSurfaceManagerEmu::Initialize( CM_HAL_MAX_VALUES HalMaxValues, CM_HAL_MAX_VALUES_EX HalMaxValuesEx )
 {
@@ -581,16 +682,16 @@ int32_t CmSurfaceManagerEmu::DestroySurface2DUP( CmSurface2DEmu* & pSurface2D )
 }
 
 CmSurfaceManagerEmu::CmSurfaceManagerEmu()
-    :m_SurfaceArray(512),
-    m_bufferID(0),
-    m_maxBufferCount(0),
-    m_bufferCount(0),
-    m_max2DSurfaceCount(0),
-    m_2DSurfaceCount(0),
-    m_max2DUPSurfaceCount(0),
-    m_2DUPSurfaceCount(0),
-    m_max3DSurfaceCount(0),
-    m_3DSurfaceCount(0)
+	:m_SurfaceArray(512),
+	m_bufferID(0),
+	m_maxBufferCount(0),
+	m_bufferCount(0),
+	m_max2DSurfaceCount(0),
+	m_2DSurfaceCount(0),
+	m_max2DUPSurfaceCount(0),
+	m_2DUPSurfaceCount(0),
+	m_max3DSurfaceCount(0),
+	m_3DSurfaceCount(0)
 {
     void *dummy = nullptr;
     CmSurface2DEmu::Create( -1,-1, 0, 0, CM_SURFACE_FORMAT_A8R8G8B8, R8G8B8A8_UNORM, true, this->m_pSurfaceDummy,dummy, true, this);
@@ -598,7 +699,6 @@ CmSurfaceManagerEmu::CmSurfaceManagerEmu()
 
 CmSurfaceManagerEmu::~CmSurfaceManagerEmu()
 {
-
     for( uint32_t i = 0; i < 512; i ++)
     {
         CmSurfaceEmu* pSurface = (CmSurfaceEmu *)m_SurfaceArray.GetElement( i );
@@ -624,6 +724,8 @@ CmSurfaceManagerEmu::~CmSurfaceManagerEmu()
                         DestroySurface( pSurf3D );
                     }else
                     {
+#if defined(_WIN32)
+#endif /* _WIN32 */
                     }
                 }
             }
@@ -755,6 +857,20 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
     case CM_SURFACE_FORMAT_A8:
     case CM_SURFACE_FORMAT_P8:
     case CM_SURFACE_FORMAT_V8U8:
+#if CM_DX9
+    case CM_SURFACE_FORMAT_IRW0:
+    case CM_SURFACE_FORMAT_IRW1:
+    case CM_SURFACE_FORMAT_IRW2:
+    case CM_SURFACE_FORMAT_IRW3:
+    case CM_SURFACE_FORMAT_L16:
+#endif
+#if CM_DX11
+    case CM_SURFACE_FORMAT_R16_UINT:
+    case CM_SURFACE_FORMAT_R16_SINT:
+    case CM_SURFACE_FORMAT_R32_SINT:
+    case CM_SURFACE_FORMAT_R32_UINT:
+    case CM_SURFACE_FORMAT_R8G8_UNORM:
+#endif
         break;
     case CM_SURFACE_FORMAT_UYVY:
     case CM_SURFACE_FORMAT_YUY2:
@@ -764,6 +880,10 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
             return CM_INVALID_WIDTH;
         }
         break;
+#if defined(_WIN32)
+    case CM_SURFACE_FORMAT_P016:
+    case CM_SURFACE_FORMAT_P010:
+#endif
         if (width & 0x1)
         {
             GFX_EMU_ASSERT(0);
@@ -782,6 +902,13 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
             GFX_EMU_ASSERT(0);
             return CM_INVALID_WIDTH;
         }
+#if defined(CM_DX11) || defined(__GNUC__)
+        if (height & 0x1)
+        {
+            GFX_EMU_ASSERT(0);
+            return CM_INVALID_HEIGHT;
+        }
+#endif
         break;
 
     default:
@@ -809,9 +936,24 @@ CmSurfaceFormatID CmSurfaceManagerEmu::ConvertOsFmtToSurfFmt(CM_SURFACE_FORMAT f
     case CM_SURFACE_FORMAT_NV12:                    return R8_UNORM;
     case CM_SURFACE_FORMAT_P016:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_P010:                    return R16_UNORM;
+#if CM_DX9
+    case CM_SURFACE_FORMAT_IRW0:                    return R16_UNORM;
+    case CM_SURFACE_FORMAT_IRW1:                    return R16_UNORM;
+    case CM_SURFACE_FORMAT_IRW2:                    return R16_UNORM;
+    case CM_SURFACE_FORMAT_IRW3:                    return R16_UNORM;
+    case CM_SURFACE_FORMAT_L16:                     return L16_UNORM;
+    case CM_SURFACE_FORMAT_UYVY:                    return YCRCB_SWAPY;
+#endif
+#if CM_DX11
+    case CM_SURFACE_FORMAT_R16_UINT:                return R16_UINT;
+    case CM_SURFACE_FORMAT_R16_SINT:                return R16_SINT;
+    case CM_SURFACE_FORMAT_R32_SINT:                return R32_SINT;
+    case CM_SURFACE_FORMAT_R32_UINT:                return R32_UINT;
+    case CM_SURFACE_FORMAT_R8G8_UNORM:              return R8G8_UNORM;
+    case CM_SURFACE_FORMAT_UYVY:                    return YCRCB_SWAPUVY;
+#endif
     default:
         GFX_EMU_ASSERT(0);
         return INVALID_SURF_FORMAT;
     }
 }
-

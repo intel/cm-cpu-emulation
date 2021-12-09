@@ -1,37 +1,24 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 #include "cm_surface_3d_emumode.h"
 #include "cm.h"
 #include "cm_mem_fast_copy.h"
+#include "cm_mem.h"
 
+#ifdef __GNUC__
 extern void
     CM_register_buffer_emu(int buf_id, CmBufferType bclass, void *src, uint width, uint height,
                        CmSurfaceFormatID surfFormat, uint depth, uint pitch);
 extern void
     CM_unregister_buffer_emu(SurfaceIndex buf_id, bool copy);
+#endif
 
 CmSurface3DEmu::CmSurface3DEmu( uint32_t width, uint32_t height, uint32_t depth, CM_SURFACE_FORMAT osApiSurfaceFmt,CmSurfaceFormatID surfFormat , bool isCmCreated ):
     CmSurfaceEmu(isCmCreated, nullptr)
@@ -59,6 +46,67 @@ int32_t CmSurface3DEmu::Initialize( uint32_t index, uint32_t arrayIndex )
     return CmSurfaceEmu::Initialize( index );
 
 }
+
+#if defined(_WIN32)
+int32_t CmSurface3DEmu::SetD3DSurface(CM_IDIRECT3DSURFACE *pD3DSurf)
+{
+#ifdef CM_DX9
+    int32_t result = CM_SUCCESS;
+    D3DSURFACE_DESC desc;
+    HRESULT hRes = pD3DSurf->GetDesc( &desc );
+    this->m_pD3DSurf = pD3DSurf;
+    D3DLOCKED_RECT rect;
+    hRes = m_pD3DSurf->LockRect( &rect, nullptr, D3DLOCK_READONLY );
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to lock a surface!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_FAILURE;
+    }
+
+    uint32_t pitch = rect.Pitch;
+
+    uint8_t *pSurf = ( uint8_t *)rect.pBits;
+    uint8_t *pDst = ( uint8_t *)this->m_buffer;
+    for (uint32_t i=0; i < this->m_height; i++)
+    {
+        CmFastMemCopyFromWC(pDst, pSurf, this->m_width, GetCpuInstructionLevel());
+        pSurf += pitch;
+        pDst += this->m_width;
+    }
+
+    hRes = m_pD3DSurf->UnlockRect();
+    if( hRes != D3D_OK )
+    {
+        GFX_EMU_ERROR_MESSAGE("Fail to unlock a surface!");
+        GFX_EMU_ASSERT( 0 );
+        return CM_FAILURE;
+    }
+
+    return result;
+#elif defined CM_DX11
+    if(this->m_pD3DSurf != nullptr)
+    {
+        ID3D11Device *pD3D11Device = nullptr;
+        ID3D11DeviceContext* pD3D11DeviceContext = nullptr;
+        pD3D11Device->GetImmediateContext(&pD3D11DeviceContext);
+        D3D11_MAPPED_SUBRESOURCE MappedResource;
+        HRESULT hRes = pD3D11DeviceContext->Map((ID3D11Resource*)m_pD3DSurf, 0, D3D11_MAP_READ_WRITE, 0, &MappedResource);
+        if( hRes != D3D_OK )
+        {
+            GFX_EMU_ERROR_MESSAGE("Fail to map a surface!");
+            GFX_EMU_ASSERT( 0 );
+            return CM_LOCK_SURFACE_FAIL;
+        }
+        uint8_t *pSurf = ( uint8_t *)MappedResource.pData;
+        uint8_t *pDst = ( uint8_t *)this->m_buffer;
+        CmFastMemCopyFromWC(pSurf, pDst, this->m_width * this->m_height, GetCpuInstructionLevel());
+        pD3D11DeviceContext->Unmap((ID3D11Resource*)m_pD3DSurf, 0);
+    }
+    return CM_SUCCESS;
+#endif
+}
+#endif
 
 int32_t CmSurface3DEmu::Create( uint32_t index, uint32_t arrayIndex, uint32_t width, uint32_t height, uint32_t depth, CM_SURFACE_FORMAT osApiSurfaceFmt, CmSurfaceFormatID surfFormat , bool isCmCreated, CmSurface3DEmu* &pSurface )
 {
@@ -134,6 +182,19 @@ CM_RT_API int32_t CmSurface3DEmu::GetIndex( SurfaceIndex*& pIndex )
     pIndex = m_pIndex;
     return CM_SUCCESS;
 }
+
+#if defined(_WIN32)
+int32_t CmSurface3DEmu::GetD3DSurface(CM_IDIRECT3DSURFACE* &pD3DSurface)
+{
+    if(!this->m_IsCmCreated)
+        pD3DSurface =  this->m_pD3DSurf;
+    else
+    {
+        pD3DSurface = nullptr;
+    }
+    return CM_SUCCESS;
+}
+#endif
 
 CmSurface3DEmu::~CmSurface3DEmu(){
     SurfaceIndex* pIndex;

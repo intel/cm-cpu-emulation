@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #define CM_EMU
 
@@ -37,35 +21,35 @@ thread_local Stack* breakStack = nullptr;
 
 CM_API Stack* getWorkingStack()
 {
-    return workingStack;
+	return workingStack;
 }
 
 CM_API void setWorkingStack(Stack *s)
 {
-    workingStack = s;
-    return;
+	workingStack = s;
+	return;
 }
 
 CM_API Stack* getBreakStack()
 {
-    return breakStack;
+	return breakStack;
 }
 
 CM_API void setBreakStack(Stack *s)
 {
-    breakStack = s;
-    return;
+	breakStack = s;
+	return;
 }
 
 CM_API uint getSIMDMarker()
 {
-    return __cm_internal_simd_marker;
+	return __cm_internal_simd_marker;
 }
 
 CM_API void setSIMDMarker(uint marker)
 {
-    __cm_internal_simd_marker = marker;
-    return;
+	__cm_internal_simd_marker = marker;
+	return;
 }
 
 CM_API uint __cm_internal_simd()
@@ -227,25 +211,25 @@ CM_API uint __cm_internal_simd_continue()
 }
 
 #define SIMD_DO_WHILE_END(T) \
-    CM_API uint __cm_internal_simd_do_while_end(T cond) \
-    { \
-        int width = MAX_MASK_WIDTH; \
-        vector<unsigned int, MAX_MASK_WIDTH> v = (unsigned int)cond; \
+	CM_API uint __cm_internal_simd_do_while_end(T cond) \
+	{ \
+		int width = MAX_MASK_WIDTH; \
+		vector<unsigned int, MAX_MASK_WIDTH> v = (unsigned int)cond; \
         unsigned int simd_mask = 0; \
         \
-         assert(sizeof(T) <= MAX_MASK_WIDTH);    \
+ 		assert(sizeof(T) <= MAX_MASK_WIDTH);	\
         for (unsigned int i = 1; i <= sizeof(T); i++) { \
             T e = v.get(i - 1); \
             if (e) \
                 simd_mask |= 1 << (MAX_MASK_WIDTH - i); \
         } \
         assert(!getBreakStack()->isEmpty()); \
-            \
+        	\
         simd_mask &= ((maskItem *)breakStack->top())->getMask(); \
         ((maskItem *)breakStack->top())->setMask(simd_mask); \
         ((maskItem *)workingStack->top())->setMask(simd_mask); \
         return simd_mask; \
-    }
+	}
 
 SIMD_DO_WHILE_END(bool);
 SIMD_DO_WHILE_END(int);
@@ -255,4 +239,3 @@ SIMD_DO_WHILE_END(unsigned char);
 SIMD_DO_WHILE_END(short);
 SIMD_DO_WHILE_END(unsigned short);
 };
-

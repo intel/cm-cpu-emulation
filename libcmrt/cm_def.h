@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CMRTLIB_AGNOSTIC_SHARE_CM_DEF_H_
 #define CMRTLIB_AGNOSTIC_SHARE_CM_DEF_H_
@@ -45,7 +29,8 @@
 #define CM_DDI_5_0 500
 #define CM_DDI_6_0 600
 #define CM_DDI_7_0 700
-#define CM_DDI_7_2 702 //for MDFRT API refreshment.
+#define CM_DDI_7_2 702
+#define CM_DDI_7_3 703 //for MDFRT API refreshment.
 
 #include "type_return_code.h"
 
@@ -125,7 +110,7 @@ inline CM_RETURN_CODE CmNotImplemented (std::string msg) {
 #ifdef GFX_EMU_FAIL_ON_NOT_IMPLEMENTED_
         GFX_EMU_FAIL_WITH_MESSAGE(msg.c_str());
 #else
-        GfxEmu::WarningMessage(msg.c_str());
+        GFX_EMU_WARNING_MESSAGE(msg.c_str());
         return CM_NOT_IMPLEMENTED;
 #endif
 }

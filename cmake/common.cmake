@@ -1,10 +1,42 @@
+
+####################################################
+
+
+####################################################
+
+
+####################################################
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake)
+
+####################################################
+
+set(COMMON_HEADERS_PATH ${CMAKE_CURRENT_LIST_DIR}/../common)
+set(COMMON_SRC_PATH ${CMAKE_CURRENT_LIST_DIR}/../common)
+
+####################################################
+
+if (WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif()
+
+####################################################
+
+if (WIN32)
+  set(COMMON_OS_HEADERS_PATH ${COMMON_HEADERS_PATH}/windows)
+  set(COMMON_OS_SRC_PATH ${COMMON_SRC_PATH}/windows)
+else()
+  set(COMMON_OS_HEADERS_PATH ${COMMON_HEADERS_PATH}/linux)
+  set(COMMON_OS_SRC_PATH ${COMMON_SRC_PATH}/linux)
+endif()
+
 # These headers are the accumulated set of those
 # interused between libcm, libcmrt and shim-layer.
 set(COMMON_HEADERS
 
   ${COMMON_HEADERS_PATH}/kernel_utils.h
   ${COMMON_HEADERS_PATH}/os_utils.h
-
+  
   ${COMMON_HEADERS_PATH}/emu_dbgsymb_types.h
   ${COMMON_HEADERS_PATH}/emu_kernel_support.h
   ${COMMON_HEADERS_PATH}/emu_kernel_support_types.h
@@ -16,6 +48,8 @@ set(COMMON_HEADERS
 
 
   ${COMMON_HEADERS_PATH}/emu_cfg.h
+  ${COMMON_HEADERS_PATH}/emu_cfg_params.h
+  ${COMMON_HEADERS_PATH}/emu_cfg_platform.h
 
   ${COMMON_HEADERS_PATH}/emu_api_export.h
 
@@ -57,6 +91,7 @@ set(COMMON_HEADERS
   ${COMMON_HEADERS_PATH}/type_surface_details.h
   ${COMMON_HEADERS_PATH}/type_task_base.h
   ${COMMON_HEADERS_PATH}/type_thread_space_base.h
+  ${COMMON_HEADERS_PATH}/type_dll_file_version.h
   ${COMMON_HEADERS_PATH}/type_26zi_dispatch_pattern.h
   ${COMMON_HEADERS_PATH}/type_coord.h
   ${COMMON_HEADERS_PATH}/type_dependency.h
@@ -86,4 +121,11 @@ set(COMMON_HEADERS
   ${COMMON_OS_HEADERS_PATH}/cm_include.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_def_os.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_api_os.h)
+
+####################################################
+
+
+####################################################
+
+
 

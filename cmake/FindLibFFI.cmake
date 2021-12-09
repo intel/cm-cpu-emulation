@@ -1,4 +1,8 @@
 
+if(WIN32)
+        message(FATAL_ERROR "\nWindows build is not supported yet.\n")
+endif()
+
 include(FindPackageHandleStandardArgs)
 
 find_path(LibFFI_INCLUDE_DIR
@@ -23,6 +27,7 @@ find_package_handle_standard_args(LibFFI
 mark_as_advanced(LibFFI_LIBRARY LibFFI_INCLUDE_DIR)
 
 if(LibFFI_FOUND)
+  add_definitions(-DLIBFFI_FOUND)
   list(APPEND LibFFI_LIBRARIES ${LibFFI_LIBRARY} ${CMAKE_DL_LIBS})
   list(APPEND LibFFI_INCLUDE_DIRS ${LibFFI_INCLUDE_DIR})
 endif()
@@ -34,3 +39,4 @@ if(LibFFI_FOUND AND NOT TARGET LibFFI::LibFFI)
   set_target_properties(LibFFI::LibFFI PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${LibFFI_INCLUDE_DIRS}")
 endif()
+

@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CM_INTRIN_H
 #define CM_INTRIN_H
@@ -30,14 +14,21 @@
 #include <mutex>
 
 #include "rt.h"
-#include "cm_common_macros.h"
 #include "emu_log.h"
-using namespace GfxEmu::Log::Flags;
-
+#include "cm_list.h"
+#include "cm_common_macros.h"
 #include "genx_dataport.h"
 
 /* Some extras for float rounding support */
+#ifdef __GNUC__
 #include <fenv.h>
+#else
+#include <float.h>
+#if defined(__ICC) || defined(__ICL)
+#pragma float_control(precise, on)
+#endif
+#pragma fenv_access (on)
+#endif // __GNUC__
 
 #include "half_type.h"
 
@@ -397,8 +388,6 @@ cm_quot(const T &src0, const stream<T, SZ> &src1,
 
     return retv;
 }
-
-
 template <typename T>
 CM_API T
 cm_quot(const T &src0, const T &src1,
@@ -463,8 +452,6 @@ cm_mod(const T &src0, const stream<T, SZ> &src1,
 
     return retv;
 }
-
-
 template <typename T>
 CM_API T
 cm_mod(const T &src0, const T &src1,
@@ -586,8 +573,6 @@ cm_div(matrix_ref<T, R, C> rmd, const T &src0, const stream<T, R * C> &src1,
 
     return retv;
 }
-
-
 template <typename T>
 CM_API T
 cm_div(T &rmd, const T &src0, const T &src1,
@@ -763,7 +748,6 @@ cm_imul(T3 &rmd, const T1 &src0,
     return retv;
 }
 
-
 template <typename T1, typename T2, typename T3, uint R, uint C>
 CM_API vector<T3, R * C>
 cm_imul(matrix<T3, R, C> &rmd, const stream<T1, R * C> &src0,
@@ -891,6 +875,128 @@ cm_add(const T1& src0, const T2& src1,
     v2(0) = src1;
     retv = cm_add<RT>(v1, v2, flags);
     return retv(0);
+}
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_addc(vector<unsigned, SZ> src0, vector<unsigned, SZ> src1,
+        vector_ref<unsigned, SZ> carry)
+{
+    vector<unsigned, SZ> result = src0 + src1;
+    carry = result < src0;
+    return result;
+}
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_addc(vector<unsigned, SZ> src0, unsigned src1,
+        vector_ref<unsigned, SZ> carry)
+{
+    vector<unsigned, SZ> Src1 = src1;
+    return cm_addc<SZ>(src0, Src1, carry);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_addc(matrix<unsigned, N1, N2> src0, matrix<unsigned, N1, N2> src1,
+        matrix_ref<unsigned, N1, N2> carry)
+{
+    vector<unsigned, N1 *N2> Src0 = src0;
+    vector<unsigned, N1 *N2> Src1 = src1;
+    vector_ref<unsigned, N1 *N2> Carry = carry.template format<unsigned>();
+    return cm_addc<N1 *N2>(Src0, Src1, Carry);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_addc(matrix<unsigned, N1, N2> src0, unsigned src1,
+        matrix_ref<unsigned, N1, N2> carry)
+{
+    vector<unsigned, N1 *N2> Src0 = src0;
+    vector<unsigned, N1 *N2> Src1 = src1;
+    vector_ref<unsigned, N1 *N2> Carry = carry.template format<unsigned>();
+    return cm_addc<N1 *N2>(Src0, Src1, Carry);
+}
+
+CM_API unsigned
+cm_addc(unsigned src0, unsigned src1, unsigned &carry);
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_addc(unsigned src0, vector<unsigned, SZ> src1,
+        vector_ref<unsigned, SZ> carry)
+{
+    return cm_addc(src1, src0, carry);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_addc(unsigned src0, matrix<unsigned, N1, N2> src1,
+        matrix_ref<unsigned, N1, N2> carry)
+{
+    return cm_addc(src1, src0, carry);
+}
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_subb(vector<unsigned, SZ> minuend, vector<unsigned, SZ> subtrahend,
+        vector_ref<unsigned, SZ> borrow)
+{
+    vector<unsigned, SZ> result = minuend - subtrahend;
+    borrow = result > minuend;
+    return result;
+}
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_subb(vector<unsigned, SZ> minuend, unsigned subtrahend,
+        vector_ref<unsigned, SZ> borrow)
+{
+    vector<unsigned, SZ> Subtrahend = subtrahend;
+    return cm_subb<SZ>(minuend, Subtrahend, borrow);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_subb(matrix<unsigned, N1, N2> minuend, matrix<unsigned, N1, N2> subtrahend,
+        matrix_ref<unsigned, N1, N2> borrow)
+{
+    vector<unsigned, N1 *N2> Minuend = minuend;
+    vector<unsigned, N1 *N2> Subtrahend = subtrahend;
+    vector_ref<unsigned, N1 *N2> Borrow = borrow.template format<unsigned>();
+    return cm_subb<N1 *N2>(Minuend, Subtrahend, Borrow);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_subb(matrix<unsigned, N1, N2> minuend, unsigned subtrahend,
+        matrix_ref<unsigned, N1, N2> borrow)
+{
+    vector<unsigned, N1 *N2> Minuend = minuend;
+    vector<unsigned, N1 *N2> Subtrahend = subtrahend;
+    vector_ref<unsigned, N1 *N2> Borrow = borrow.template format<unsigned>();
+    return cm_subb<N1 *N2>(Minuend, Subtrahend, Borrow);
+}
+
+CM_API unsigned
+cm_subb(unsigned minuend, unsigned subtrahend, unsigned &borrow);
+
+template <int SZ>
+CM_API vector<unsigned, SZ>
+cm_subb(unsigned minuend, vector<unsigned, SZ> subtrahend,
+        vector_ref<unsigned, SZ> borrow)
+{
+    vector<unsigned, SZ> Minuend = minuend;
+    return cm_subb(Minuend, subtrahend, borrow);
+}
+
+template <int N1, int N2>
+CM_API matrix<unsigned, N1, N2>
+cm_subb(unsigned minuend, matrix<unsigned, N1, N2> subtrahend,
+        matrix_ref<unsigned, N1, N2> borrow)
+{
+    matrix<unsigned, N1, N2> Minuend = minuend;
+    return cm_subb(Minuend, subtrahend, borrow);
 }
 
 //Mul
@@ -2102,7 +2208,6 @@ cm_log(const T& src0, const typename uint_type<T, T>::type flags = 0)
     return v(0);
 }
 
-
 //dst = 2**src
 template <uint SZ>
 CM_API vector<float, SZ>
@@ -2390,7 +2495,6 @@ cm_cos(const T& src0, const typename uint_type<T, T>::type flags = 0)
     return v(0);
 }
 
-
 //sincos
 template <uint SZ>
 CM_API vector<float, SZ>
@@ -2487,70 +2591,70 @@ template <typename T, uint R, uint C>
 CM_API void
 cm_input(matrix<T,R,C> &in)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_input(matrix_ref<T,R,C> in)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_input(vector<T, S> &in)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_input(vector_ref<T, S> in)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template<typename T>
 CM_API void
 cm_input(T& in)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_output(const matrix<T,R,C> &out)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint R, uint C>
 CM_API void
 cm_output(const matrix_ref<T,R,C> out)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_output(const vector<T, S> &out)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint S>
 CM_API void
 cm_output(const vector_ref<T, S> out)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template<typename T>
 CM_API void
 cm_output(const T& out)
 {
-    //GfxEmu::DebugMessage<fCmIntrin | fExtraDetail>("workarroundForIpoBugOrFeature\n");
+    //GFX_EMU_DEBUG_MESSAGE(fCmIntrin | fExtraDetail, "workarroundForIpoBugOrFeature\n");
 }
 
 template <typename T, uint SZ>
@@ -2795,6 +2899,10 @@ cm_fbh(const T1& src0, const typename uint_type<T1, T1>::type flags = 0)
     return retv(0);
 }
 
+#if !defined __CM && defined _WIN32
+#include <intrin.h>
+#pragma intrinsic(__rdtsc)
+#endif
 
 template <typename T>
 CM_API vector<T, 4>
@@ -2802,6 +2910,15 @@ cm_rdtsc()
 {
     static const bool conformable1 = uinttype<T>::value;
     vector<T, 4> dst = 0;
+    #if !defined __CM && defined _WIN32
+    unsigned __int64  ts      = __rdtsc();
+    unsigned __int32* ptr     = (unsigned __int32*)&ts;
+    unsigned __int32  ts_low  = *ptr;
+    unsigned __int32  ts_high = *(ptr + 1);
+
+    dst[0] = (T)ts_low;
+    dst[1] = (T)ts_high;
+    #endif
     return dst;
 }
 
@@ -2988,7 +3105,6 @@ cm_bf_insert(const T1& width, const T2& offset,
     return retv(0);
 }
 
-
 // Extract value from src bitfield of defined width at defined offset
 template<typename RT, typename T1, typename T2, typename T3, uint SZ>
 CM_API vector<RT, SZ>
@@ -3101,7 +3217,6 @@ cm_f16tof32(const stream<T1, SZ>& src,
         T1 input = src.get(i);
         //float output = Float16Conversion::tof32(input);
         half val;
-
         // Need to replace this.
         // val.setBits(input);
         assert(0);
@@ -3130,7 +3245,6 @@ cm_f32tof16(const stream<T1, SZ>& src,
         T1 input = src.get(i);
         //ushort output = Float16Conversion::tof16(input);
         half output = half(input);
-
         // Need to replace it.
         // retv(i) = output.getBits();
         assert(0);
@@ -3138,7 +3252,6 @@ cm_f32tof16(const stream<T1, SZ>& src,
 
     return retv;
 }
-
 
 CM_API void cm_barrier();
 CM_API void cm_sbarrier(uint  flag);
@@ -3167,21 +3280,19 @@ template <> struct Allowed_Vector_Length_8_Or_16<16> {
 template <class T, int SZ>
 void assert_slm_access () {
     static_assert(!((SZ*sizeof(T)) % 16 /*OWord*/), "Vector width must be OWord-aligned.");
-
 }
 
-template <class T, uint SZ>
-CM_API void cm_slm_read(uint slmBuffer, vector_ref<ushort, SZ> offsets, vector_ref<T, SZ> dst) {
-    assert_slm_access<T,SZ>();
+template <typename T, uint N, typename S,
+          template<typename ElmTy1, unsigned SZ> typename AddrTy,
+          template<typename ElmTy2, unsigned SZ> typename DestTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
+CM_API typename std::enable_if<std::is_same<S, uint>::value || std::is_same<S, ushort>::value>::type
+cm_slm_read(uint slmBuffer, const AddrTy<S, N> &offsets, DestTy<T, N> &dst) {
+    static_assert((N == 8 || N == 16) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
+    assert_slm_access<T, N>();
     const auto base = __cm_emu_get_slm() + slmBuffer;
-    for (int i = 0; i < SZ; i++) // NB: implemented with Byte-Scattered-Read in Gen7+
+    for (int i = 0; i < N; i++) // NB: implemented with Byte-Scattered-Read in Gen7+
         dst(i) = *reinterpret_cast<T*>(base + sizeof(T) * offsets(i));
 }
-
-// Catch all real world use cases with vector passed instead of vector_ref to the above documentation-based signature.
-template<class OT, template <class,uint> class DT, class T, uint SZ>
-CM_API void cm_slm_read(uint slmBuffer, OT offsets, DT<T, SZ>& dst)
-{ cm_slm_read(slmBuffer,vector_ref<ushort, SZ>{offsets},vector_ref<T, SZ>{dst}); }
 
 template <class T, uint SZ>
 CM_API void cm_slm_block_read(uint slmBuffer, int offset, vector_ref<T,SZ> dst) {
@@ -3250,130 +3361,40 @@ cm_slm_read4_internal (uint slmBuffer, T1 v_Addr, vector_ref<T,M> v_Dst, SLM_Cha
     }
 }
 
-template <typename T, uint N, uint M>
+template <typename T, uint N, uint M,
+         template<typename ElmTy1, unsigned SZ1> typename AddrTy,
+         template<typename ElmTy2, unsigned SZ2> typename DestTy, typename MaskTy>
 CM_API void
-cm_slm_read4 (uint slmBuffer, vector_ref<ushort,N> v_Addr, vector<T,M> &v_Dst, SLM_ChannelMaskType mask)
+cm_slm_read4 (uint slmBuffer, const AddrTy<uint,N> &v_Addr, DestTy<T,M> &v_Dst, MaskTy mask)
 {
     vector_ref<T,M> dst = v_Dst;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
+    cm_slm_read4_internal(slmBuffer, v_Addr, dst, (SLM_ChannelMaskType)mask, N, M);
 }
 
-template <typename T, uint N, uint M>
+template <typename T, uint N, uint M,
+         template<typename ElmTy1, unsigned SZ1> typename AddrTy,
+         template<typename ElmTy2, unsigned SZ2> typename DestTy, typename MaskTy>
+[[deprecated("please use 'cm_slm_read4' with 'uint' as the element offset type!")]]
 CM_API void
-cm_slm_read4 (uint slmBuffer, vector<ushort,N> &v_Addr, vector_ref<T,M> v_Dst, SLM_ChannelMaskType mask)
+cm_slm_read4 (uint slmBuffer, const AddrTy<ushort,N> &v_Addr, DestTy<T,M> &v_Dst, MaskTy mask)
 {
     vector_ref<T,M> dst = v_Dst;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector_ref<ushort,N> v_Addr, vector_ref<T,M> v_Dst, SLM_ChannelMaskType mask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector<ushort,N> &v_Addr, vector<T,M> &v_Dst, SLM_ChannelMaskType mask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-//---------------------------------
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector_ref<ushort,N> v_Addr, vector<T,M> &v_Dst, int imask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    SLM_ChannelMaskType mask = (SLM_ChannelMaskType) imask;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector<ushort,N> &v_Addr, vector_ref<T,M> v_Dst, int imask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    SLM_ChannelMaskType mask = (SLM_ChannelMaskType) imask;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector_ref<ushort,N> v_Addr, vector_ref<T,M> v_Dst, int imask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    SLM_ChannelMaskType mask = (SLM_ChannelMaskType) imask;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
-}
-
-template <typename T, uint N, uint M>
-CM_API void
-cm_slm_read4 (uint slmBuffer, vector<ushort,N> &v_Addr, vector<T,M> &v_Dst, int imask)
-{
-    vector_ref<T,M> dst = v_Dst;
-    SLM_ChannelMaskType mask = (SLM_ChannelMaskType) imask;
-    cm_slm_read4_internal(slmBuffer, v_Addr, dst, mask, N, M);
+    cm_slm_read4_internal(slmBuffer, v_Addr, dst, (SLM_ChannelMaskType)mask, N, M);
 }
 
 // Write the vector 'v_Src' to the SLM buffer 'slmBuffer' at the
 // addresses given in 'v_Addr'
 // Implement with Byte-Scattered-Write in Gen7+
-template <typename T, uint N> // Supported: N = 8 or 16; T = Byte, Word, or Dword
-CM_API void
+template <typename T, uint N, typename S,
+          template<typename ElmTy1, unsigned SZ> typename AddrTy,
+          template<typename ElmTy2, unsigned SZ> typename SrcTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
+CM_API typename std::enable_if<std::is_same<S, uint>::value || std::is_same<S, ushort>::value>::type
 cm_slm_write (uint  slmBuffer,           // SLM buffer
-              vector<ushort, N> &v_Addr, // Byte-Offsets into SLM Buffer
-              vector<T, N>      &v_Src   // Data vector to be written to SLM
+              const AddrTy<S, N> &v_Addr, // Byte-Offsets into SLM Buffer
+              const SrcTy<T, N>      &v_Src   // Data vector to be written to SLM
              )
 {
-    char *baseOffset, *byteOffset;
-    baseOffset = __cm_emu_get_slm() + slmBuffer;
-    for (int i=0; i<N; i++) {
-        byteOffset = baseOffset +  sizeof(T) * v_Addr(i);
-        *( (T *)byteOffset ) = v_Src(i);
-    }
-}
-
-template <typename T, uint N> // Supported: N = 8 or 16; T = Byte, Word, or Dword
-CM_API void
-cm_slm_write (uint  slmBuffer,              // SLM buffer
-              vector_ref<ushort, N> v_Addr, // Byte-Offsets into SLM Buffer
-              vector_ref<T, N>      v_Src   // Data vector to be written to SLM
-             )
-{
-    char *baseOffset, *byteOffset;
-    baseOffset = __cm_emu_get_slm() + slmBuffer;
-    for (int i=0; i<N; i++) {
-        byteOffset = baseOffset +  sizeof(T) * v_Addr(i);
-        *( (T *)byteOffset ) = v_Src(i);
-    }
-}
-
-template <typename T, uint N> // Supported: N = 8 or 16; T = Byte, Word, or Dword
-CM_API void
-cm_slm_write (uint  slmBuffer,               // SLM buffer
-              vector<ushort, N>     &v_Addr, // Byte-Offsets into SLM Buffer
-              vector_ref<T, N>      v_Src    // Data vector to be written to SLM
-             )
-{
-    char *baseOffset, *byteOffset;
-    baseOffset = __cm_emu_get_slm() + slmBuffer;
-    for (int i=0; i<N; i++) {
-        byteOffset = baseOffset +  sizeof(T) * v_Addr(i);
-        *( (T *)byteOffset ) = v_Src(i);
-    }
-}
-
-template <typename T, uint N> // Supported: N = 8 or 16; T = Byte, Word, or Dword
-CM_API void
-cm_slm_write (uint  slmBuffer,              // SLM buffer
-              vector_ref<ushort, N> v_Addr, // Byte-Offsets into SLM Buffer
-              vector<T, N>          &v_Src  // Data vector to be written to SLM
-             )
-{
+    static_assert((N == 8 || N == 16) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
     char *baseOffset, *byteOffset;
     baseOffset = __cm_emu_get_slm() + slmBuffer;
     for (int i=0; i<N; i++) {
@@ -3418,23 +3439,19 @@ cm_slm_block_write(uint  slmBuffer,              // SLM buffer
 template <class T1, class T2, uint AddrCount, uint SrcElCount, class MaskT>
 void cm_slm_write4 (
     uint slmBuffer,
-    const stream<T1 /*
-        ... no comments.
-    */, AddrCount>& v_Addr,
+    const stream<T1, AddrCount>& v_Addr,
     const stream<T2,SrcElCount>& v_Src,
     MaskT mask)
 {
     //constexpr bool conformable1 = Allowed_Type_Float_Or_Dword<T2>::value;
     // const auto mask = static_cast<SLM_ChannelMaskType> (mask);
     char numColors=0, color[4]={0,0,0,0};
-
     if (!(mask & 0x1)) {color[0]=1; numColors++;}
     if (!(mask & 0x2)) {color[1]=1; numColors++;}
     if (!(mask & 0x4)) {color[2]=1; numColors++;}
     if (!(mask & 0x8)) {color[3]=1; numColors++;}
 
     if (numColors == 0) {
-
         GFX_EMU_ERROR_MESSAGE("cm_slm_read4 error: At least one"
                 "destination vector has to be read!\n");
         exit(EXIT_FAILURE);
@@ -3467,6 +3484,7 @@ read_local(SurfaceIndex & buf_id, int x_pos, int y_pos, int block_width, int blo
 {
     uint i, j, m;
     uint offset;
+
     cm_list<CmEmulSys::iobuffer>::iterator buff_iter =
         CmEmulSys::search_buffer(buf_id.get_data() & 0xFF);
 
@@ -3573,8 +3591,6 @@ void send_local(
     uchar bti = msgDesc & 0xFF;
     uchar flag_rd_wr = (msgDesc >> 14) & 0x1F;
     uchar target_func_id = exDesc & 0xF;
-
-    // A hack for prefetch.
     if (exDesc & 0x80000000)
         return;
 
@@ -3592,7 +3608,6 @@ void send_local(
         }
         else if (flag_rd_wr == 0x8) //slm block write
         {
-
         }
     }
     else if (bti < 0xEF) //global mem access
@@ -3621,7 +3636,6 @@ void send_local(
         }
         else if (flag_rd_wr == 0x8) //slm block write
         {
-
         }
     }
 
@@ -3631,7 +3645,6 @@ void send_local(
 template <class M>
 void send_local(int rspVar, M msgVar, unsigned int exDesc, unsigned int msgDesc, unsigned int sendc)
 {
-    // A hack for prefetch.
     if (exDesc & 0x8000)
         return;
 
@@ -5353,4 +5366,3 @@ _GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, 
 }
 
 #endif /* CM_INTRIN_H */
-

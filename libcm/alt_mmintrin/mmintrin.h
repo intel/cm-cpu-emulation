@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 /*
  * Definitions and declarations for use with compiler intrinsics.
@@ -28,28 +12,59 @@
 #ifndef _MMINTRIN_H_INCLUDED
 #define _MMINTRIN_H_INCLUDED
 
+/*
+ * Define the calling convention that will be used by intrinsics.
+ * For most of them this convention has almost no effect, as they are
+ * completely lowered by compiler. To override the calling convention
+ * throw an additional option -D__ICL_INTRINCC=<call-conv>. This may
+ * be needed to match MSFT declarartions, which miss __cdecl specifier.
+ */
 #ifndef __ICL_INTRINCC
 
+#if defined(_WIN32)
+# define __ICL_INTRINCC __cdecl
+#else
 # define __ICL_INTRINCC
+#endif
 
 #endif /*__ICL_INTRINCC */
 
 #ifndef __ICL_CDECLCC
 
+#if defined(_WIN32)
+# define __ICL_CDECLCC __cdecl
+#else
 # define __ICL_CDECLCC
+#endif
 
 #endif /* __ICL_CDECLCC */
 
+#ifndef _WIN32
 #define __cdecl
+#endif
 
 #if defined(__INTEL_COMPILER)
 # define _MMINTRIN_TYPE(X) __declspec(align(X)) __declspec(intrin_type)
 #else
 #
+# if defined(_WIN32)
+// #  pragma message ("You are using an Intel supplied intrinsic header file " \
+//                    "with a third-party compiler.")
+#  if _MSC_FULL_VER < 160020506
+     /*
+      * MS versions prior to VS2010B1 do not support alignment of
+      * intrin type parameters.
+      */
+#    define _MMINTRIN_TYPE(X) __declspec(intrin_type)
+#  else
+#    define _MMINTRIN_TYPE(X) __declspec(intrin_type) __declspec(align(X))
+#  endif
+# else
 //#  warning ("You are using an Intel supplied intrinsic header file "  \
 //            "with a third-party compiler.")
 #  define _MMINTRIN_TYPE(X) __attribute__((aligned(X)))
    typedef long long __int64;
+# endif
 #endif
 
 typedef union _MMINTRIN_TYPE(8) __m64 {

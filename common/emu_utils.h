@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2020 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CM_UTILS_H
 #define CM_UTILS_H
@@ -33,12 +17,21 @@
 #include <regex>
 #include <atomic>
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
+
+#include "emu_api_export.h"
+
 namespace GfxEmu {
 namespace Utils {
 
+[[noreturn]] GFX_EMU_API void terminate(int code, bool printBacktrace = false);
+
 // --- debug and linkage data ---
 
-void* symbolNameToAddr (const char *moduleName, const std::string& linkageName, const std::string& name = "");
+GFX_EMU_API void* symbolNameToAddr (const char *moduleName, const std::string& linkageName, const std::string& name = "");
 
 // --- atomics ---
 
@@ -87,13 +80,26 @@ inline std::string removeSpace(std::string str) {
 // -- system-specific: error, process name, etc. ---
 
 inline void debugBreak () {
+#ifdef _WIN32
+    __debugbreak();
+#else
     __builtin_trap();
+#endif
 }
 
 std::string lastErrorStr();
 
+#ifdef _WIN32
+std::string wstringToString(std::wstring ws);
+std::string getCurrentProcessBaseName ();
+#endif
+
 inline std::string getMainProgramName () {
+#ifdef _WIN32
+    return getCurrentProcessBaseName ();
+#else
     return "/proc/self/exe";
+#endif
 }
 
 bool deleteFile (const char*);
@@ -116,7 +122,6 @@ using VoidFuncPtr = void(*)();
 // static_assert(std::is_convertible<VoidFuncPtr,void*>::value);
 // This will FAIL, however POSIX's dlsym specification requires void* and a function pointer
 // to be interconvertible [https://pubs.opengroup.org/onlinepubs/9699919799/functions/dlsym.html]
-
 // At least we can ensure alignment and size match
 static_assert(sizeof(VoidFuncPtr) == sizeof(void*));
 static_assert(std::alignment_of<VoidFuncPtr>::value == std::alignment_of<void*>::value);

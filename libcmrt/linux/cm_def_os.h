@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CMRTLIB_LINUX_SHARE_CM_DEF_OS_H_
 #define CMRTLIB_LINUX_SHARE_CM_DEF_OS_H_
@@ -41,11 +25,16 @@
 #include "pthread.h"
 #include <malloc.h>
 
+////////////////////////////////////////////////////////////////////////////////////
+// MS-specific defines/typedefs, which are absent under Linux but still used
+////////////////////////////////////////////////////////////////////////////////////
 #define _aligned_malloc(size, alignment) memalign(alignment, size)
 #define _aligned_free(ptr) free(ptr)
+typedef uint8_t BOOLEAN, *PBOOLEAN;
 
+////////////////////////////////////////////////////////////////////////////////////
 //      Platform dependent macros (Start)
-
+////////////////////////////////////////////////////////////////////////////////////
 #define CM_STRCPY(dst, sizeInBytes, src)       strcpy(dst, src)
 #define CM_STRNCPY(dst, sizeOfDst, src, count) strncpy(dst, src, count)
 #define CM_STRCAT(dst, sizeOfDst, src)       strcat(dst, src)
@@ -62,9 +51,13 @@
 #define SUCCEEDED(hr)   (hr == VA_STATUS_SUCCESS)
 #define FAILED(hr)      (hr != VA_STATUS_SUCCESS)
 
+////////////////////////////////////////////////////////////////////////////////////
 //      Platform dependent macros (End)
+////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////////
 //      Platform dependent definitions (Start)
+////////////////////////////////////////////////////////////////////////////////////
 
 #define VAExtModuleCMRT 2
 #define CM_MAX_SURFACE2D_FORMAT_COUNT 47
@@ -73,7 +66,9 @@
 #define CM_MAX_2D_SURF_WIDTH  16384
 #define CM_MAX_2D_SURF_HEIGHT 16384
 
+////////////////////////////////////////////////////////////////////////////////////
 //      Platform dependent definitions (End)
+////////////////////////////////////////////////////////////////////////////////////
 
 typedef enum _REGISTRATION_OP
 {

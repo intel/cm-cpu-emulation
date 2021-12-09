@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 //!
 //! \file      cm_rt.h
@@ -35,13 +19,10 @@
 //**********************************************************************
 #include "cm_version_defs.h"
 
-
 //**********************************************************************
 // external headers
 //**********************************************************************
-#ifndef __SYCL_EXPLICIT_SIMD_PLUGIN__
 #include <stdint.h>
-#endif // __SYCL_EXPLICIT_SIMD_PLUGIN__
 
 //**********************************************************************
 // Macros
@@ -133,7 +114,6 @@
 #define CM_SVM_ACCESS_FLAG_ATOMICS           (1 << 1)                            //Crosse IA/GT atomics supported SVM buffer, need CM_SVM_ACCESS_FLAG_FINE_GRAINED flag is set as well
 #define CM_SVM_ACCESS_FLAG_DEFAULT           CM_SVM_ACCESS_FLAG_COARSE_GRAINED   //default is coarse-grained SVM buffer
 
-
 //**********************************************************************
 // OS-specific includings and types
 //**********************************************************************
@@ -204,7 +184,6 @@
 #include "type_thread_space_base.h"
 #include "type_queue_base.h"
 
-
 //**********************************************************************
 // Function pointer types
 //**********************************************************************
@@ -222,6 +201,5 @@ typedef void (*IMG_WALKER_FUNTYPE)(void* img, void* arg);
 EXTERN_C CM_RT_API INT DestroyCmDevice(CmDevice* &device);
 EXTERN_C CM_RT_API INT CMRT_Enqueue(CmQueue* queue, CmTask* task, CmEvent** event, const CmThreadSpace* threadSpace = nullptr);
 EXTERN_C CM_RT_API const char* GetCmErrorString(int errCode);
-
 
 #endif //__CM_RT_H__

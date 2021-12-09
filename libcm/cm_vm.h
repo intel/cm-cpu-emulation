@@ -1,35 +1,20 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CM_VM_H
 #define CM_VM_H
 
 #include <cassert>
-//#include <cstddef>
-//#ifdef CM_DEBUG
-//#include <sstream>
-//#endif
+#include <type_traits>
+
+#include "emu_api_export.h"
+
+#include "emu_log.h"
 
 #ifdef CM_GENX
 #define OFFSET ushort
@@ -41,6 +26,11 @@
 #include "cm_common_macros.h"
 
 #define __GLOBAL(V) thread_local V
+#ifndef __GNUC__
+    #define CM_NOINLINE_EMU __declspec(noinline)
+#else
+    #define CM_NOINLINE_EMU __attribute__((noinline))
+#endif
 
 template <typename T, uint R, uint C>
 class matrix;
@@ -50,65 +40,6 @@ template <typename T, uint SZ>
 class vector;
 template <typename T, uint SZ>
 class vector_ref;
-namespace cm
-{
-  template<typename ty>
-  struct pointer_traits
-  {
-    enum { dim = 0 };
-    typedef ty tail_pointee_type;
-  };
-
-  template<typename ty, int n>
-  struct pointer_traits<ty [n]>
-  {
-    enum { dim = pointer_traits<ty>::dim + 1 };
-    typedef typename pointer_traits<ty>::tail_pointee_type tail_pointee_type;
-  };
-
-  template<typename ty>
-  struct pointer_traits<ty *>
-  {
-    enum { dim = pointer_traits<ty>::dim + 1 };
-    typedef typename pointer_traits<ty>::tail_pointee_type tail_pointee_type;
-  };
-
-  template <typename dataTy, unsigned int size>
-  class array_1d
-  {
-  public:
-    typedef dataTy (*datasTy)[size];
-  public:
-    array_1d () : datas_ (NULL), size_ (size)
-    {
-    }
-    array_1d (void * datas) : datas_ ((datasTy)datas), size_ (size)
-    {
-    }
-  public:
-    datasTy      datas_;
-    unsigned int size_;
-  };
-
-  template <typename dataTy, unsigned int rows, unsigned int cols>
-  class array_2d
-  {
-  public:
-    typedef dataTy (*datasTy)[cols];
-  public:
-    array_2d (void * datas)
-      : rows_ (rows), cols_ (cols)
-    {
-      for (unsigned int row = 0; row < rows_; ++row) {
-        array_1ds_[row].datas_ = (datasTy)datas + row;
-      }
-    }
-  public:
-    array_1d<dataTy, cols> array_1ds_[rows];
-    unsigned int           rows_;
-    unsigned int           cols_;
-  };
-};
 
 /* Basic stream. Non template class. */
 class basic_stream {
@@ -131,7 +62,7 @@ class stream: public basic_stream {
 public:
         typedef  T _Type;
 
-        CM_INLINE int n_elems() const { return SZ; }
+        CM_INLINE constexpr int n_elems() const { return SZ; }
 
         virtual T get(uint i) const = 0; // call to this virtual function won't appear in IL0
         virtual T& getref(uint i) = 0; // call to this virtual function won't appear in IL0
@@ -181,8 +112,8 @@ public:
         enum { SZ = R*C };
         enum { ROWS=R, COLS=C, ELEMS=R*C };
 
-        CM_INLINE int n_rows() const { return R; }
-        CM_INLINE int n_cols() const { return C; }
+        CM_INLINE constexpr int n_rows() const { return R; }
+        CM_INLINE constexpr int n_cols() const { return C; }
 
         template <uint REP> CM_INLINE
         const vector<T, R*C*REP> replicate(OFFSET ioff=0, OFFSET joff=0)
@@ -238,6 +169,13 @@ public:
             return inner_hack<T,R,C>(this,i);
         }
 
+        CM_NOINLINE_EMU GFX_EMU_API static void emuKernelParamInit__ (void *tgtObj = nullptr, void *src = nullptr, size_t size = 0) {
+            if(tgtObj != nullptr) {
+                assert(size == sizeof(T)*R*C);
+                new(tgtObj) matrix<T,R,C>(static_cast<const T*>(src));
+            }
+        }
+
         // constructor for emu global variable, supporting global variables in emu mode
         CM_NOINLINE matrix(bool isGlobal);
 
@@ -250,11 +188,9 @@ public:
         template <typename T2, uint R2, uint C2> CM_NOINLINE matrix(const matrix<T2,R2,C2>& src, const uint sat = 0 );
         template <typename T2, uint R2, uint C2> CM_NOINLINE matrix(const matrix_ref<T2,R2,C2>& src, const uint sat = 0);
         template <typename T2> CM_NOINLINE matrix(const vector<T2,R*C>& src)
-          : array_2d_ (data)
         { new (this) matrix<T,R,C>((matrix<T2,1,R*C>&)src); }
 
         template <typename T2> CM_NOINLINE matrix(const vector_ref<T2,R*C>& src)
-          : array_2d_ (data)
         { new (this) matrix<T,R,C>((matrix_ref<T2,1,R*C>&)src); }
 
         //operator =
@@ -278,6 +214,12 @@ public:
         //1D iselect
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index);
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index);
+#if _MSC_VER >= 1700
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index, std::true_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index, std::false_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index, std::true_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index, std::false_type);
+#endif
 
         //2D iselect
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index_x, const vector<T2,WD>& index_y);
@@ -325,7 +267,6 @@ public:
 private:
 
         T data[SZ];
-        cm::array_2d<T, R, C> array_2d_;
         CM_NOINLINE T operator () (uint i) const {
             assert(i < SZ);
             return get(i);
@@ -362,8 +303,8 @@ public:
         enum { SZ = R*C };
         enum { ROWS=R, COLS=C, ELEMS=R*C };
 
-        CM_INLINE int n_rows() const { return R; }
-        CM_INLINE int n_cols() const { return C; }
+        CM_INLINE constexpr int n_rows() const { return R; }
+        CM_INLINE constexpr int n_cols() const { return C; }
 
         template <uint REP> CM_INLINE
         const vector<T, R*C*REP> replicate(OFFSET ioff=0, OFFSET joff=0)
@@ -477,6 +418,12 @@ public:
         //1D iselect
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index);
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index);
+#if _MSC_VER >= 1700
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index, std::true_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index, std::false_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index, std::true_type);
+        template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector_ref<T2,WD>& index, std::false_type);
+#endif
 
         //2D iselect
         template <typename T2, uint WD> CM_NOINLINE vector<T,WD> iselect(const vector<T2,WD>& index_x, const vector<T2,WD>& index_y);
@@ -556,8 +503,17 @@ public:
         vector<T,W*REP> replicate(OFFSET joff=0)
         {return ((matrix<T,1,SZ> *)this)->template replicate<REP,VS,W,HS>(0, joff);};
 
+        CM_NOINLINE_EMU GFX_EMU_API static void emuKernelParamInit__ (void *tgtObj = nullptr, void *src = nullptr, size_t size = 0) {
+            if(tgtObj != nullptr) {
+                assert(size == sizeof(T)*SZ);
+                new(tgtObj) vector<T,SZ>(static_cast<const T*>(src));
+            }
+        }
+
         // constructors: call base versions of constructors
-        CM_NOINLINE vector() : matrix<T,1,SZ>() {}
+        CM_NOINLINE vector() : matrix<T,1,SZ>() {
+            emuKernelParamInit__();
+        }
 
         // constructor for emu global variable
         CM_NOINLINE vector(bool isGlobal) : matrix<T, 1, SZ>(isGlobal) {}
@@ -565,6 +521,7 @@ public:
         template <typename T2> CM_NOINLINE vector(const T2 initArray[]) : matrix<T,1,SZ>(initArray) {
             // constructor with array initializer
         }
+
         CM_NOINLINE vector(const vector<T,SZ>& src) : matrix<T,1,SZ>((const matrix<T,1,SZ>&)src) {} // copy constructor
         template <typename T2> CM_NOINLINE vector(const T2& src) : matrix<T,1,SZ>(src) {}
         template <typename T2, uint R2, uint C2> CM_NOINLINE vector(const matrix<T2,R2,C2>& src, uint sat = 0) : matrix<T,1,SZ>(src, sat) {}
@@ -1054,9 +1011,6 @@ void stream<T,SZ>::merge(const T x, const T y, const stream<T1,SZ>& c)
 /*
 template <typename T, uint R, uint C>
 matrix<T,R,C>::matrix(void *ptr)
-#ifdef CM_EMU
-  : array_2d_ (data)
-#endif
 {
     int i;
     for (i = 0; i < SZ; i++) {
@@ -1067,7 +1021,6 @@ matrix<T,R,C>::matrix(void *ptr)
 
 template <typename T, uint R, uint C>
 matrix<T, R, C>::matrix(bool isGlobal)
-    : array_2d_(data)
 {
     if (isGlobal)
     {
@@ -1079,67 +1032,54 @@ matrix<T, R, C>::matrix(bool isGlobal)
 // Matrix Initialization with array
 template <typename T, uint R, uint C>
 template <typename T2>
-matrix<T,R,C>::matrix(const T2 initArray[])
-  : array_2d_ (data)
-{
-    //int i;
-
-    //for (i = 0; i < SZ; i++) {
-    //    // data[i] = (T)initArray[i];
-    //    data[i] = *((T *)((char *)initArray + i*sizeof(T)));
-    //}
-  typedef typename cm::pointer_traits<T2>::tail_pointee_type tail_pointee_type;
-  for (int i = 0; i < SZ; i++) {
-//    SIMDCF_WRAPPER(data[i] = (T)((tail_pointee_type *)initArray)[i], SZ, i);
-      data[i] = (T)((tail_pointee_type *)initArray)[i];
-  }
+matrix<T,R,C>::matrix(const T2 initArray[]) {
+    using argElT = std::remove_all_extents_t<T2>;
+    for (int i = 0; i < SZ; i++) {
+        const auto& el = reinterpret_cast<const argElT*>(initArray)[i];
+        // SIMDCF_WRAPPER(data[i] = el, SZ, i);
+        data[i] = el;
+    }
 }
 
 template <typename T, uint R, uint C>
 matrix<T,R,C>::matrix()
-  : array_2d_ (data)
 {
     //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
+    emuKernelParamInit__();
 }
 
 //copy constructor
 template <typename T, uint R, uint C>
-matrix<T,R,C>::matrix(const matrix<T,R,C>& src)
-  : array_2d_ (data)
-{
-        //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
-        (*this) = src;
+matrix<T,R,C>::matrix(const matrix<T,R,C>& src) {
+    //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
+    *this = src;
 }
 template <typename T, uint R, uint C>
 template <typename T2>
-matrix<T,R,C>::matrix(const T2& src)
-  : array_2d_ (data)
-{
-        //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
-        (*this) = src;
+matrix<T,R,C>::matrix(const T2& src) {
+    //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
+    *this = src;
 }
 template <typename T, uint R, uint C>
 template <typename T2, uint R2, uint C2>
 matrix<T,R,C>::matrix(const matrix<T2,R2,C2>& src, const uint sat)
-  : array_2d_ (data)
 {
-        //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
-        static const bool conformable = check_true<R*C == R2*C2>::value;
-        assert(R*C == R2*C2);
+    //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
+    static const bool conformable = check_true<R*C == R2*C2>::value;
+    assert(R*C == R2*C2);
 
-        uint sat1 = 0;
-        //uint sat1 = CmEmulSys::_SetSatur<T2, is_inttype<T>::value>::SetSatur();
-        vector<T2, SZ> in_src; in_src.assign_noSIMDCF(src);
+    uint sat1 = 0;
+    //uint sat1 = CmEmulSys::_SetSatur<T2, is_inttype<T>::value>::SetSatur();
+    vector<T2, SZ> in_src; in_src.assign_noSIMDCF(src);
 
-        for (uint i=0; i < SZ; i++) {
+    for (uint i=0; i < SZ; i++) {
 //          SIMDCF_WRAPPER((*this)(i) = CmEmulSys::satur<T>::saturate(in_src(i), sat | sat1), SZ, i);
-            (*this)(i) = CmEmulSys::satur<T>::saturate(in_src(i), sat | sat1);
-        }
+        (*this)(i) = CmEmulSys::satur<T>::saturate(in_src(i), sat | sat1);
+    }
 }
 template <typename T, uint R, uint C>
 template <typename T2, uint R2, uint C2>
 matrix<T,R,C>::matrix(const matrix_ref<T2,R2,C2>& src, const uint sat)
-  : array_2d_ (data)
 {
         //number = OBJ_COUNTER ? ++CmEmulSys::_count : 0;
         static const bool conformable = check_true<R*C == R2*C2>::value;
@@ -1155,8 +1095,9 @@ matrix<T,R,C>::matrix(const matrix_ref<T2,R2,C2>& src, const uint sat)
         }
 }
 
+//
 // matrix operator =
-
+//
 template <typename T, uint R, uint C>
 matrix<T,R,C>& matrix<T,R,C>::operator = (const matrix<T,R,C>& src)
 {
@@ -1166,7 +1107,6 @@ matrix<T,R,C>& matrix<T,R,C>::operator = (const matrix<T,R,C>& src)
         }
         return *this;
 }
-
 template <typename T, uint R, uint C>
 template <typename T2>
 matrix<T,R,C>& matrix<T,R,C>::operator = (const T2 src)
@@ -1180,6 +1120,7 @@ matrix<T,R,C>& matrix<T,R,C>::operator = (const T2 src)
 
         return *this;
 }
+
 template <typename T, uint R, uint C>
 template <typename T2, uint R2, uint C2>
 matrix<T,R,C>& matrix<T,R,C>::operator = (const matrix<T2,R2,C2>& src)
@@ -1198,6 +1139,7 @@ matrix<T,R,C>& matrix<T,R,C>::operator = (const matrix<T2,R2,C2>& src)
 
         return *this;
 }
+
 template <typename T, uint R, uint C>
 template <typename T2, uint R2, uint C2>
 matrix<T,R,C>& matrix<T,R,C>::operator = (const matrix_ref<T2,R2,C2>& src)
@@ -1295,8 +1237,9 @@ matrix_operation(>>)     // >>=
 matrix_operation(<<)     // <<=
 #undef matrix_operation
 
+//
 // matrix selects
-
+//
 template <typename T, uint R, uint C>
 template <typename T2>
 vector_ref<T2,R*C*sizeof(T)/sizeof(T2)> matrix<T,R,C>::format()
@@ -1508,6 +1451,105 @@ const vector<T, R2*WD> matrix<T,R,C>::genx_select(OFFSET ioff, OFFSET joff)
 }
 
 //1D iselect for matrix
+#if _MSC_VER >= 1700
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector<T2,WD>& index)
+{
+        return iselect(index, std::is_integral<T2>());
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector<T2,WD>& index, std::true_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(ret(i) = data[index.get(i)], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector<T2,WD>& index, std::false_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            // in this case index doesn't have integral type elements
+            // so can't be used - we will have already generated an error,
+            // so just use 0 to allow compilation to continue (in case there
+            // are more errors to find...)
+            SIMDCF_WRAPPER(ret(i) = data[0], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector_ref<T2,WD>& index)
+{
+        return iselect(index, std::is_integral<T2>());
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector_ref<T2,WD>& index, std::true_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(ret(i) = data[index.get(i)], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix<T,R,C>::iselect(const vector_ref<T2,WD>& index, std::false_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            // in this case index doesn't have integral type elements
+            // so can't be used - we will have already generated an error,
+            // so just use 0 to allow compilation to continue (in case there
+            // are more errors to find...)
+            SIMDCF_WRAPPER(ret(i) = data[0], WD, i);
+        }
+        return ret;
+}
+#else
 template <typename T, uint R, uint C>
 template <typename T2, uint WD>
 vector<T,WD> matrix<T,R,C>::iselect(const vector<T2,WD>& index)
@@ -1545,6 +1587,7 @@ vector<T,WD> matrix<T,R,C>::iselect(const vector_ref<T2,WD>& index)
         }
         return ret;
 }
+#endif
 
 //below are 2D iselect for matrix
 template <typename T, uint R, uint C>
@@ -1651,7 +1694,6 @@ const matrix_ref<T, R, C> CM_NOINLINE matrix<T,R,C>::select_all() const
 /                         matrix_ref
 /
 *******************************************************************/
-
 template <typename T, uint R, uint C>
 bool matrix_ref<T,R,C>::is_contiguous() const
 {
@@ -1681,8 +1723,9 @@ bool matrix_ref<T,R,C>::is_contiguous(const uint start, const uint end) const
         return true;
 }
 
+//
 // matrix_ref copy constructor
-
+//
 template <typename T, uint R, uint C>
 matrix_ref<T,R,C>::matrix_ref(const matrix_ref<T,R,C>& src)
 {
@@ -1706,9 +1749,9 @@ matrix_ref<T,R,C>::matrix_ref(matrix<T,R,C>& src)
                 set_elem_ref(i * COLS + j, (T*)(src.get_addr(i * COLS + j)));
             }
 }
-
+//
 // matrix_ref assignment operator
-
+//
 template <typename T, uint R, uint C>
 matrix_ref<T,R,C>& matrix_ref<T,R,C>::operator = (const matrix<T,R,C>& src)
 {
@@ -1719,8 +1762,9 @@ matrix_ref<T,R,C>& matrix_ref<T,R,C>::operator = (const matrix<T,R,C>& src)
         return *this;
 }
 
+//
 // matrix_ref operator =
-
+//
 template <typename T, uint R, uint C>
 template <typename T2>
 matrix_ref<T,R,C>& matrix_ref<T,R,C>::operator = (const T2 src)
@@ -1858,8 +1902,9 @@ matrix_ref_operation(>>)     // >>=
 matrix_ref_operation(<<)     // <<=
 #undef matrix_operation
 
+//
 // matrix_ref selects
-
+//
 template <typename T, uint R, uint C>
 template <typename T2>
 vector_ref<T2,R*C*sizeof(T)/sizeof(T2)> matrix_ref<T,R,C>::format()
@@ -2029,7 +2074,6 @@ matrix_ref<T,R,1> matrix_ref<T,R,C>::column(OFFSET index)
         }
         return ret;
 }
-
 template <typename T, uint R, uint C>
 template <uint R2, uint RS, uint C2, uint CS>
 matrix_ref<T,R2,C2> matrix_ref<T,R,C>::select(OFFSET ioff, OFFSET joff)
@@ -2153,6 +2197,105 @@ const vector<T, R2*WD> matrix_ref<T,R,C>::genx_select(OFFSET ioff, OFFSET joff)
 }
 
 //below are 1D iselect for matrix_ref
+#if _MSC_VER >= 1700
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector<T2,WD>& index)
+{
+        return iselect(index, std::is_integral<T2>());
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector<T2,WD>& index, std::true_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(ret(i) = *data[index.get(i)], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector<T2,WD>& index, std::false_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            // in this case index doesn't have integral type elements
+            // so can't be used - we will have already generated an error,
+            // so just use 0 to allow compilation to continue (in case there
+            // are more errors to find...)
+            SIMDCF_WRAPPER(ret(i) = *data[0], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector_ref<T2,WD>& index)
+{
+        return iselect(index, std::is_integral<T2>());
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector_ref<T2,WD>& index, std::true_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(ret(i) = *data[index.get(i)], WD, i);
+        }
+        return ret;
+}
+
+template <typename T, uint R, uint C>
+template <typename T2, uint WD>
+vector<T,WD> matrix_ref<T,R,C>::iselect(const vector_ref<T2,WD>& index, std::false_type)
+{
+        static const bool conformable1 = check_true<(WD > 0)>::value;
+        static const bool type_conformable = is_inttype<T2>::value;
+        assert(WD>=0 && R>=0 && C>=0);
+
+        for (uint i=0; i < WD; i++) {
+            SIMDCF_WRAPPER(assert(index.get(i) < SZ), WD, i);
+        }
+
+        vector<T,WD> ret(id());
+        for (uint i=0; i < WD; i++) {
+            // in this case index doesn't have integral type elements
+            // so can't be used - we will have already generated an error,
+            // so just use 0 to allow compilation to continue (in case there
+            // are more errors to find...)
+            SIMDCF_WRAPPER(ret(i) = *data[0], WD, i);
+        }
+        return ret;
+}
+#else
 template <typename T, uint R, uint C>
 template <typename T2, uint WD>
 vector<T,WD> matrix_ref<T,R,C>::iselect(const vector<T2,WD>& index)
@@ -2190,6 +2333,7 @@ vector<T,WD> matrix_ref<T,R,C>::iselect(const vector_ref<T2,WD>& index)
         }
         return ret;
 }
+#endif
 
 //below are 2D iselect for matrix_ref
 template <typename T, uint R, uint C>
@@ -2569,15 +2713,15 @@ binary_compare_op(>=)
 binary_compare_op(==)
 binary_compare_op(!=)
 
-#define reduce_boolean_op(OP,ReduceOP,initValue)    \
+#define reduce_boolean_op(OP,ReduceOP,initValue)	\
 \
 template<typename T, uint SZ>\
-CM_NOINLINE ushort stream<T, SZ>::OP ( void ) const    \
+CM_NOINLINE ushort stream<T, SZ>::OP ( void ) const	\
 {\
         static const bool type_conformable = cmtype<T>::value; \
         ushort ret((ushort)initValue);\
         for (int i=0; i<SZ; i++) {\
-            SIMDCF_WRAPPER(ret = (get(i) ReduceOP ret), SZ, i);     \
+            SIMDCF_WRAPPER(ret = (get(i) ReduceOP ret), SZ, i); 	\
             if ( ret!=initValue ) { return ret; } \
         }\
         return ret;\

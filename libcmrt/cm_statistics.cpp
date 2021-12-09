@@ -1,33 +1,22 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
+============================= end_copyright_notice ===========================*/
 
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
-
+/////////////////////////////////////////////////////////////////////
 #include <fstream>
 #include <iostream>
 using namespace std;
 #include "cm_include.h"
 #include "cm_mem.h"
 
+/////////////////////////////////////////////////////////////////////
+#if defined(_WIN32)
+#include "Iphlpapi.h"
+#endif
 #include "cm_statistics.h"
 #ifndef CMRT_VISA_EMU
 #include "cm_task_emumode.h"
@@ -35,30 +24,87 @@ using namespace std;
 
 #include "cm_kernel_emumode.h"
 
+//////////////////////////////////////////////////////////////////////////////////
 #define STATISTIC_LOCATION_KEY_NAME "SOFTWARE\\Intel\\IGFX\\CM\\"
 #define STATISTIC_VALUE_NAME        "enableStatistics"
 
+////////////////////////////////////////////////////////////////////////
 CmStatistics * CmStatistics::m_pTracker = nullptr;
 
+///////////////////////////////////////////////////////////////////////
 CmStatistics::CmStatistics(void)
             : m_lsRunnedKernel(nullptr)
 {
 }
+///////////////////////////////////////////////////////////////
+#if defined(_WIN32)
+bool
+CmStatistics::IsEnabled(void)
+{
+    HKEY  dmKey;
+    int32_t result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, STATISTIC_LOCATION_KEY_NAME, 0, KEY_READ | KEY_WOW64_32KEY, &dmKey);
+    if(ERROR_SUCCESS != result)
+    {
+        result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, STATISTIC_LOCATION_KEY_NAME, 0, KEY_READ |  KEY_WOW64_64KEY, &dmKey);
+        if( ERROR_SUCCESS != result )
+        {
+            return false;
+        }
+    }
 
+    {
+        //do something with the key
+        unsigned long type;
+        unsigned int enabled    = 0;
+        unsigned int  len       = sizeof(enabled);
+
+        int32_t readSuccess = RegQueryValueExA(dmKey, STATISTIC_VALUE_NAME, nullptr, &type, (LPBYTE)(&enabled), (LPDWORD)(&len));
+
+        RegCloseKey(dmKey);
+
+        // Check for success AND that the data is a null terminated string
+        if(ERROR_SUCCESS != readSuccess)
+        {
+            return false;
+        }
+        else
+        {
+            if( enabled == 1)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+}
+#else  //__GNUC__
 bool
 CmStatistics::IsEnabled(void)
 {
     return false; //Currently NOT support for CmStatistics in Linux
 }
-
+#endif
+/////////////////////////////////////////////////////////////
 CmStatistics *
 CmStatistics::Create(void)
 {
-
+    //////////////////////////////////////////////////////
     ofstream    out("cmrt_dump.txt", ofstream::app);
     time_t currentTime;
     time(&currentTime);
+#if defined(_WIN32)
+    tm tm_lcltime;
+    localtime_s(&tm_lcltime, &currentTime);
+    char charstr_time[32];
+    asctime_s( charstr_time, 32, &tm_lcltime);
+    out << "CmDevice Created: " << charstr_time << endl;
+    out.close();
+#else
     //Currently NOT support for CmStatistics in Linux
+#endif
 
     if( m_pTracker == nullptr && IsEnabled() )
     {
@@ -72,10 +118,10 @@ CmStatistics::Create(void)
 
     return m_pTracker;
 }
-
+///////////////////////////////////////////////
 CmStatistics::~CmStatistics(void)
 {
-
+    //////////////////////////////////////////////////////
     ofstream    out("cmrt_dump.txt", ofstream::app);
     out.width(30);
     out <<"KernelName";
@@ -96,13 +142,22 @@ CmStatistics::~CmStatistics(void)
     out << endl;
     time_t currentTime;
     time(&currentTime);
+#if defined(_WIN32)
+    tm tm_lcltime;
+    localtime_s(&tm_lcltime, &currentTime);
+    char charstr_time[32];
+    asctime_s( charstr_time, 32, &tm_lcltime);
+    out << "CmDevice Destroyed: " << charstr_time << endl;
+    out.close();
+#else
     //Currently NOT support for CmStatistics in Linux
+#endif
 }
-
+/////////////////////////////////////////////////////////
 int
 CmStatistics::Destroy(void)
 {
-
+    //////////////////////////////////////////////////////
     if( m_pTracker == nullptr )
     {
         return CM_SUCCESS;
@@ -114,15 +169,17 @@ CmStatistics::Destroy(void)
     return CM_SUCCESS;
 }
 
+////////////////////////////////////////////////////
 int
 CmStatistics::TrackRunnedKernels( const CmTask * const pTask )
 {
-
+    ////////////////////////////////////////////////////////////
     if( pTask == nullptr )
     {
         return CM_FAILURE;
     }
 
+    //////////////////////////////////////////////////
     CmKernelArrayEmu *pTsk = (CmKernelArrayEmu *)pTask;
     int nKernels =  pTsk->GetKernelCount();
 

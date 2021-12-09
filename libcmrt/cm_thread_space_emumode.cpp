@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <cmath>
 
@@ -38,7 +22,7 @@ int32_t CmThreadSpaceEmu::Create( CmDeviceEmu* pDevice, uint32_t width, uint32_t
 {
     if( ( width == 0 ) || ( height == 0 ) )
     {
-        GfxEmu::ErrorMessage("Thread space width and height must be non-zero!");
+        GFX_EMU_ERROR_MESSAGE("Thread space width and height must be non-zero!");
         GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
     }
@@ -148,7 +132,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::AssociateThreadWithMask( uint32_t x, uint32_
 CM_RT_API int32_t CmThreadSpaceEmu::SetThreadSpaceColorCount( uint32_t colorCount )
 {
     if (colorCount == CM_INVALID_COLOR_COUNT ||
-        (GfxEmu::Cfg ().Platform.getInt () <= GfxEmu::Platform::KBL
+        (GfxEmu::Cfg::Platform ().getInt () <= GfxEmu::Platform::KBL
         )  ?
             (colorCount > CM_THREADSPACE_MAX_COLOR_COUNT) :
             (colorCount > CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS))
@@ -303,7 +287,7 @@ CM_RT_API int32_t CmThreadSpaceEmu::SetThreadDependencyPattern( uint32_t count, 
 {
     if( count > CM_MAX_DEPENDENCY_COUNT )
     {
-        GfxEmu::ErrorMessage("Exceed dependency count limitation, which is 8!");
+        GFX_EMU_ERROR_MESSAGE("Exceed dependency count limitation, which is 8!");
         GFX_EMU_ASSERT( 0 );
         return CM_FAILURE;
 
@@ -484,7 +468,11 @@ bool CmThreadSpaceEmu::IntegrityCheck(CmKernelArrayEmu* pTask)
     if (this->IsThreadAssociated())
     {
         //For future extending to multiple kernels cases, we're using a general mechanism to check the integrity
+    #if defined(_WIN32)
         bool** pTSMapping = new bool*[KernelCount];
+    #else
+        bool** pTSMapping = new bool*[KernelCount];
+    #endif
         bool* pKernelInScoreboard = new bool[KernelCount];
         CmSafeMemSet(pTSMapping, 0, KernelCount * sizeof(bool*));
         for (i = 0; i < KernelCount; i++)
@@ -536,7 +524,7 @@ bool CmThreadSpaceEmu::IntegrityCheck(CmKernelArrayEmu* pTask)
         if (unassociated != 0)
         {
             //GFX_EMU_ASSERT(0);
-            GfxEmu::PrintMessage(("pTS->IntegrityCheck Failed: ThreadSpace association is not correct!\n"));
+            GFX_EMU_MESSAGE(("pTS->IntegrityCheck Failed: ThreadSpace association is not correct!\n"));
             return false;
         }
         else
@@ -986,7 +974,6 @@ int32_t CmThreadSpaceEmu::Wavefront26ZISeqVV26HH26()
                 }
             }
 
-
             temp_xyFor26.x = temp_xyFor26.x + (2 * m_26ZIBlockWidth);
             temp_xyFor26.y = temp_xyFor26.y - ( 1 * m_26ZIBlockHeight);
 
@@ -1175,7 +1162,12 @@ int32_t CmThreadSpaceEmu::Wavefront26ZISeqVV1x26HH1x26()
 //!
 CM_RT_API int32_t CmThreadSpaceEmu::SetGlobalThreadDependencyMask( uint8_t mask )
 {
+#if 0
+    m_Mask = mask;
+    return CM_SUCCESS;
+#else
     return CmNotImplemented(__PRETTY_FUNCTION__);
+#endif
 }
 
 int32_t CmThreadSpaceEmu::GetThreadSpaceSize(uint32_t & width, uint32_t & height)
@@ -1278,4 +1270,3 @@ bool CmThreadSpaceEmu::IsDependencySet()
 {
     return ((m_Dependency.count != 0) ? true : false);
 }
-

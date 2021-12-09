@@ -1,34 +1,14 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_lib.h"
 #include "genx_lib.h"
 #include "cm_intrin.h"
-
-void __this_thread_yield(){
-    cmrt::this_thread_yield();
-}
 
 CM_API void cm_barrier()
 {
@@ -72,7 +52,6 @@ CM_API unsigned int cm_slm_alloc(unsigned int size)
 
 CM_API void cm_slm_free(void)
 {
-
 }
 
 void check_dimention(uint dim)
@@ -111,6 +90,7 @@ CM_API uint cm_group_count(uint dim) // Number of groups
 // Set the fp rounding mode
 CM_API void  cm_fsetround(CmRoundingMode val)
 {
+#ifdef __GNUC__
     unsigned int xval;
     switch(val)
     {
@@ -131,10 +111,31 @@ CM_API void  cm_fsetround(CmRoundingMode val)
         exit(EXIT_FAILURE);
     }
     fesetround(xval);
+#else
+    unsigned int xval;
+    switch(val)
+    {
+    case CM_RTE:
+        xval = _RC_NEAR;
+        break;
+    case CM_RTP:
+        xval = _RC_UP;
+        break;
+    case CM_RTN:
+        xval = _RC_DOWN;
+        break;
+    case CM_RTZ:
+        xval = _RC_CHOP;
+        break;
+    default:
+        GFX_EMU_ERROR_MESSAGE("Unexpected rounding mode: %d\n", val);
+        exit(EXIT_FAILURE);
+    }
+    _control87(xval, _MCW_RC);
+#endif
 
     return;
 }
-
 CM_API void cm_pause(unsigned short length)
 {
     std::cerr << "\ncm_pause intrinsic is not supported in emulation mode and doesn't do anything";
@@ -145,6 +146,7 @@ CM_API CmRoundingMode cm_fgetround(void)
 {
     CmRoundingMode val;
 
+#ifdef __GNUC__
     unsigned int xval = fegetround();
     switch (xval)
     {
@@ -164,6 +166,27 @@ CM_API CmRoundingMode cm_fgetround(void)
         GFX_EMU_ERROR_MESSAGE("Retrieved unexpected rounding mode from control work: %04x\n", xval);
         exit(EXIT_FAILURE);
     }
+#else
+    unsigned int xval = _control87(0, 0);
+    switch (xval & _MCW_RC)
+    {
+    case _RC_NEAR:
+        val = CM_RTE;
+        break;
+    case _RC_UP:
+        val = CM_RTP;
+        break;
+    case _RC_DOWN:
+        val = CM_RTN;
+        break;
+    case _RC_CHOP:
+        val = CM_RTZ;
+        break;
+    default:
+        GFX_EMU_ERROR_MESSAGE("Retrieved unexpected rounding mode from control work: %04x\n", xval & _MCW_RC);
+        exit(EXIT_FAILURE);
+    }
+#endif
 
     return val;
 }
@@ -185,4 +208,26 @@ CM_API void cm_fsetmode(CmFPMode val)
 CM_API CmFPMode cm_fgetmode()
 {
     return CM_IEEE;
+}
+
+CM_API unsigned
+cm_addc(unsigned src0, unsigned src1, unsigned &carry)
+{
+    vector<unsigned, 1> Src0 = src0;
+    vector<unsigned, 1> Src1 = src1;
+    vector<unsigned, 1> Carry;
+    vector<unsigned, 1> Result = cm_addc<1>(Src0, Src1, Carry);
+    carry = Carry(0);
+    return Result(0);
+}
+
+CM_API unsigned
+cm_subb(unsigned minuend, unsigned subtrahend, unsigned &borrow)
+{
+    vector<unsigned, 1> Minuend = minuend;
+    vector<unsigned, 1> Subtrahend = subtrahend;
+    vector<unsigned, 1> Borrow;
+    vector<unsigned, 1> Result = cm_subb<1>(Minuend, Subtrahend, Borrow);
+    borrow = Borrow(0);
+    return Result(0);
 }

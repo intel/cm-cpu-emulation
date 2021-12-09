@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #ifndef CM_LIST_H
 #define CM_LIST_H
@@ -92,16 +76,16 @@ public:
         top->_Prev = n;
         _Base._Next = n;
     }
-    //added for dyn generation stuff so that parameters are in the correct order for iteration
-    void push_back(T data)
-    {
-        cm_node_ptr n = new _CM_List_Node<T>(data);
+	//added for dyn generation stuff so that parameters are in the correct order for iteration
+	void push_back(T data)
+	{
+		cm_node_ptr n = new _CM_List_Node<T>(data);
         cm_node_ptr bot = (cm_node_ptr)_Base._Prev;
-        n->_Prev=bot;
-        n->_Next = bot->_Next;
-        bot->_Next = n;
-        _Base._Prev=n;
-    }
+		n->_Prev=bot;
+		n->_Next = bot->_Next;
+		bot->_Next = n;
+		_Base._Prev=n;
+	}
     void push_front(T data) { add(data); }
 
     void remove(iterator i) {
@@ -133,18 +117,18 @@ public:
     T& front() { return *begin(); }
 
     bool empty() {
-        return size() == 0;
-    }
-    void clear()
-    {
-        for (iterator next, i = begin(); i != end(); i = next) {
+		return size() == 0;
+	}
+	void clear()
+	{
+		for (iterator next, i = begin(); i != end(); i = next) {
             next = i;
             ++next;
             cm_node_ptr n = i._Ptr;
             delete n;
         }
-        _Base._Next = &_Base;_Base._Prev = &_Base;
-    }
+		_Base._Next = &_Base;_Base._Prev = &_Base;
+	}
 };
 
 #endif /* CM_LIST_H */

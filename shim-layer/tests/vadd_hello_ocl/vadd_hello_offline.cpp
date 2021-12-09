@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2019 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include <cassert>
 #include <cstdint>
@@ -99,12 +83,12 @@ int main() {
   constexpr int NPROGS = 1;
   uint8_t *progs[NPROGS] = {progbin.data()};
   size_t progssize[NPROGS] = {binsize};
-  cl_program prog = clCreateProgramWithBinary(context,
-                                              NPROGS,
-                                              &device,
-                                              progssize,
-                                              (const unsigned char **)progs,
-                                              &error,
+  cl_program prog = clCreateProgramWithBinary(context,                       //
+                                              NPROGS,                        //
+                                              &device,                       //
+                                              progssize,                     //
+                                              (const unsigned char **)progs, //
+                                              &error,                        //
                                               &errNum);
   OCL_CHECK(error);
 
@@ -146,6 +130,7 @@ int main() {
     hBufC[i] = -1;
   }
 
+#if 1
   // allocate buffer
   cl_mem dBufA =
       clCreateBuffer(context, CL_MEM_READ_ONLY, bufsize, NULL, &error);
@@ -164,6 +149,17 @@ int main() {
                                  NULL));
   OCL_CHECK(clEnqueueWriteBuffer(cq, dBufC, CL_TRUE, 0, bufsize, hBufC, 0, NULL,
                                  NULL));
+#else
+  cl_mem dBufA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                                bufsize, hBufA, &error);
+  OCL_CHECK(error);
+  cl_mem dBufB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                                bufsize, hBufB, &error);
+  OCL_CHECK(error);
+  cl_mem dBufC = clCreateBuffer(
+      context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, bufsize, hBufC, &error);
+  OCL_CHECK(error);
+#endif
 
   // get a handle and map parameters for the kernel
   cl_kernel k_vadd = clCreateKernel(prog, "vadd", &error);

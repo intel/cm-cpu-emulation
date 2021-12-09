@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #pragma once
 
@@ -61,6 +45,11 @@ inline void FastMemCopy_SSE2(void* dst, void* src, const size_t doubleQuadWords)
 inline void FastMemCopy_SSE2_movntdq_movdqa(void* dst, void* src, const size_t doubleQuadWords);
 inline void FastMemCopy_SSE2_movdqu_movdqa(void* dst, void* src, const size_t doubleQuadWords);
 inline void FastMemCopy_SSE2_movntdq_movdqu(void* dst, const void* src, const size_t doubleQuadWords);
+
+#if !defined (_WIN64) && !defined (__GNUC__)
+inline void __fastcall FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqa(void* dst, const void* src);
+inline void __fastcall FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqu(void* dst, const void* src);
+#endif
 
 /*****************************************************************************\
 MACROS:
@@ -161,6 +150,22 @@ inline bool TestSSE4_1(void)
     {
 #endif //NO_EXCEPTION_HANDLING
 
+#if !defined(_WIN64) && defined(_WIN32)
+    //Execute SSE4.1 PTEST instruction
+    __asm _emit 0x66
+    __asm _emit 0x0f
+    __asm _emit 0x38
+    __asm _emit 0x17
+    __asm _emit 0xc1
+#elif defined (_WIN32) && defined (_In_)
+    static __m128i m128Space = { 0 };
+    __m128i* pMMSrc = &m128Space;
+    __m128i  xmm0;
+    xmm0 = _mm_stream_load_si128(pMMSrc);
+#else
+    success = false;
+#endif // #ifndef _WIN64
+
 #ifndef NO_EXCEPTION_HANDLING
     }
     __except (EXCEPTION_EXECUTE_HANDLER)
@@ -192,6 +197,21 @@ inline void GetCPUID(int CPUInfo[4], int InfoType)
     __try
     {
 #endif //NO_EXCEPTION_HANDLING
+
+#if defined(_WIN32) && !defined(_WIN64)
+    #ifdef _MSC_VER
+        __asm mov eax, InfoType
+        __asm cpuid
+        __asm mov esi, CPUInfo
+        __asm mov[esi], eax
+        __asm mov[esi + 4], ebx
+        __asm mov[esi + 8], ecx
+        __asm mov[esi + 12], edx
+    #endif
+#elif defined(_WIN64)
+        __cpuid(CPUInfo, InfoType);
+#elif defined(__GNUC__)
+#endif
 
 #ifndef NO_EXCEPTION_HANDLING
     }
@@ -251,10 +271,30 @@ inline void CmFastMemCopyFromWC(void* dst, const void* src, const size_t bytes, 
                 const bool isDstDoubleQuadWordAligned =
                     IsAligned(p_dst, sizeof(DQWORD));
 
+#if defined(_WIN64)
+                __m128i* pMMSrc = (__m128i*)(p_src);
+                __m128i* pMMDest = reinterpret_cast<__m128i*>(p_dst);
+                __m128i  xmm0, xmm1, xmm2, xmm3;
+#endif
                 if (isDstDoubleQuadWordAligned)
                 {
                     for (size_t i = 0; i<DoubleHexWordsToCopy; i++)
                     {
+#if defined(_WIN64)
+                        xmm0 = _mm_stream_load_si128(pMMSrc);
+                        xmm1 = _mm_stream_load_si128(pMMSrc + 1);
+                        xmm2 = _mm_stream_load_si128(pMMSrc + 2);
+                        xmm3 = _mm_stream_load_si128(pMMSrc + 3);
+                        pMMSrc += 4;
+
+                        _mm_store_si128(pMMDest, xmm0);
+                        _mm_store_si128(pMMDest + 1, xmm1);
+                        _mm_store_si128(pMMDest + 2, xmm2);
+                        _mm_store_si128(pMMDest + 3, xmm3);
+                        pMMDest += 4;
+#elif defined(_WIN32)
+                        FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqa(p_dst, p_src);
+#endif
 
                         p_dst += sizeof(DHWORD);
                         p_src += sizeof(DHWORD);
@@ -265,6 +305,21 @@ inline void CmFastMemCopyFromWC(void* dst, const void* src, const size_t bytes, 
                 {
                     for (size_t i = 0; i<DoubleHexWordsToCopy; i++)
                     {
+#if defined(_WIN64)
+                        xmm0 = _mm_stream_load_si128(pMMSrc);
+                        xmm1 = _mm_stream_load_si128(pMMSrc + 1);
+                        xmm2 = _mm_stream_load_si128(pMMSrc + 2);
+                        xmm3 = _mm_stream_load_si128(pMMSrc + 3);
+                        pMMSrc += 4;
+
+                        _mm_storeu_si128(pMMDest, xmm0);
+                        _mm_storeu_si128(pMMDest + 1, xmm1);
+                        _mm_storeu_si128(pMMDest + 2, xmm2);
+                        _mm_storeu_si128(pMMDest + 3, xmm3);
+                        pMMDest += 4;
+#elif defined(_WIN32)
+                        FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqu(p_dst, p_src);
+#endif
                         p_dst += sizeof(DHWORD);
                         p_src += sizeof(DHWORD);
                         count -= sizeof(DHWORD);
@@ -703,3 +758,100 @@ inline void CmFastMemCopy(void* dst, const   void* src, const size_t bytes)
     }
 }
 
+/*****************************************************************************\
+Inline Function:
+FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqa
+
+Description: Fast copy from USWC memory to cacheable system memory
+
+Input:
+dst - 16-byte aligned pointer to (cacheable) destination buffer
+src - 16-byte(req)/64-byte(optimal) aligned pointer to (USWC) source buffer
+\*****************************************************************************/
+#if !defined (_WIN64) && !defined (__GNUC__)
+inline void __fastcall FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqa(void* dst, const void* src)
+{
+    __asm
+    {
+        ; Store the orginal source start address
+        mov edx, src
+
+        ; Store the dest address
+        mov ecx, dst
+
+        align 16
+
+        ; Load data from source buffer
+        ; Streaming loads from the same cache line should be grouped together
+        ; and not be interleaved with : a) Writes or non - streaming loads or
+        ; b) Streaming loads from other cache lines(strided accesses)
+
+        ; movntdqa xmm0, xmmword ptr[edx]
+        MOVNTDQA_R_MR(REG_XMM0, REG_EDX)
+
+        ; movntdqa xmm1, xmmword ptr[edx + 16]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM1, REG_EDX, 16)
+
+        ; movntdqa xmm2, xmmword ptr[edx + 32]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM2, REG_EDX, 32)
+
+        ; movntdqa xmm3, xmmword ptr[edx + 48]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM3, REG_EDX, 48)
+
+        ; Save data in destination buffer.
+        movdqa xmmword ptr[ecx], xmm0
+        movdqa xmmword ptr[ecx + 16], xmm1
+        movdqa xmmword ptr[ecx + 32], xmm2
+        movdqa xmmword ptr[ecx + 48], xmm3
+    }
+} // FastMemCopy_SSE4_1_movntdqa_movdqa()
+#endif //!defined (_WIN64)
+
+  /*****************************************************************************\
+  Inline Function:
+  FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqu
+
+  Description: Fast copy from USWC memory (DHWORD in size) to cacheable system memory
+
+  Input:
+  dst - 16-byte (unaligned) pointer to (cacheable) destination buffer
+  src - 16-byte(req)/64-byte(optimal) aligned pointer to (USWC) source buffer
+  \*****************************************************************************/
+#if !defined(_WIN64) && defined(_WIN32)
+inline void  __fastcall FastBlockCopyFromUSWC_SSE4_1_movntdqa_movdqu(void* dst, const void* src)
+{
+    __asm
+    {
+        ; Store the orginal source start address
+        mov edx, src
+
+        ; Store the dest address
+        mov ecx, dst
+
+        align 16
+
+        ; Load data from source buffer
+        ; Streaming loads from the same cache line should be grouped together
+        ; and not be interleaved with : a) Writes or non - streaming loads or
+        ; b) Streaming loads from other cache lines(strided accesses)
+
+        ; movntdqa xmm0, xmmword ptr[edx]
+        MOVNTDQA_R_MR(REG_XMM0, REG_EDX)
+
+        ; movntdqa xmm1, xmmword ptr[edx + 16]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM1, REG_EDX, 16)
+
+        ; movntdqa xmm2, xmmword ptr[edx + 32]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM2, REG_EDX, 32)
+
+        ; movntdqa xmm3, xmmword ptr[edx + 48]
+        MOVNTDQA_R_MR_OFFSET(REG_XMM3, REG_EDX, 48)
+
+        ; Copy data in destination buffer.
+        movdqu xmmword ptr[ecx], xmm0
+        movdqu xmmword ptr[ecx + 16], xmm1
+        movdqu xmmword ptr[ecx + 32], xmm2
+        movdqu xmmword ptr[ecx + 48], xmm3
+    }
+} // FastMemCopy_SSE4_1_movntdqa_movdqu()
+#endif // !defined (_WIN64)

@@ -1,19 +1,28 @@
 
+project(libcm)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/common.cmake)
+
 cmake_minimum_required(VERSION 3.10)
+
 
 find_package(LibFFI REQUIRED)
 
 
+
+if (NOT WIN32)
   if (DEFINED LIBVA_INSTALL_PATH)
     set(LIBVA_INCLUDE_DIRS ${LIBVA_INSTALL_PATH}/include)
   else()
     include(FindPkgConfig)
     pkg_check_modules(LIBVA REQUIRED libva>=1.6.0)
   endif()
+endif()
 
 set(LIBCM_SOURCE
   # NB: this shall go to a separate emu_common dll.
   ${COMMON_SRC_PATH}/emu_cfg.cpp
+  ${COMMON_SRC_PATH}/emu_cfg_platform.cpp
   ${COMMON_SRC_PATH}/emu_utils.cpp
   ${COMMON_SRC_PATH}/emu_log.cpp
   ${COMMON_SRC_PATH}/emu_kernel_support.cpp
@@ -24,7 +33,7 @@ set(LIBCM_SOURCE
 
   cm_internal.cpp
   cm_intrin.cpp
-  esimdcpu_support.cpp
+  esimdemu_support.cpp
   genx_dataport_emu.cpp
   genx_threading.cpp
   rt.cpp)
@@ -47,8 +56,7 @@ set(LIBCM_HEADERS
   cm_traits.h
   cm_vm.h
   cmtl/cmtl.h
-  esimdcpu_support.h
-  dataport_common.h
+  esimdemu_support.h
   genx_dataport.h
   genx_simdcontrolflow.h
   genx_simdcontrolflow_emu.h
@@ -89,10 +97,14 @@ if(UNIX AND
 endif()
 
 
+if(NOT WIN32)
   target_include_directories(libcm SYSTEM PUBLIC ${LIBVA_INCLUDE_DIRS})
   target_link_libraries(libcm PRIVATE dl pthread)
+endif()
+
 
 target_link_libraries(libcm PRIVATE LibFFI::LibFFI)
+
 
 
 if(DBGSYMB_PROVIDER_LIB_FOUND)

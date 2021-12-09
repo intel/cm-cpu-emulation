@@ -1,26 +1,10 @@
-/*===================== begin_copyright_notice ==================================
+/*========================== begin_copyright_notice ============================
 
- Copyright (c) 2021, Intel Corporation
+Copyright (C) 2017 Intel Corporation
 
+SPDX-License-Identifier: MIT
 
- Permission is hereby granted, free of charge, to any person obtaining a
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
-
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
-======================= end_copyright_notice ==================================*/
+============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
 #include "cm_task_emumode.h"
@@ -42,13 +26,13 @@ int32_t CmThreadGroupSpace::Create(CmDevice *pDevice, uint32_t thrdSpaceWidth, u
     pDevice->GetCaps(CAP_USER_DEFINED_THREAD_COUNT_PER_THREAD_GROUP, size, &max_thread_count_per_group);
     uint32_t max_thread_space_width_pergroup = 0;
     uint32_t max_thread_space_height_pergroup = 0;
-    if (GfxEmu::Cfg ().Platform.getInt () >= GfxEmu::Platform::XEHP_SDV)
+    if (GfxEmu::Cfg::Platform ().getInt () >= GfxEmu::Platform::XEHP_SDV)
     {
         max_thread_space_width_pergroup  = MAX_THREAD_SPACE_WIDTH_PERGROUP_XEHP_SDV;
         max_thread_space_height_pergroup = MAX_THREAD_SPACE_HEIGHT_PERGROUP_XEHP_SDV;
     }
 
-    if (GfxEmu::Cfg ().Platform.getInt () == GfxEmu::Platform::TGLLP)
+    if (GfxEmu::Cfg::Platform ().getInt () == GfxEmu::Platform::TGLLP)
     {
         max_thread_space_width_pergroup  = MAX_THREAD_SPACE_WIDTH_PERGROUP_GEN12LP;
         max_thread_space_height_pergroup = MAX_THREAD_SPACE_HEIGHT_PERGROUP_GEN12LP;
@@ -65,7 +49,7 @@ int32_t CmThreadGroupSpace::Create(CmDevice *pDevice, uint32_t thrdSpaceWidth, u
         || (thrdSpaceHeight > max_thread_space_height_pergroup)
         || (thrdSpaceDepth * thrdSpaceHeight * thrdSpaceWidth > max_thread_count_per_group))
     {
-        GfxEmu::ErrorMessage("Exceed thread group size limitation!");
+        GFX_EMU_ERROR_MESSAGE("Exceed thread group size limitation!");
         GFX_EMU_ASSERT( 0 );
         return CM_INVALID_THREAD_GROUP_SPACE;
     }
@@ -132,4 +116,3 @@ int32_t CmThreadGroupSpace::Initialize( void )
 {
     return CM_SUCCESS;
 }
-

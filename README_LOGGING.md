@@ -4,7 +4,6 @@
 
 - [EMU message logging and debug API.](#emu-message-logging-and-debug-api)
   - [Message topic channels, importance levels, minimal importance level.](#message-topic-channels-importance-levels-minimal-importance-level)
-    - [Sticky messages](#sticky-messages)
   - [API usage examples and output:](#api-usage-examples-and-output)
     - [Trigger debug breakpoint](#trigger-debug-breakpoint)
     - [Output backtrace](#output-backtrace)
@@ -24,11 +23,6 @@ Information about corresponding message topic channel and importance is being au
 
 **At the build- and runtime** a user can set particular topic channels to be enabled or disabled, also the minimal importance level of messages displayed can be set. See [common/emu_log_flags.h](./common/emu_log_flags.h) for compile-time settings,
 see [runtime configuration readme](./README_CONFIG.md) for runtime configuration settings.
-
-### Sticky messages
-
-Sticky messages are not affected by runtime choice of messages to be displayed and are aways shown.
-Use **fSticky** flag to make the message sticky.
 
 ## API usage examples and output:
 
@@ -61,7 +55,7 @@ For flags constants (not necessary if using flag names inside GFX_EMU_... macros
 
    GFX_EMU_ASSERT_MESSAGE(condition, "Message %u", 42);
 
-In case of failure message with additional filename and line number information printed. GfxEmu::DebugBreak () is invoked.
+In case of failure message with additional filename and line number information printed. GfxEmu::Utils::debugBreak () is invoked.
 
 ----
 ### Message output APIs have general form of 
@@ -141,21 +135,14 @@ Optional **ARGS** are for MESSAGE_FORMAT (as in printf also).
     [shim] *** Error (at <file>:<line>): message 42.
 
 ----
-### Program termination with error printout
+### Program termination with error and backtrace printout
 
      GFX_EMU_FAIL_WITH_MESSAGE ("message %u.\n", 42);
 
 **Output:**
 
     *** Error: message 42.
-    <finishes execution>
-
-----
-    GfxEmu::FailWithMessage<true> ("message %u.\n", 42);
-
-**Output:** 
-
-    as above, additionally prints backtrace.
+    <finishes execution, prints backtrace if EMU_BACKTRACE_ON_TERMINATION env variable is set>
 
 ----
 ### Setting common message prefix for a program lexical scope.
