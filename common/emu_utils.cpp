@@ -69,7 +69,7 @@ void* symbolNameToAddr (const char *moduleName, const std::string& linkageName, 
 
     const auto addr = dlsym(dlSession, linkageName.c_str());
     if (!addr) {
-        GFX_EMU_WARNING_MESSAGE(fDbgSymb | fCritical, "symbolNameToAddr: \n"
+        GFX_EMU_WARNING_MESSAGE(fDbgSymb, "symbolNameToAddr: \n"
             "\tunable to lookup symbol %s (linkage name: %s) with dlsym().\n"
             "\tmay recompile with -rdynamic or -Wl,--export-dynamic for this to work.\n\n",
                 name.c_str (),

@@ -279,7 +279,7 @@ void WarningMessage(const Log::Flags::Type flags, const char *msg, ArgsT&& ... a
         constexpr
 #endif
     (static_cast<bool>(at)) prefix += *at;
-    PrintMessage<Log::LogFile,nullptr,true>(flags, prefix + msg, std::forward<ArgsT>(args)...);
+    PrintMessage<Log::LogFile,nullptr>(Log::Flags::fWarn | flags, prefix + msg, std::forward<ArgsT>(args)...);
 }
 
 template <Log::Flags::Type flags = Log::Flags::fUnset,

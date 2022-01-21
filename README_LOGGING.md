@@ -69,12 +69,12 @@ Optional **FLAGS**, if present, specify **topic channel**-s and/or **importance 
 **Examples**
 
     fShim
-    fShim | fCritical
+    fShim | fInfo
 
 May also use multiple topic channels:
 
     fShim | fKernelLaunch
-    fShim | fKernelLaunch | fCritical
+    fShim | fKernelLaunch | fDetail
 
 
 **MESSAGE_FORMAT** is a printf-compatible format string.

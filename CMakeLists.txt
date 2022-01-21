@@ -18,7 +18,7 @@ add_subdirectory(libcm)
 install(FILES
     README.md
     README_CONFIG.md
-    DESTINATION doc
+    DESTINATION share/doc
 )
 
 include(cmake/package.cmake)

@@ -158,7 +158,7 @@ const DbgSymb::FunctionDesc& getKernelDesc_ (
     if(!k.addr)
         fallback_getKernelDataFromShim(k, kernelModuleApplied);
 #else
-    GFX_EMU_MESSAGE(fKernelSupport | fCritical, "kernel data query via debug data is not supported in current build.\n");
+    GFX_EMU_WARNING_MESSAGE(fKernelSupport, "kernel data query via debug data is not supported in current build.\n");
 
     k.addr = GfxEmu::Utils::symbolNameToAddr(
         kernelModuleApplied.getModuleFileName ().c_str (),

@@ -48,20 +48,23 @@ The list of logging channel names:
 
 > E.g. export EMU_LOG_CHANNELS=".,~config" will output all the logging channel messages except for "config" channel. 
 
+Warnings can be separately controlled with "warn" flag:
+
+> E.g. export EMU_LOG_CHANNELS="warn" will enable warning messages on all the channels. 
+
 NB: this setting will not affect sticky messages display.
 
 #### ENV: EMU_LOG_LEVEL
 
 (regex string to match minimal log level name, default: "info")
 
-> E.g. export EMU_LOG_LEVEL="crit" will match log level "critical" so that only critical-level messages are displayed. 
+> E.g. export EMU_LOG_LEVEL="info" will match log level "info" so that only info-level messages are displayed. 
 
 The list of logging levels:
 
 - extra
 - detail
 - info
-- critical
 - [see here for more](common/emu_log_flags.h)
 
 #### ENV: EMU_LOG_WARNINGS

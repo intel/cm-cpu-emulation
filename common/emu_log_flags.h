@@ -23,6 +23,7 @@ GFX_EMU_DEBUG_FLAG("shim",          fShim,            9, false)
 GFX_EMU_DEBUG_FLAG("cm intrin",     fCmIntrin,        10, false)
 GFX_EMU_DEBUG_FLAG("config",        fCfg,             11, false)
 GFX_EMU_DEBUG_FLAG("sched",         fSched,           12, false)
+GFX_EMU_DEBUG_FLAG("warn",          fWarn,            13, false)
 
 // -- Importance level --- NB: num must increase with importance semantics.
 //GFX_EMU_DEBUG_LEVEL(msg,constant,num)
@@ -30,4 +31,3 @@ GFX_EMU_DEBUG_FLAG("sched",         fSched,           12, false)
 GFX_EMU_DEBUG_LEVEL("extra",         fExtraDetail,    1)
 GFX_EMU_DEBUG_LEVEL("detail",        fDetail,         2)
 GFX_EMU_DEBUG_LEVEL("info",          fInfo,           3)
-GFX_EMU_DEBUG_LEVEL("critical",      fCritical,       4)
