@@ -7,11 +7,13 @@ SPDX-License-Identifier: MIT
 ============================= end_copyright_notice ===========================*/
 
 /////////////////////////////////////////////////////////////////////
-#include <fstream>
 #include <iostream>
+#include <sstream>
+
 using namespace std;
 #include "cm_include.h"
 #include "cm_mem.h"
+#include "emu_log.h"
 
 /////////////////////////////////////////////////////////////////////
 #if defined(_WIN32)
@@ -92,7 +94,7 @@ CmStatistics *
 CmStatistics::Create(void)
 {
     //////////////////////////////////////////////////////
-    ofstream    out("cmrt_dump.txt", ofstream::app);
+    std::stringstream out;
     time_t currentTime;
     time(&currentTime);
 #if defined(_WIN32)
@@ -101,7 +103,7 @@ CmStatistics::Create(void)
     char charstr_time[32];
     asctime_s( charstr_time, 32, &tm_lcltime);
     out << "CmDevice Created: " << charstr_time << endl;
-    out.close();
+    GFX_EMU_MESSAGE(fStat, "%s\n", out.str ().c_str ());
 #else
     //Currently NOT support for CmStatistics in Linux
 #endif
@@ -122,7 +124,7 @@ CmStatistics::Create(void)
 CmStatistics::~CmStatistics(void)
 {
     //////////////////////////////////////////////////////
-    ofstream    out("cmrt_dump.txt", ofstream::app);
+    std::stringstream out;
     out.width(30);
     out <<"KernelName";
     out.width(30);
@@ -148,7 +150,7 @@ CmStatistics::~CmStatistics(void)
     char charstr_time[32];
     asctime_s( charstr_time, 32, &tm_lcltime);
     out << "CmDevice Destroyed: " << charstr_time << endl;
-    out.close();
+    GFX_EMU_MESSAGE(fStat, "%s\n", out.str ().c_str ());
 #else
     //Currently NOT support for CmStatistics in Linux
 #endif
