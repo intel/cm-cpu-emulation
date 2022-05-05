@@ -72,10 +72,31 @@ protected:
 
 using CmEmuThreadBroadcastEl = uint32_t;
 
+enum class NamedBarrierMode
+{
+    ProducerConsumer = 0,
+    Producer = 1,
+    Consumer = 2,
+    MaxMode  = Consumer,
+    Mask = 3
+};
+
 constexpr size_t
+    kMaxNamedBarriersCount = 32,
+    kMaxWorkItemsPerWorkGroup = 512,
+    kDpaswMaxSystolicDepth = 8,
+
     kGrfSize = 32,
-    kCmEmuKnlTimeout = 40000
+    kCmEmuKnlTimeout = 40000,
+
+    kCmEmuGrfSizeInXThreadBufEls = kGrfSize / sizeof(CmEmuThreadBroadcastEl),
+    kCmEmuXThreadBroadcastPerThreadBufSize =
+        (kDpaswMaxSystolicDepth/2) * kCmEmuGrfSizeInXThreadBufEls,
+    kCmEmuXThreadBroadcastBufSize =
+        kMaxWorkItemsPerWorkGroup * kCmEmuXThreadBroadcastPerThreadBufSize
 ;
+
+using XThreadBroadcastBuf = vector<CmEmuThreadBroadcastEl, kCmEmuXThreadBroadcastBufSize>;
 
 extern thread_local class CmEmuMt_Thread* g_resident_thread; // For helper funcs.
 
@@ -92,6 +113,48 @@ public:
 };
 
 class CmEmuMt_Kernel;
+class CmEmuMt_NamedBarrier
+{
+public:
+    constexpr static int kUninitId = -1;
+
+private:
+    constexpr static bool kAssertsEnabled {true}, kDbgEnabled {false};
+    static std::mutex s_dbgMtx;
+
+    int m_id {kUninitId};
+
+    int m_cfg_prod_count {};
+    int m_cfg_cons_count {};
+
+    std::atomic<int> m_cfg_cookie {0};
+    std::atomic<bool> m_is_configured {false};
+
+    std::atomic_flag m_reconfLock = ATOMIC_FLAG_INIT; // std::mutex m_reconfMtx;
+
+    std::atomic<int> m_signaled_prod_count {};
+    std::atomic<int> m_signaled_cons_count {};
+    std::atomic<int> m_pending_cons_count {};
+    std::array<bool, kMaxWorkItemsPerWorkGroup> m_cons_tracking {};
+    std::array<bool, kMaxWorkItemsPerWorkGroup> m_prod_tracking {};
+
+    bool is_ready() const;
+
+public:
+    CmEmuMt_NamedBarrier ();
+    ~CmEmuMt_NamedBarrier ();
+
+    void set_id (int id) {m_id = id;}
+
+    void signal(
+        const int tid,
+        const bool isProd,
+        const bool isCons,
+        const int numProd,
+        const int numCons);
+
+    void wait(const int tid);
+};
 
 class CmEmuMt_GroupBarrier
 {
@@ -112,7 +175,8 @@ struct CmEmuMt_SLM
 {
     constexpr static size_t
         kChunkSize = 4ll << 10,
-        kDefaultMaxSize = 64ll << 10
+        kDefaultMaxSize = 64ll << 10,
+        kPvcMaxSize = 128ll << 10
     ;
     std::vector<char> m_memory;
     std::mutex        m_mutex;
@@ -168,11 +232,28 @@ struct CmEmuMt_GroupState
 {
     CmEmuMt_SLM slm;
     std::unique_ptr<CmEmuMt_GroupBarrier> simple_barrier, aux_barrier;
+    std::array<CmEmuMt_NamedBarrier, kMaxNamedBarriersCount> named_barriers;
+    XThreadBroadcastBuf xthread_broadcast;
+	uint max_avail_barrier_id {0};
+
+    void set_max_avail_barrier_id(uint maxId) {
+        if(maxId >= named_barriers.size())
+        {
+            std::cerr << "*** Error: max initialized barrier id can not be more than " <<
+                (named_barriers.size () - 1) << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        max_avail_barrier_id = maxId;
+    }
+
+    uint get_max_avail_barrier_id() const { return max_avail_barrier_id; }
 
     CmEmuMt_GroupState(CmEmuMt_Kernel *kernel)
     {
         simple_barrier = std::make_unique<CmEmuMt_GroupBarrier>(kernel);
         aux_barrier = std::make_unique<CmEmuMt_GroupBarrier>(kernel);
+        {int i = 0; for (auto& b: named_barriers) b.set_id (i++);}
     }
 };
 
@@ -229,6 +310,7 @@ public:
     void                execute();
 
     CmEmuMt_Kernel* kernel() const { return m_kernel; }
+    CmEmuMt_NamedBarrier* named_barrier(uint id) { return &m_resources->named_barriers[id]; }
     CmEmuMt_GroupBarrier* simple_barrier() const { return m_resources->simple_barrier.get(); }
     CmEmuMt_GroupBarrier* aux_barrier() const { return m_resources->aux_barrier.get(); }
     std::shared_ptr<CmEmuMt_GroupState> resources() const { return m_resources; }
@@ -238,6 +320,7 @@ public:
     size_t                get_slm_size() { return m_resources->slm.get_size();}
     unsigned int          alloc_slm(unsigned int bufferSize) { return m_resources->slm.alloc(bufferSize); }
 
+    XThreadBroadcastBuf& get_xthread_broadcast() { return m_resources->xthread_broadcast; }
 };
 
 class CmEmuMt_Kernel
@@ -287,6 +370,11 @@ public:
     uint32_t group_count(uint32_t idx);
 };
 
+inline uint platform_get_max_barriers_count()
+{
+    return kMaxNamedBarriersCount;
+}
+
 /* helper function that can be called by the client kernel */
 
 int32_t thread_global_idx();
@@ -298,8 +386,21 @@ int32_t group_idx(uint32_t);
 int32_t group_count(uint32_t);
 int32_t group_size();
 
+void assert_cm_nbarrier_init_api_usage();
+void group_named_barriers_init(uint count);
+void group_barrier_signal(
+    uint barrierId,
+    bool isProducer,
+    bool isConsumer,
+    uint numProducers,
+    uint numConsumers);
+void group_barrier_wait(uint barrierId);
+
 void    simple_group_barrier_signal();
 void    simple_group_barrier_wait();
+
+void    group_barrier_signal();
+void    group_barrier_wait();
 
 void    aux_barrier_signal();
 void    aux_barrier_wait();
@@ -310,6 +411,8 @@ char *       get_slm();
 void         set_slm_size(unsigned int size);
 size_t       get_slm_size();
 unsigned int alloc_slm(unsigned int bufferSize);
+
+XThreadBroadcastBuf& get_xthread_broadcast();
 
 CM_API void this_thread_yield();
 

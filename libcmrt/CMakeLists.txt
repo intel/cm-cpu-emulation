@@ -13,7 +13,6 @@ set(CMRT_SOURCE
   cm_event_emumode.cpp
   cm_group_space_emumode.cpp
   cm_kernel_emumode.cpp
-  cm_memory_object_control.cpp
   cm_program_emumode.cpp
   cm_queue_emumode.cpp
   cm_rt_helpers.cpp

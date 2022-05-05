@@ -11,7 +11,6 @@ SPDX-License-Identifier: MIT
 #include <vector>
 #include "cm_array.h"
 #include "cm_def.h"
-#include "cm_memory_object_control.h"
 #include "cm_surface_emumode.h"
 #include "cm_surface_2d_emumode.h"
 #include "cm_buffer_emumode.h"
@@ -24,6 +23,38 @@ class CmSurface2DEmu;
 class CmSurface3D;
 class CmSurface3DEmu;
 class SurfaceIndex;
+
+struct CompareByGfxAddress
+{
+    bool operator()(CmSurfaceEmu *left, CmSurfaceEmu *right) const
+    {
+        uint64_t lAddr = 0;
+        uint64_t rAddr = 0;
+
+        if (left->GetStatelessSurfaceType() == CM_STATELESS_BUFFER)
+        {
+            CmBufferEmu *bufferStatelessLeft = static_cast<CmBufferEmu *>(left);
+            bufferStatelessLeft->GetGfxAddress(lAddr);
+        }
+        else if (left->GetStatelessSurfaceType() == CM_STATELESS_SURFACE_2D)
+        {
+            CmSurface2DEmu *surf2DStatelessLeft = static_cast<CmSurface2DEmu *>(left);
+            surf2DStatelessLeft->GetGfxAddress(lAddr);
+        }
+
+        if (right->GetStatelessSurfaceType() == CM_STATELESS_BUFFER)
+        {
+            CmBufferEmu *bufferStatelessRight = static_cast<CmBufferEmu *>(right);
+            bufferStatelessRight->GetGfxAddress(rAddr);
+        }
+        else if (right->GetStatelessSurfaceType() == CM_STATELESS_SURFACE_2D)
+        {
+            CmSurface2DEmu *surf2DStatelessRight = static_cast<CmSurface2DEmu *>(right);
+            surf2DStatelessRight->GetGfxAddress(rAddr);
+        }
+        return (lAddr < rAddr);
+    }
+};
 
 class CmSurfaceManagerEmu
 {
@@ -76,11 +107,22 @@ public:
         m_aliasIndexTable.erase(iter);
     }
 
+    int32_t CreateBufferStateless(size_t size, uint32_t option, void *memAddress, CmBufferEmu *&pBufferStateless);
+
+    int32_t CreateSurface2DStateless(uint32_t width, uint32_t height, uint32_t &pitch, CmSurface2DEmu *&pSurface2D);
+
+	std::set<CmSurfaceEmu *, CompareByGfxAddress> &
+        GetStatelessSurfaceArray() { return m_statelessSurfaceArray; }
+
 protected:
 
     CmSurfaceManagerEmu();
     ~CmSurfaceManagerEmu( void );
     int32_t Initialize( CM_HAL_MAX_VALUES HalMaxValues, CM_HAL_MAX_VALUES_EX HalMaxValuesEx );
+
+	/* Emulator not support GPU memory map, ...GfxMem and ...SysMem must be the same */
+    int32_t CreateBufferStatelessBasedGfxMem(size_t size, CmBufferEmu *&pSurface);
+    int32_t CreateBufferStatelessBasedSysMem(size_t size, void *memAddress, CmBufferEmu *&pSurface) { return CmNotImplemented(__PRETTY_FUNCTION__); }
 
     CmDynamicArray m_SurfaceArray;
     uint32_t m_maxSurfaceCount;
@@ -102,4 +144,5 @@ protected:
 
     std::vector<uint32_t> m_aliasIndexTable;
 
+	std::set<CmSurfaceEmu *, CompareByGfxAddress> m_statelessSurfaceArray;
 };

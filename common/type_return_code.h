@@ -118,7 +118,7 @@ enum CM_RETURN_CODE
     CM_FAILED_TO_CREATE_CURBE_SURFACE           = -100,
     CM_INVALID_CAP_NAME                         = -101,
     CM_INVALID_PARAM_FOR_CREATE_QUEUE_EX        = -102,
-    CM_INTERNAL_ERROR(103)                        = -103,
+    CM_INVALID_CREATE_OPTION_FOR_BUFFER_STATELESS = -103,
     CM_INVALID_KERNEL_ARG_POINTER                 = -104,
     CM_LOAD_LIBRARY_FAILED                        = -105,
     CM_NO_SUPPORTED_ADAPTER                       = -106,

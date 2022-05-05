@@ -21,6 +21,8 @@ using fptrVoid = void(*)();
 
 /// Imported from rt.h : Begin
 
+using CmEmuThreadBroadcastEl = uint32_t;
+
 /// Imported from rt.h : End
 
 class EsimdemuKernel

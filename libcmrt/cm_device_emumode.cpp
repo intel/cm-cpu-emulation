@@ -309,8 +309,11 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2D(uint32_t width,
 
     if ( height > CM_MAX_2D_SURF_HEIGHT )
     {
+        if ( GfxEmu::Cfg::Platform ().getInt () != GfxEmu::Platform::PVC )
+        {
             GFX_EMU_ASSERT(0);
             return CM_INVALID_HEIGHT;
+        }
     }
 
     //support NV12 format with odd height only in DX9
@@ -1059,47 +1062,17 @@ CM_RT_API int32_t CmDeviceEmu::GetCaps(CM_DEVICE_CAP_NAME capName, size_t& capVa
                 case GfxEmu::Platform::XEHP_SDV:
                     platform = PLATFORM_INTEL_XEHP_SDV;
                     break;
+                case GfxEmu::Platform::PVC:
+                    platform = PLATFORM_INTEL_PVC;
+                    break;
+                case GfxEmu::Platform::DG2:
+                    platform = PLATFORM_INTEL_DG2;
+                    break;
                 default:
                     break;
             }
 
             CmSafeMemCopy( pCapValue, &platform, capValueSize );
-            return CM_SUCCESS;
-        }
-        else
-        {
-            return CM_FAILURE;
-        }
-
-    case CAP_GT_PLATFORM:
-        if( capValueSize >= sizeof(PLATFORM_INTEL_GT_UNKNOWN) )
-        {
-            auto genPlatform = GfxEmu::Platform::UNDEFINED;
-            GetGenPlatform(genPlatform);
-
-            if (genPlatform >= GfxEmu::Platform::BXT) {
-                return CmNotImplemented("getting CAP_GT_PLATFORM for platform >= BXT");
-            }
-
-            const auto& cfgSku = GfxEmu::Cfg::Sku ();
-            auto gtPlatform = GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN;
-
-            gtPlatform =
-                cfgSku.getStr () == "gt1" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT1 :
-                cfgSku.getStr () == "gt2" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT2 :
-                cfgSku.getStr () == "gt3" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT3 :
-                cfgSku.getStr () == "gt4" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GT4 :
-                cfgSku.getStr () == "gta" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTA :
-                cfgSku.getStr () == "gtc" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTC :
-                cfgSku.getStr () == "gtx" ? GPU_GT_PLATFORM::PLATFORM_INTEL_GTX :
-                                            GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN
-            ;
-
-            if(gtPlatform == GPU_GT_PLATFORM::PLATFORM_INTEL_GT_UNKNOWN) {
-                GFX_EMU_WARNING_MESSAGE(fCfg, "platform %s is not recognized.\n", cfgSku.getStr ().c_str ());
-            }
-
-            CmSafeMemCopy( pCapValue, &gtPlatform, sizeof(gtPlatform) );
             return CM_SUCCESS;
         }
         else
@@ -1533,4 +1506,98 @@ CM_RT_API int32_t CmDeviceEmu::CreateSurface2DAlias(CmSurface2D* surface2d,
     }
 
     return CM_SUCCESS;
+}
+
+CM_RT_API int32_t
+CmDeviceEmu::CreateBufferStateless(size_t size,
+                                   uint32_t option,
+                                   void *memAddress,
+                                   CmBufferStateless *&pSurface)
+{
+    CmBufferEmu * ptemp = nullptr;
+
+    if ( GfxEmu::Cfg::Platform ().getInt () != GfxEmu::Platform::PVC )
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_PLATFORM_UNSUPPORTED_FOR_API;
+    }
+
+    if (size < CM_MIN_SURF_WIDTH)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_INVALID_WIDTH;
+    }
+
+    CLock locker(m_CriticalSection_Surface);
+    int32_t status = m_pSurfaceMgr->CreateBufferStateless(size, option, memAddress, ptemp);
+    pSurface = static_cast<CmBufferStateless*>(ptemp);
+
+    return status;
+}
+
+CM_RT_API int32_t CmDeviceEmu::DestroyBufferStateless(CmBufferStateless* & pSurface)
+{
+    if (pSurface == nullptr)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_FAILURE;
+    }
+    CLock locker(m_CriticalSection_Surface);
+    CmBufferEmu* temp = (CmBufferEmu*)(pSurface);
+    int32_t status = this->m_pSurfaceMgr->DestroySurface(temp);
+    if (status == CM_SUCCESS)
+    {
+        pSurface = nullptr;
+    }
+
+    return status;
+}
+
+CM_RT_API int32_t
+CmDeviceEmu::CreateSurface2DStateless(uint32_t width,
+                                      uint32_t height,
+                                      uint32_t &pitch,
+                                      CmSurface2DStateless *&pSurface)
+{
+    CmSurface2DEmu *ptemp = nullptr;
+
+    if ( GfxEmu::Cfg::Platform ().getInt () != GfxEmu::Platform::PVC )
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_PLATFORM_UNSUPPORTED_FOR_API;
+    }
+
+    if (width < CM_MIN_SURF_WIDTH)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_INVALID_WIDTH;
+    }
+
+    CLock locker(m_CriticalSection_Surface);
+    int32_t status = m_pSurfaceMgr->CreateSurface2DStateless(width,
+                                                             height,
+                                                             pitch,
+                                                             ptemp);
+    pSurface = static_cast<CmSurface2DStateless*>(ptemp);
+
+    return status;
+}
+
+CM_RT_API int32_t
+CmDeviceEmu::DestroySurface2DStateless(CmSurface2DStateless *&pSurface)
+{
+    if (pSurface == nullptr)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_FAILURE;
+    }
+    CLock locker(m_CriticalSection_Surface);
+    CmSurface2DEmu* temp = (CmSurface2DEmu*)(pSurface);
+    int32_t status = this->m_pSurfaceMgr->DestroySurface(temp);
+    if (status == CM_SUCCESS)
+    {
+        pSurface = nullptr;
+    }
+
+    return status;
 }

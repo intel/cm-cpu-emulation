@@ -8,7 +8,6 @@
       - [ENV: EMU_LOG_FILE](#env-emu_log_file)
       - [ENV: EMU_LOG_CHANNELS](#env-emu_log_channels)
       - [ENV: EMU_LOG_LEVEL](#env-emu_log_level)
-      - [ENV: EMU_LOG_WARNINGS](#env-emu_log_warnings)
     - [HW configuration choice.](#hw-configuration-choice)
       - [ENV: CM_RT_PLATFORM (string)](#env-cm_rt_platform-string)
       - [ENV: CM_RT_SKU (string)](#env-cm_rt_sku-string)
@@ -66,12 +65,6 @@ The list of logging levels:
 - detail
 - info
 - [see here for more](common/emu_log_flags.h)
-
-#### ENV: EMU_LOG_WARNINGS
-
-(bool, default: false)
-
-> Enables warnings output.
 
 ### HW configuration choice.
 

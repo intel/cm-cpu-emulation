@@ -13,7 +13,6 @@ SPDX-License-Identifier: MIT
 #include <vector>
 #include "cm_include.h"
 #include "emu_log.h"
-#include "cm_memory_object_control.h"
 #include "cm_index_types.h"
 #include "type_buffer_state_param.h"
 #include "type_surface_2d_state_param.h"

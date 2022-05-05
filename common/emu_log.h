@@ -272,7 +272,6 @@ template <Log::Flags::Type = Log::Flags::fUnset,
           const char** at = nullptr,
           class ... ArgsT>
 void WarningMessage(const Log::Flags::Type flags, const char *msg, ArgsT&& ... args) {
-    if(!GfxEmu::Log::warningsEnabled__()) return;
     auto prefix = std::string("*** Warning ");
     if
 #if defined(_WIN32) || __clang__ || __GNUC__ > 7

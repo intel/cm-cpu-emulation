@@ -13,6 +13,5 @@ struct CM_BUFFER_STATE_PARAM
 {
     uint32_t uiSize;
     uint32_t uiBaseAddressOffset;
-    CM_SURFACE_MEM_OBJ_CTRL mocs;
 };
 #endif // GUARD_common_type_buffer_state_param_h

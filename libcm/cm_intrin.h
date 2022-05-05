@@ -32,6 +32,8 @@ SPDX-License-Identifier: MIT
 
 #include "half_type.h"
 
+CM_API cmrt::XThreadBroadcastBuf& __cm_dpasw_xthread_broadcast();
+
 //------------------------------------------------------------------------------
 // SLM-related.
 //------------------------------------------------------------------------------
@@ -147,6 +149,82 @@ cm_bf_cvt(const stream<T, SZ>& src0)
         exit(EXIT_FAILURE);
     }
 
+    return retv;
+}
+
+/* srnd: FLOAT->HF
+ * */
+template<typename RT, uint SZ, typename T>
+CM_API vector<RT, SZ>
+cm_srnd(const vector<T, SZ>& src0, const vector<T, SZ>& src1)
+{
+    typename abstype<T>::type ret;
+    vector<RT, SZ> retv;
+    static const bool conformable1 = is_hf_type<RT>::value;
+    static const bool conformable2 = is_byte_type<RT>::value;
+    int i;
+
+    if (is_fp_type<T>::value)
+    {
+        if (conformable1)
+        {
+            for (i = 0; i < SZ; i++){
+                SIMDCF_ELEMENT_SKIP(i);
+                float tmp = src0.get(i);
+                float rnd = src1.get(i);
+                ushort* p = (ushort *) &tmp;
+                ushort* pr = (ushort *) &rnd;
+                ushort sign = p[1] >> 15;
+                ushort exp = (p[1] >> 7) & 0b11111111;
+                uint32_t mant = (p[1] & 0x007F) << 16 | (p[0] & 0xFFFF);
+                uint32_t tmp_src0 = mant | 0x800000;
+                uint32_t tmp_src1 = pr[0] & 0x1FFF;
+                half ret_tmp;
+                ushort* pret_tmp = (ushort *) &ret_tmp;
+
+                // NaN
+                if (((p[1] & 0x7F80) == 0x7F80) && (((p[1] & 0x007F) != 0) || ((p[0] & 0xFFFF) != 0)))
+                {
+                    ret_tmp = sign << 15 | 0b11111 << 10 | 0b1000000000;
+                }
+                // inf
+                else if (((p[1] & 0x7F80) == 0x7F80) && (((p[1] & 0x007F) == 0) && ((p[0] & 0xFFFF) == 0)))
+                {
+                    ret_tmp = sign << 15 | 0b11111 << 10 | 0b0000000000;
+                }
+                // denorm or zero
+                else if ((p[1] & 0x7F80) == 0)
+                {
+                    ret_tmp = sign << 15 | 0b00000 << 10 | (p[1] & 0x007F) << 3 | (p[0] & 0xE000) >> 13;
+                }
+                else
+                {
+                    uint32_t mant_result = tmp_src0 + tmp_src1;
+                    if ((mant_result & 0x1000000) != 0)
+                    {
+                        mant_result = mant_result >> 1;
+                        exp += 1;
+                    }
+                    mant_result = mant_result & 0x7FFFFF;
+                    float result;
+                    uint32_t* presult = (uint32_t *) &result;
+                    presult[0] = sign << 31 | exp << 23 | mant_result;
+                    ret_tmp = static_cast<half>(result);
+                }
+                retv(i) = ret_tmp;
+            }
+        }
+        else
+        {
+            GFX_EMU_ERROR_MESSAGE("only fp -> hf conversion is supported\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        GFX_EMU_ERROR_MESSAGE("unsupported data type.\n");
+        exit(EXIT_FAILURE);
+    }
     return retv;
 }
 
@@ -1281,9 +1359,8 @@ cm_dp4a(const stream<T0, SZ>& src0, const stream<T1, SZ>& src1,
     static const bool conformable1 =
         is_dword_type<RT>::value && is_dword_type<T0>::value &&
         is_dword_type<T1>::value && is_dword_type<T2>::value;
-    static const bool conformable2 = check_true<SZ==4>::value;
+
     CM_STATIC_ERROR(conformable1, "only int/uint element type is supported");
-    CM_STATIC_ERROR(conformable2, "only SZ of 4 is supported");
 
     typename restype_ex<T0, typename restype_ex<T1, T2>::type>::type reta;
     vector<RT, SZ> retv;
@@ -1316,6 +1393,353 @@ cm_dp4a(const stream<T0, SZ>& src0, const stream<T1, SZ>& src1,
 
     return retv;
 }
+
+constexpr uint cm_dpas_bits_precision(CmPrecisionType precisionType)
+{
+    return
+        precisionType == CM_PRECISION_TF32 ?
+            32 :
+        precisionType == CM_PRECISION_BF || precisionType == CM_PRECISION_HF ?
+            16 :
+        precisionType == CM_PRECISION_S8 || precisionType == CM_PRECISION_U8
+            ? 8 :
+        precisionType == CM_PRECISION_S4 || precisionType == CM_PRECISION_U4 ?
+            4:
+        precisionType == CM_PRECISION_S2 || precisionType == CM_PRECISION_U2 ?
+            2 :
+            1;
+}
+
+template <
+    CmPrecisionType src1_precision,
+    CmPrecisionType src2_precision,
+    int systolic_depth,
+    int repeat_count,
+    typename RT, typename T1, typename T2,
+    uint SZ, uint N1, uint N2
+    >
+    CM_API vector<RT, SZ>
+    cm_dpas_(
+        const stream<RT, SZ>* src0, const stream<T1, N1>& src1, const stream<T2, N2>& src2,
+        const uint flags = 0)
+{
+    vector<RT, SZ> retv;
+
+    uint sat1 = CmEmulSys::_SetSatur<T1, is_inttype<RT>::value>::SetSatur() ||
+        CmEmulSys::_SetSatur<T2, is_inttype<RT>::value>::SetSatur();
+
+    constexpr uint ops_per_chan =
+        src1_precision == CM_PRECISION_TF32 || src2_precision == CM_PRECISION_TF32 ?
+        1 :
+        src1_precision == CM_PRECISION_BF || src1_precision == CM_PRECISION_HF ||
+        src2_precision == CM_PRECISION_BF || src2_precision == CM_PRECISION_HF ?
+        2 :
+        src1_precision == CM_PRECISION_S8 || src1_precision == CM_PRECISION_U8 ||
+        src2_precision == CM_PRECISION_S8 ||
+        src2_precision == CM_PRECISION_U8
+        ?
+        4 :
+        8;
+
+    uint V = 0, U = 0, k = 0, temp = 0, src1_ops_per_dword = 0, p = 0;
+
+    constexpr auto src1_el_bits = cm_dpas_bits_precision(src1_precision);
+    constexpr auto src2_el_bits = cm_dpas_bits_precision(src2_precision);
+
+    constexpr bool src1_signed =
+        src1_precision == CM_PRECISION_S2 ||
+        src1_precision == CM_PRECISION_S4 ||
+        src1_precision == CM_PRECISION_S8 ? 1 : 0;
+
+    constexpr bool src2_signed =
+        src2_precision == CM_PRECISION_S2 ||
+        src2_precision == CM_PRECISION_S4 ||
+        src2_precision == CM_PRECISION_S8 ? 1 : 0;
+
+#if defined(CM_XEHPC)
+    constexpr bool isPvc = true;
+    constexpr size_t SIMDSize = 16;
+#else
+    constexpr bool isPvc = false;
+    constexpr size_t SIMDSize = 8;
+#endif
+
+    constexpr bool
+        pvcHfDest = isPvc && std::is_same<RT, half>::value,
+        pvcBfDest = isPvc && std::is_same<RT, short>::value,
+        pvcBfOrHfDest = pvcBfDest || pvcHfDest,
+
+        pvcBfDestChecks =
+            pvcBfDest &&
+            src1_precision == CM_PRECISION_BF &&
+            src2_precision == CM_PRECISION_BF,
+
+        pvcHfDestChecks =
+            pvcHfDest && (
+            (src1_precision == CM_PRECISION_HF &&
+             src2_precision == CM_PRECISION_HF) ||
+            (src1_precision == CM_PRECISION_BF &&
+             src2_precision == CM_PRECISION_BF)),
+
+        destTypeChk =
+            (!pvcBfOrHfDest && is_fp_or_dword_type<RT>::value) ||
+            (pvcBfOrHfDest && (pvcBfDestChecks || pvcHfDestChecks)),
+
+        srcTypeChk =
+            is_dword_type<T1>::value && is_dword_type<T2>::value,
+
+        destSizeChk = SZ >= SIMDSize * repeat_count,
+
+        systolicDepthAndRepeatCountChk = systolic_depth == 8 && repeat_count >= 1 && repeat_count <= 8,
+
+        src1CountChk = N1 == ((src1_el_bits * systolic_depth * ops_per_chan * SZ) / (repeat_count * sizeof(T1) * 8)),
+        src2CountChk = N2 >= ((src2_el_bits * systolic_depth * ops_per_chan * repeat_count) / (sizeof(T2) * 8))
+    ;
+
+    if constexpr (!isPvc)
+        CM_STATIC_ERROR (!pvcBfOrHfDest,
+           "dpas: hfloat and bfloat16 destination element type is only supported on PVC.");
+    CM_STATIC_ERROR (destTypeChk, "dpas: unsupported dest and accumulator type.");
+    CM_STATIC_ERROR (srcTypeChk,  "dpas: unsupported src element type.");
+    CM_STATIC_ERROR (destSizeChk, "dpas: destination size must be SIMDSize x repeat_count.");
+    CM_STATIC_ERROR (systolicDepthAndRepeatCountChk, "dpas: only systolic_depth = 8 and repeat_count of 1 to 8 are supported.");
+    CM_STATIC_ERROR (src1CountChk, "dpas: invalid size for src1.");
+    CM_STATIC_ERROR (src2CountChk, "dpas: invalid size for src2.");
+
+    using TmpAccEl = typename std::conditional<
+            pvcBfOrHfDest,
+            float,
+            typename restype_ex<RT, typename restype_ex<T1, T2>::type>::type
+        >::type;
+
+    vector<
+        TmpAccEl,
+        SIMDSize> simdAcc;
+
+    for (uint r = 0; r < repeat_count; r++)
+    {
+        V = r;
+        k = 0;
+
+        for (uint n = 0; n < SIMDSize; n++)
+        {
+            if (src0)
+            {
+                auto src0El = src0->get(r * SIMDSize + n);
+
+                if(pvcBfDest)
+                {
+                    const auto tmp = uint32_t(src0El) << 16;
+                    simdAcc(n) = reinterpret_cast<const TmpAccEl&> (tmp);
+                } else
+                    simdAcc(n) = src0El;
+            }
+            else
+                simdAcc(n) = 0;
+        }
+
+        for (uint s = 0; s < systolic_depth; s++)
+        {
+            src1_ops_per_dword = 32 / (ops_per_chan * src1_el_bits);
+            //U = s / src1_ops_per_dword;
+            U = s >> uint(log2(src1_ops_per_dword));
+
+            for (uint n = 0; n < SIMDSize; n++)
+            {
+                for (uint d = 0; d < ops_per_chan; d++)
+                {
+                    p = d + (s % src1_ops_per_dword) * ops_per_chan;
+
+                    if (src2_precision == CM_PRECISION_TF32)
+                    {
+                        static_assert(std::is_standard_layout_v<float> && sizeof(uint32_t) == sizeof(float));
+                        const auto s1 = extract<uint32_t>(src1_el_bits, p*src1_el_bits,
+                                src1.get(U * SIMDSize + n));
+                        const auto s2 = extract<uint32_t>(src2_el_bits, d*src2_el_bits,
+                                src2.get(V * 8 + k / ops_per_chan), src2_signed);
+                        simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
+                    }
+                    else if (src2_precision == CM_PRECISION_BF)
+                    {
+                        static_assert(std::is_standard_layout_v<float> && sizeof(uint32_t) == sizeof(float));
+                        const auto s1 = extract<uint32_t>(src1_el_bits, p*src1_el_bits,
+                                src1.get(U * SIMDSize + n)) << 16;
+                        const auto s2 = extract<uint32_t>(src2_el_bits, d*src2_el_bits,
+                                src2.get(V * 8 + k / ops_per_chan), src2_signed) << 16;
+                        simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
+                    }
+                    else if (src2_precision == CM_PRECISION_HF)
+                    {
+                        static_assert(std::is_standard_layout_v<half> && sizeof(short) == sizeof(half));
+                        const auto s1 = extract<short>(src1_el_bits, p*src1_el_bits,
+                                src1.get(U * SIMDSize + n));
+                        const auto s2 = extract<short>(src2_el_bits, d*src2_el_bits,
+                                src2.get(V * 8 + k / ops_per_chan), src2_signed);
+                        simdAcc(n) += reinterpret_cast<const half&> (s1) * reinterpret_cast<const half&> (s2);
+                    }
+                    else
+                    {
+                        int src = (sizeof(T2) * 8) / (ops_per_chan * src2_el_bits);
+                        int off = s % src  * (ops_per_chan * src2_el_bits);
+                        int src1_tmp = extract<T1>(src1_el_bits, p*src1_el_bits,
+                                src1.get(U * SIMDSize + n), src1_signed);
+                        int src2_tmp = extract<T2>(src2_el_bits, d*src2_el_bits + off,
+                                src2.get((V * 8 + k / ops_per_chan) / src), src2_signed);
+                        simdAcc(n) += src1_tmp * src2_tmp;
+                    }
+                }
+            }
+
+            k += ops_per_chan;
+
+        } // Systolic phase.
+
+        for (uint n = 0; n < SIMDSize; n++)
+        {
+            if constexpr (pvcBfDest)
+            {
+                auto tmpFloat = simdAcc(n);
+                auto tmpUint = reinterpret_cast<uint32_t&> (tmpFloat);
+                if (std::isnormal(tmpFloat) && tmpUint & 1ull << 15 && (
+                        tmpUint & 0x7fff || tmpUint & 1ull << 16
+                   )) tmpUint += 1ull << 16;
+                retv(r * SIMDSize + n) = static_cast<short> (reinterpret_cast<uint32_t&> (tmpUint) >> 16);
+            }
+            else
+                retv(r * SIMDSize + n) = CmEmulSys::satur<RT>::saturate(
+                                            simdAcc(n),
+                                                flags | sat1);
+        }
+
+    } // Repeat.
+
+    return retv;
+}
+
+template <CmPrecisionType src1_precision,
+    CmPrecisionType src2_precision,
+    int systolic_depth,
+    int repeat_count,
+    typename RT, typename T1, typename T2,
+    uint SZ, uint N1, uint N2
+    >
+    CM_API vector<RT, SZ>
+    cm_dpas(std::nullptr_t dummy, const stream<T1, N1>& src1, const stream<T2, N2>& src2,
+        const uint flags = 0)
+{
+    return cm_dpas_<src1_precision, src2_precision, systolic_depth, repeat_count,
+                        RT, T1, T2, SZ>
+        (
+            dummy,
+            src1,
+            src2,
+            flags
+        );
+}
+
+template <CmPrecisionType src1_precision,
+    CmPrecisionType src2_precision,
+    int systolic_depth,
+    int repeat_count,
+    typename RT, typename T1, typename T2,
+    uint SZ, uint N1, uint N2>
+    CM_API vector<RT, SZ>
+    cm_dpas(const stream<RT, SZ>& src0, const stream<T1, N1>& src1, const stream<T2, N2>& src2,
+        const uint flags = 0)
+{
+    return cm_dpas_<src1_precision, src2_precision, systolic_depth, repeat_count>
+            (
+                std::addressof(src0), src1, src2, flags
+            );
+}
+
+template <class EL, uint SZ, class Ret = vector<EL, SZ*2>>
+Ret dpasw_prep_src2(const stream<EL,SZ>& src2stream)
+{
+    auto& xt = __cm_dpasw_xthread_broadcast();
+    const auto lid = cm_linear_local_id ();
+    const bool isOdd = lid & 1;
+    const auto peerLid = lid + (isOdd ? - 1 : +1);
+    Ret src2_tmp;
+
+    __cm_emu_aux_barrier(); // Execute in lock-step mode for the fused threads pairs.
+    vector <EL, SZ> src2;
+    for (int i = 0; i < SZ; i++) src2(i) = src2stream.get(i);
+
+    xt.template select<SZ, 1> (lid * cmrt::kCmEmuXThreadBroadcastPerThreadBufSize) = src2; // Put thread's src2 into common buffer.
+
+    __cm_emu_aux_barrier();
+
+    // EVEN_THREAD.src2 = ODD_THREAD.src2 = ODD_THREAD.src2 concat EVEN_THREAD.src2
+    src2_tmp.template select<SZ, 1> (isOdd ? SZ : 0) = src2; // Merge this thread's src2.
+    src2_tmp.template select<SZ, 1> (isOdd ? 0 : SZ) = xt.template select<SZ, 1> ( // Merge peer thread's src2.
+        peerLid * cmrt::kCmEmuXThreadBroadcastPerThreadBufSize);
+
+    return src2_tmp;
+}
+
+template <
+    CmPrecisionType src1_precision,
+    CmPrecisionType src2_precision,
+    int systolic_depth,
+    int repeat_count,
+    class RT, class T1, class T2,
+    uint SZ, uint SZ1, uint SZ2
+    >
+CM_API vector<RT, SZ> cm_dpasw(
+    std::nullptr_t dummy,
+    const stream<T1, SZ1>& src1,
+    const stream<T2, SZ2>& src2,
+    const uint flags = 0)
+{
+    return cm_dpas<src1_precision, src2_precision, systolic_depth, repeat_count,
+            RT, T1, T2, SZ>
+            (
+                dummy,
+                src1,
+                dpasw_prep_src2(src2),
+                flags
+            );
+}
+
+template <
+    CmPrecisionType src1_precision,
+    CmPrecisionType src2_precision,
+    int systolic_depth,
+    int repeat_count,
+    class RT, class T1, class T2,
+    uint SZ, uint SZ1, uint SZ2
+    >
+CM_API vector<RT, SZ> cm_dpasw(
+    const stream<RT, SZ>& src0,
+    const stream<T1, SZ1>& src1,
+    const stream<T2, SZ2>& src2,
+    const uint flags = 0)
+{
+    return cm_dpas<src1_precision, src2_precision, systolic_depth, repeat_count,
+            RT, T1, T2, SZ>
+            (
+                src0,
+                src1,
+                dpasw_prep_src2(src2),
+                flags
+            );
+}
+
+static inline void cm_dpasw_depr_warning()
+{
+    static bool once = 0; if (!once) {
+        std::cout << "*** Warning: cm_dpasw with 8 aguments is deprecated!!!"
+            " Please use the proper cm_dpasw intrinsic format." << std::endl; once = 1;}
+}
+
+#define cm_dpasw(src1_precision,src2_precision,systolic_depth,repeat_count,res,src0,src1,src2)\
+(cm_dpasw_depr_warning (),\
+    res = cm_dpasw<src1_precision, src2_precision, systolic_depth, repeat_count>\
+        (\
+        src0,\
+        src1,\
+        src2))
 
 template <typename RT, typename T1, typename T2, uint SZ>
 CM_API vector<RT, SZ>
@@ -3287,7 +3711,7 @@ template <typename T, uint N, typename S,
           template<typename ElmTy2, unsigned SZ> typename DestTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
 CM_API typename std::enable_if<std::is_same<S, uint>::value || std::is_same<S, ushort>::value>::type
 cm_slm_read(uint slmBuffer, const AddrTy<S, N> &offsets, DestTy<T, N> &dst) {
-    static_assert((N == 8 || N == 16) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
+    static_assert((N == 8 || N == 16 || N == 32) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
     assert_slm_access<T, N>();
     const auto base = __cm_emu_get_slm() + slmBuffer;
     for (int i = 0; i < N; i++) // NB: implemented with Byte-Scattered-Read in Gen7+
@@ -3394,7 +3818,7 @@ cm_slm_write (uint  slmBuffer,           // SLM buffer
               const SrcTy<T, N>      &v_Src   // Data vector to be written to SLM
              )
 {
-    static_assert((N == 8 || N == 16) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
+    static_assert((N == 8 || N == 16 || N == 32) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
     char *baseOffset, *byteOffset;
     baseOffset = __cm_emu_get_slm() + slmBuffer;
     for (int i=0; i<N; i++) {

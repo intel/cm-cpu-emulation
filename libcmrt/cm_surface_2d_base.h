@@ -10,7 +10,6 @@ SPDX-License-Identifier: MIT
 #define CMRTLIB____SHARE_CM_SURFACE_2D_BASE_H_
 
 #include <cstdint>
-#include "cm_memory_object_control.h"
 #include "cm_def.h"
 #include "cm_surface_alias_table.h"
 

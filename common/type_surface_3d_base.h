@@ -94,17 +94,6 @@ public:
     //! \retval     CM_FAILURE otherwise.
     CM_RT_API virtual int32_t InitSurface(const uint32_t initValue, CmEvent* pEvent) = 0;
 
-    //! \brief      Selects one of the pre-defined memory object control
-    //!             settings for this surface.
-    //! \param      [in] option
-    //!             Option of the pre-defined memory object control setting.
-    //!             See also MEMORY_OBJECT_CONTROL.
-    //! \retval     CM_SUCCESS if the copy is successful.
-    //! \retval     CM_FAILURE otherwise.
-    //! \note       This API is platform related, and only for SKL and plus platforms.
-    CM_RT_API virtual int32_t
-    SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL option) = 0;
-
     virtual ~CmSurface3D () = default;
 };
 #endif // GUARD_common_type_surface_3d_base_h

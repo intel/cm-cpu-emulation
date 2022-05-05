@@ -114,6 +114,10 @@ SPDX-License-Identifier: MIT
 #define CM_SVM_ACCESS_FLAG_ATOMICS           (1 << 1)                            //Crosse IA/GT atomics supported SVM buffer, need CM_SVM_ACCESS_FLAG_FINE_GRAINED flag is set as well
 #define CM_SVM_ACCESS_FLAG_DEFAULT           CM_SVM_ACCESS_FLAG_COARSE_GRAINED   //default is coarse-grained SVM buffer
 
+#define CM_BUFFER_STATELESS_CREATE_OPTION_GFX_MEM 0
+#define CM_BUFFER_STATELESS_CREATE_OPTION_SYS_MEM 1
+#define CM_BUFFER_STATELESS_CREATE_OPTION_DEGAULT CM_BUFFER_STATELESS_CREATE_OPTION_GFX_MEM
+
 //**********************************************************************
 // OS-specific includings and types
 //**********************************************************************
@@ -126,7 +130,6 @@ SPDX-License-Identifier: MIT
 #include "type_status.h"
 #include "type_pixel_type.h"
 #include "type_gpu_platform.h"
-#include "type_gpu_gt_platform.h"
 #include "type_device_cap_name.h"
 #include "type_fastcopy_option.h"
 #include "type_dependency_pattern.h"
@@ -134,7 +137,6 @@ SPDX-License-Identifier: MIT
 #include "type_26zi_dispatch_pattern.h"
 #include "type_mw_group_select.h"
 /**************** L3/Cache ***************/
-#include "type_memory_object_control.h"
 #include "type_memory_type.h"
 #include "type_l3_suggest_config.h"
 #include "type_surface_address_control_mode.h"
@@ -160,7 +162,6 @@ SPDX-License-Identifier: MIT
 #include "type_kernel_exec_mode.h"
 #include "type_exec_config.h"
 // parameters used to set the surface state of the buffer
-#include "type_surface_mem_obj_ctrl.h"
 #include "type_buffer_state_param.h"
 #include "type_surface_2d_state_param.h"
 #include "type_queue_create_option.h"
@@ -183,6 +184,8 @@ SPDX-License-Identifier: MIT
 #include "type_surface_3d_base.h"
 #include "type_thread_space_base.h"
 #include "type_queue_base.h"
+#include "type_buffer_stateless_base.h"
+#include "type_surface_2d_stateless_base.h"
 
 //**********************************************************************
 // Function pointer types

@@ -22,11 +22,22 @@ SPDX-License-Identifier: MIT
 /// Imported from rt.h : Begin
 
 constexpr size_t
+    kMaxNamedBarriersCount = 32,
+    kMaxThreadsPerGroup = 128,
+    kDpaswMaxSystolicDepth = 8,
+
     kGrfSize = 32,
-    kCmEmuKnlTimeout = 40000
+    kCmEmuKnlTimeout = 40000,
+
+    kCmEmuGrfSizeInXThreadBufEls = kGrfSize / sizeof(CmEmuThreadBroadcastEl),
+    kCmEmuXThreadBroadcastPerThreadBufSize =
+        (kDpaswMaxSystolicDepth/2) * kCmEmuGrfSizeInXThreadBufEls,
+    kCmEmuXThreadBroadcastBufSize =
+        kMaxThreadsPerGroup * kCmEmuXThreadBroadcastPerThreadBufSize
 ;
 
 /// Imported from rt.h : End
+std::vector<CmEmuThreadBroadcastEl> esimd_xthread_broadcast_buffer;
 
 ESIMD_API
 EsimdemuKernel::EsimdemuKernel(const fptrVoid entryPoint,
@@ -39,6 +50,7 @@ EsimdemuKernel::EsimdemuKernel(const fptrVoid entryPoint,
   {
     m_parallel = 1;
   }
+  esimd_xthread_broadcast_buffer.resize(kCmEmuXThreadBroadcastBufSize,0);
 }
 
 ESIMD_API
@@ -94,6 +106,12 @@ ESIMD_API
 size_t get_group_count(uint32_t dim)
 {
   return (size_t)cmrt::group_count(dim);
+}
+
+ESIMD_API
+char *get_xthread_broadcast_buf()
+{
+  return reinterpret_cast<char*>(::esimd_xthread_broadcast_buffer.data());
 }
 
 ESIMD_API

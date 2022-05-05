@@ -8,7 +8,6 @@ SPDX-License-Identifier: MIT
 
 #pragma once
 
-#include "cm_memory_object_control.h"
 #include "cm_surface_3d_base.h"
 #include "cm_surface_emumode.h"
 #include "emu_log.h"
@@ -27,7 +26,6 @@ public:
     CM_RT_API int32_t ReadSurface( unsigned char* pSysMem, CmEvent* pEvent, uint64_t sysMemSize = 0xFFFFFFFFFFFFFFFFULL );
     CM_RT_API int32_t WriteSurface( const unsigned char* pSysMem, CmEvent* pEvent, uint64_t sysMemSize = 0xFFFFFFFFFFFFFFFFULL );
     CM_RT_API int32_t InitSurface(const uint32_t initValue, CmEvent* pEvent);
-    CM_RT_API int32_t SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL mem_ctrl) { return CmNotImplemented(__PRETTY_FUNCTION__); }
 
     int32_t GetArrayIndex( uint32_t& arrayIndex );
     int32_t SetArrayIndex( uint32_t arrayIndex );

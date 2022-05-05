@@ -44,13 +44,6 @@ CFG_PARAM( LogLevel,
     }
 );
 
-CFG_PARAM( LogWarnings,
-    "log warnings",
-    "enable warnings in logging output.",
-    {"EMU_LOG_WARNINGS",""},
-    false
-);
-
 CFG_PARAM( Platform,
     "HW platform",
     "",

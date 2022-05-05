@@ -9,8 +9,6 @@ SPDX-License-Identifier: MIT
 #ifndef CMRTLIB____SHARE_CM_SURFACE_3D_BASE_H_
 #define CMRTLIB____SHARE_CM_SURFACE_3D_BASE_H_
 
-#include "cm_memory_object_control.h"
-
 #include "type_surface_3d_base.h"
 
 #endif  // #ifndef CMRTLIB____SHARE_CM_SURFACE_3D_BASE_H_

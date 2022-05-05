@@ -198,6 +198,7 @@ public:
     CM_RT_API virtual int32_t QuerySpillSize(unsigned int &spillSize) = 0;
 
     //! \brief      Set SVM
+    //!             or stateless buffer
     //!             pointer as per-kernel argument.
     //! \details    The total size in bytes of all
     //!             per kernel arguments and per thread arguments should be
@@ -213,11 +214,16 @@ public:
     //!             The size of kernel argument.
     //! \param      [in] value
     //!             The SVM
+    //!             or stateless buffer pointer
     //!             that should be used as
     //!             the argument value for argument specified by index.The
     //!             SVM buffer pointer value specified as the argument
     //!             value can be the pointer returned by CreateBufferSVM().
+    //!             And the stateless buffer pointer value specified as the argument
+    //!             value can be the pointer returned by CmBufferStateless::
+    //!             GetGfxAddress() or CmBufferStateless::GetSysAddress().
     //!             Or can be a pointer + offset into the SVM
+    //!             and stateless buffer
     //!             region.
     //! \retval     CM_SUCCESS if the per-kernel argument is set successfully.
     //! \retval     CM_INVALID_ARG_INDEX if the argument 'index' is incorrect

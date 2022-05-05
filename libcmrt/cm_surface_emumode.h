@@ -49,6 +49,15 @@ bool doD3DCopy=true
     virtual int32_t GetArrayIndex( uint32_t& arrayIndex )=0;
     virtual int32_t SetArrayIndex( uint32_t arrayIndex )=0;
 
+    CM_STATELESS_SURFACE_TYPE GetStatelessSurfaceType() {
+        return m_stateless_surface_type;
+    }
+
+    void SetStatelessSurfaceType(CM_STATELESS_SURFACE_TYPE type)
+    {
+        m_stateless_surface_type = type;
+    }
+
 protected:
     CmSurfaceEmu( bool isCmCreated, CmSurfaceManagerEmu* surfaceManager);
     virtual ~CmSurfaceEmu( void );
@@ -76,4 +85,5 @@ protected:
 
     CmSurfaceManagerEmu* m_surfaceManager;
 
+    CM_STATELESS_SURFACE_TYPE m_stateless_surface_type;
 };

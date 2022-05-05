@@ -23,6 +23,13 @@ class SurfaceIndex;
 // currently maximum multiple GPGPU walker number = 2
 #define MAXIMUM_GPGPUWALKER_NUM 2
 
+// EU thread scheduling mode override for PVC
+#define EU_THREAD_SCHEDULING_MODE_OVERRIDE_DEFAULT 0
+#define EU_THREAD_SCHEDULING_MODE_OVERRIDE_OLEST_FIRST 1
+#define EU_THREAD_SCHEDULING_MODE_OVERRIDE_ROUND_ROBIN 2
+#define EU_THREAD_SCHEDULING_MODE_OVERRIDE_STALL_ROUND_ROBIN 3
+
+// Thread execution arbitration mode for skl+ except for PVC
 // Thread execution arbitration mode for skl+
 #define THREAD_EXECUTION_ARBITRATION_MODE_AGE_BASED 0
 #define THREAD_EXECUTION_ARBITRATION_MODE_ROUND_ROBIN 1

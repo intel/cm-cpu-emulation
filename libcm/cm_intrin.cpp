@@ -10,8 +10,70 @@ SPDX-License-Identifier: MIT
 #include "genx_lib.h"
 #include "cm_intrin.h"
 
+CM_API void cm_nbarrier_init(uint count) {
+    cmrt::group_named_barriers_init(count);
+};
+
+CM_API void cm_nbarrier_signal(
+    uint barrierId,
+    uint producerConsumerMode,
+    uint numProducers,
+    uint numConsumers)
+{
+    if (producerConsumerMode > (int)cmrt::NamedBarrierMode::MaxMode)
+    {
+        std::cerr << "*** Error: invalid mode constant for cm_nbarrier_signal supplied: "
+            << producerConsumerMode << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+#ifdef CM_EMU_USE_SIMPLE_BARRIER
+    if (barrierId == 0)
+    {
+        if (!(numProducers == numConsumers == cmrt::group_size ()))
+        {
+            std::cerr << "Using both simple barrier and named barriersi implementations is only allowed"
+                " when all workgroup threads participate"
+                " and are in producer+consumer mode." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        return cmrt::simple_group_barrier_signal();
+    }
+#endif
+
+    // What was the reason to make ProducerConsumer = 0 instead of Producer|Consumer ?!
+    const bool
+        isProdCons = producerConsumerMode == (int)cmrt::NamedBarrierMode::ProducerConsumer,
+        isProd = isProdCons || producerConsumerMode == (int)cmrt::NamedBarrierMode::Producer,
+        isCons = isProdCons || producerConsumerMode == (int)cmrt::NamedBarrierMode::Consumer
+    ;
+
+    cmrt::group_barrier_signal(
+        barrierId,
+        isProd,
+        isCons,
+        numProducers,
+        numConsumers);
+}
+
+CM_API void cm_nbarrier_wait(uint barrierId)
+{
+#ifdef CM_EMU_USE_SIMPLE_BARRIER
+    if (barrierId == 0)
+        return cmrt::simple_group_barrier_wait();
+#endif
+    cmrt::group_barrier_wait(barrierId);
+}
+
 CM_API void cm_barrier()
 {
+#if !defined(CM_EMU_USE_SIMPLE_BARRIER)
+    cmrt::assert_cm_nbarrier_init_api_usage ();
+    cmrt::group_barrier_signal();
+    cmrt::group_barrier_wait();
+    return;
+#endif
 
     cmrt::simple_group_barrier_signal();
     cmrt::simple_group_barrier_wait();
@@ -19,6 +81,12 @@ CM_API void cm_barrier()
 
 CM_API void cm_sbarrier(uint flag)
 {
+#if !defined(CM_EMU_USE_SIMPLE_BARRIER)
+    cmrt::assert_cm_nbarrier_init_api_usage ();
+    flag ? cmrt::group_barrier_signal() :
+           cmrt::group_barrier_wait();
+    return;
+#endif
 
     flag ? cmrt::simple_group_barrier_signal() :
            cmrt::simple_group_barrier_wait();
@@ -52,6 +120,10 @@ CM_API unsigned int cm_slm_alloc(unsigned int size)
 
 CM_API void cm_slm_free(void)
 {
+}
+
+CM_API cmrt::XThreadBroadcastBuf& __cm_dpasw_xthread_broadcast(){
+    return cmrt::get_xthread_broadcast();
 }
 
 void check_dimention(uint dim)

@@ -36,6 +36,8 @@ inline constexpr CM_QUEUE_CREATE_OPTION CM_DEFAULT_QUEUE_CREATE_OPTION = {
         false,
         0,
         CM_QUEUE_SSEU_USAGE_HINT_DEFAULT,
+        0,
+        0,
 };
 //// clang-format on
 

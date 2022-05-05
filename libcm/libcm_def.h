@@ -17,6 +17,33 @@ SPDX-License-Identifier: MIT
 
 class SurfaceIndex;
 
+// DPAS-related.
+enum class CmPrecisionType {
+    CM_Precision_U1 = 0,      // unsigned 1 bit
+    CM_Precision_U2 = 1,      // unsigned 2 bits
+    CM_Precision_U4 = 2,      // unsigned 4 bits
+    CM_Precision_U8 = 3,      // unsigned 8 bits
+    CM_Precision_S1 = 4,      // signed 1 bit
+    CM_Precision_S2 = 5,      // signed 2 bits
+    CM_Precision_S4 = 6,      // signed 4 bits
+    CM_Precision_S8 = 7,      // signed 8 bits
+    CM_Precision_BF16 = 8,    // bfloat 16
+    CM_Precision_FP16 = 9,    // half float
+    CM_Precision_TF32 = 11,   // tensorfloat 32
+};
+
+#define CM_PRECISION_U1 CmPrecisionType::CM_Precision_U1
+#define CM_PRECISION_U2 CmPrecisionType::CM_Precision_U2
+#define CM_PRECISION_U4 CmPrecisionType::CM_Precision_U4
+#define CM_PRECISION_U8 CmPrecisionType::CM_Precision_U8
+#define CM_PRECISION_S1 CmPrecisionType::CM_Precision_S1
+#define CM_PRECISION_S2 CmPrecisionType::CM_Precision_S2
+#define CM_PRECISION_S4 CmPrecisionType::CM_Precision_S4
+#define CM_PRECISION_S8 CmPrecisionType::CM_Precision_S8
+#define CM_PRECISION_BF CmPrecisionType::CM_Precision_BF16
+#define CM_PRECISION_HF CmPrecisionType::CM_Precision_FP16
+#define CM_PRECISION_TF32 CmPrecisionType::CM_Precision_TF32
+
 typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;

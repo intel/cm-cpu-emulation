@@ -18,8 +18,11 @@ enum GPU_PLATFORM
     PLATFORM_INTEL_KBL         = 11, //Kabylake
     PLATFORM_INTEL_ICLLP       = 13, //Icelake LP
     PLATFORM_INTEL_TGLLP       = 15, //TigerLakeLP
+    PLATFORM_INTEL_DG1         = 20, //DG1
+    PLATFORM_INTEL_DG2         = 22, //DG2
 };
 
+#define PLATFORM_INTEL_PVC 18
 #define PLATFORM_INTEL_XEHP_SDV 14
 
 #endif // GUARD_common_type_gpu_platform_h

@@ -11,7 +11,6 @@ SPDX-License-Identifier: MIT
 #include "rt.h"
 
 #include "cm_queue_emumode.h"
-#include "cm_memory_object_control.h"
 #include "cm_event_emumode.h"
 #include "cm_kernel_emumode.h"
 #include "cm_device_emumode.h"
@@ -373,8 +372,8 @@ CM_RT_API int32_t CmQueueEmu::EnqueueWithGroup(
     void (*fncPt)()      = nullptr;
     CmKernelEmu *kernel  = NULL;
     //GfxEmu::KernelArg *     pArg    = nullptr;
-    uint32_t     threadSpaceWidth, threadSpaceHeight, threadSpaceDepth,
-        groupSpaceWidth, groupSpaceHeight, groupSpaceDepth;
+    uint32_t     threadSpaceWidth = -1, threadSpaceHeight = -1, threadSpaceDepth = -1,
+        groupSpaceWidth = -1, groupSpaceHeight = -1, groupSpaceDepth = -1;
 
     if (pKernelArray == nullptr)
     {
@@ -604,7 +603,7 @@ int32_t CmQueueEmu::Execute(const CmKernelEmu& kernel, uint32_t threadId)
 
 int32_t CmQueueEmu::ExecuteScoreBoard(CmThreadSpaceEmu *threadSpace, bool be_walker)
 {
-    CM_THREAD_SPACE_UNIT *pThreadSpaceUnit;
+    CM_THREAD_SPACE_UNIT *pThreadSpaceUnit = nullptr;
     uint32_t              height      = 0;
     uint32_t              width       = 0;
     uint32_t              numMaxArgs  = 0;
@@ -866,7 +865,7 @@ finish:
 int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_walker)
 {
     int32_t               result = CM_SUCCESS;
-    CM_THREAD_SPACE_UNIT *pThreadSpaceUnit;
+    CM_THREAD_SPACE_UNIT *pThreadSpaceUnit = nullptr;
     uint32_t              height      = 0;
     uint32_t              width       = 0;
     uint32_t              colorCount  = 1;

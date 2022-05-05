@@ -15,7 +15,7 @@ SPDX-License-Identifier: MIT
 #define __CM_RT_DEF_OS_H__
 
 #include <time.h>
-#include <va/va.h>
+#include <va_stub.h>
 #include <malloc.h>
 
 #define _tmain main

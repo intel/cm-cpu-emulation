@@ -97,7 +97,7 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
 {
     uint32_t sizePerPixel = 0;
     if(
-#ifdef CM_DX11
+#if defined(CM_DX11) || defined(__GNUC__)
         ( format != CM_SURFACE_FORMAT_R32_UINT )   &&
         ( format != CM_SURFACE_FORMAT_R32_SINT )   &&
         ( format != CM_SURFACE_FORMAT_R8G8_UNORM ) &&
@@ -143,7 +143,7 @@ int32_t CmSurfaceManagerEmu::getBytesPerPixel(CM_SURFACE_FORMAT format, uint32_t
     case CM_SURFACE_FORMAT_A8R8G8B8:
     case CM_SURFACE_FORMAT_R32F:
     case CM_SURFACE_FORMAT_R10G10B10A2:
-#ifdef CM_DX11
+#if defined(CM_DX11) || defined(__GNUC__)
     case CM_SURFACE_FORMAT_R32_UINT:
     case CM_SURFACE_FORMAT_R32_SINT:
 #endif
@@ -505,6 +505,15 @@ int32_t CmSurfaceManagerEmu::DestroySurface( CmBufferEmu* & pSurface1D )
     uint32_t index = 0;
     pSurface1D->GetArrayIndex( index );
 
+    for (auto surface : m_statelessSurfaceArray)
+    {
+        if (surface == m_SurfaceArray.GetElement(index))
+        {
+            m_statelessSurfaceArray.erase(surface);
+            break;
+        }
+    }
+
     GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface1D );
     m_SurfaceArray.SetElement( index , nullptr );
 
@@ -531,6 +540,15 @@ int32_t CmSurfaceManagerEmu::DestroySurface( CmSurface2DEmu* & pSurface2D )
 {
     uint32_t index = 0;
     pSurface2D->GetArrayIndex( index );
+
+    for (auto surface : m_statelessSurfaceArray)
+    {
+        if (surface == m_SurfaceArray.GetElement(index))
+        {
+            m_statelessSurfaceArray.erase(surface);
+            break;
+        }
+    }
 
     GFX_EMU_ASSERT( m_SurfaceArray.GetElement( index ) == pSurface2D );
     m_SurfaceArray.SetElement( index , nullptr);
@@ -857,14 +875,13 @@ int32_t CmSurfaceManagerEmu::Surface2DSanityCheck(uint32_t width, uint32_t heigh
     case CM_SURFACE_FORMAT_A8:
     case CM_SURFACE_FORMAT_P8:
     case CM_SURFACE_FORMAT_V8U8:
-#if CM_DX9
+#if defined(CM_DX9)
     case CM_SURFACE_FORMAT_IRW0:
     case CM_SURFACE_FORMAT_IRW1:
     case CM_SURFACE_FORMAT_IRW2:
     case CM_SURFACE_FORMAT_IRW3:
     case CM_SURFACE_FORMAT_L16:
-#endif
-#if CM_DX11
+#elif defined(CM_DX11) || defined(__GNUC__)
     case CM_SURFACE_FORMAT_R16_UINT:
     case CM_SURFACE_FORMAT_R16_SINT:
     case CM_SURFACE_FORMAT_R32_SINT:
@@ -936,15 +953,14 @@ CmSurfaceFormatID CmSurfaceManagerEmu::ConvertOsFmtToSurfFmt(CM_SURFACE_FORMAT f
     case CM_SURFACE_FORMAT_NV12:                    return R8_UNORM;
     case CM_SURFACE_FORMAT_P016:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_P010:                    return R16_UNORM;
-#if CM_DX9
+#if defined(CM_DX9)
     case CM_SURFACE_FORMAT_IRW0:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_IRW1:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_IRW2:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_IRW3:                    return R16_UNORM;
     case CM_SURFACE_FORMAT_L16:                     return L16_UNORM;
     case CM_SURFACE_FORMAT_UYVY:                    return YCRCB_SWAPY;
-#endif
-#if CM_DX11
+#elif defined(CM_DX11) || defined(__GNUC__)
     case CM_SURFACE_FORMAT_R16_UINT:                return R16_UINT;
     case CM_SURFACE_FORMAT_R16_SINT:                return R16_SINT;
     case CM_SURFACE_FORMAT_R32_SINT:                return R32_SINT;
@@ -956,4 +972,121 @@ CmSurfaceFormatID CmSurfaceManagerEmu::ConvertOsFmtToSurfFmt(CM_SURFACE_FORMAT f
         GFX_EMU_ASSERT(0);
         return INVALID_SURF_FORMAT;
     }
+}
+
+int32_t CmSurfaceManagerEmu::CreateBufferStateless(size_t size,
+                                                   uint32_t option,
+                                                   void *memAddress,
+                                                   CmBufferEmu *&pBufferStateless)
+{
+    uint32_t status = CM_SUCCESS;
+
+	switch(option)
+	{
+		case CM_BUFFER_STATELESS_CREATE_OPTION_GFX_MEM:
+			status = CreateBufferStatelessBasedGfxMem(size, pBufferStateless);
+			break;
+		case CM_BUFFER_STATELESS_CREATE_OPTION_SYS_MEM:
+			status = CreateBufferStatelessBasedSysMem(size, memAddress, pBufferStateless);
+			break;
+		default:
+		    GFX_EMU_ASSERT(0);
+			return CM_INVALID_CREATE_OPTION_FOR_BUFFER_STATELESS;
+	}
+
+    return status;
+}
+
+int32_t CmSurfaceManagerEmu::CreateBufferStatelessBasedGfxMem(size_t size,
+                                                              CmBufferEmu *&pSurface)
+{
+    pSurface = nullptr;
+	void *buffer = nullptr;
+
+    uint32_t index = 0;
+    index = m_SurfaceArray.GetFirstFreeIndex();
+
+    if (index >= this->m_maxSurfaceCount)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+
+    if (m_bufferCount >= m_maxBufferCount)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+
+    int32_t result = CmBufferEmu::Create(index, index, size, R8G8B8A8_UINT, true, pSurface, buffer, false, this);
+
+    if (result != CM_SUCCESS)
+    {
+        GFX_EMU_ASSERT(0);
+        return result;
+    }
+
+    pSurface->SetGfxAddress(reinterpret_cast<uint64_t>(buffer));
+    pSurface->SetStatelessSurfaceType(CM_STATELESS_BUFFER);
+
+    m_statelessSurfaceArray.insert(pSurface);
+
+    m_SurfaceArray.SetElement(index, pSurface);
+    m_bufferCount++;
+
+    return CM_SUCCESS;
+}
+
+int32_t CmSurfaceManagerEmu::CreateSurface2DStateless(uint32_t width,
+                                                      uint32_t height,
+                                                      uint32_t &pitch,
+                                                      CmSurface2DEmu *&pSurface2D)
+{
+    pSurface2D = nullptr;
+    void *buffer = nullptr;
+
+    uint32_t index = 0;
+    index = m_SurfaceArray.GetFirstFreeIndex();
+
+    if (index >= this->m_maxSurfaceCount)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+
+    if (m_bufferCount >= m_maxBufferCount)
+    {
+        GFX_EMU_ASSERT(0);
+        return CM_EXCEED_SURFACE_AMOUNT;
+    }
+
+    int32_t result = CmSurface2DEmu::Create(index, // index
+                                            1,     // sizePerPixel
+                                            width,
+                                            height,
+                                            CM_SURFACE_FORMAT_A8, // CM_SURFACE_FORMAT osApiSurfaceFmt
+                                            A8_UNORM, // CmSurfaceFormatID surfFormat
+                                            true, // isCreated
+                                            pSurface2D, // pSurface
+                                            buffer, // psysmem
+                                            false, // dummysurf
+                                            this); // surfacemanager
+
+    if (result != CM_SUCCESS)
+    {
+        GFX_EMU_ASSERT(0);
+        return result;
+    }
+
+    pSurface2D->SetGfxAddress(reinterpret_cast<uint64_t>(buffer));
+    pSurface2D->SetStatelessSurfaceType(CM_STATELESS_SURFACE_2D);
+
+    m_statelessSurfaceArray.insert(pSurface2D);
+
+    m_SurfaceArray.SetElement(index, pSurface2D);
+
+    m_2DSurfaceCount ++;
+    pitch = width;
+
+    return CM_SUCCESS;
 }

@@ -66,6 +66,7 @@ struct CM_KERNEL_INFO {
   const char** globalStrings;
   char kernelASMName[CM_MAX_KERNEL_NAME_SIZE_IN_BYTE + 1];        //The name of the Gen assembly file for this kernel (no extension)
   uint8_t kernelSLMSize;     //Size of the SLM used by each thread group
+  uint8_t kernelNBarrierCnt;
   uint32_t variable_count;
   gen_var_info_t *variables;
   uint32_t address_count;

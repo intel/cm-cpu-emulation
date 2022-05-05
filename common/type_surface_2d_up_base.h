@@ -33,19 +33,6 @@ public:
     CM_RT_API virtual int32_t GetIndex( SurfaceIndex*& pIndex ) = 0;
 
     //!
-    //! \brief      Selects one of the pre-defined memory object control
-    //!             settings for this surface.
-    //! \details    This API is platform related for SKL and plus platforms.
-    //! \param      [in] option
-    //!             Option of the pre-defined memory object control setting.
-    //! \retval     CM_SUCCESS if the memory object control is set successfully.
-    //! \retval     CM_FAILURE if the memory object control is not set
-    //!             correctly.
-    //!
-    CM_RT_API virtual int32_t
-    SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL option) = 0;
-
-    //!
     //! \brief      Set surface property for interlace usage.
     //! \details    A surface can be set as top filed, bottom filed for
     //!             interlace usage.

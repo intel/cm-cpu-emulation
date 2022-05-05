@@ -7,7 +7,6 @@ SPDX-License-Identifier: MIT
 ============================= end_copyright_notice ===========================*/
 
 #include "cm_include.h"
-#include "cm_memory_object_control.h"
 #include "cm_buffer_base.h"
 #include "cm_buffer_emumode.h"
 #include "cm_surface_manager_emumode.h"
@@ -39,8 +38,14 @@ CmBufferEmu::CmBufferEmu(uint32_t width,
 }
 
 CmBufferEmu::~CmBufferEmu(){
-    SurfaceIndex* pIndex;
+    SurfaceIndex* pIndex = nullptr;
     this->GetIndex(pIndex);
+    if (nullptr == pIndex)
+    {
+        GFX_EMU_ERROR_MESSAGE("Surface index not found.\n");
+        fflush(stderr);
+        exit(1);
+    }
     CM_unregister_buffer_emu(*pIndex,false);
     if(this->m_buffer != nullptr && this->alloc_dummy)
     {
@@ -305,6 +310,18 @@ int32_t CmBufferEmu::GPUCopyForBufferAlias()
             //CmFastMemCopyFromWC(buff_iter->p_volatile, (int8_t*)m_buffer + iter->second.uiBaseAddressOffset, iter->second.size, GetCpuInstructionLevel());
         }
     }
+    return CM_SUCCESS;
+}
+
+CM_RT_API int32_t CmBufferEmu::GetGfxAddress(uint64_t &address)
+{
+    address = m_gfxAddress;
+    return CM_SUCCESS;
+}
+
+int32_t CmBufferEmu::SetGfxAddress(uint64_t address)
+{
+    m_gfxAddress = address;
     return CM_SUCCESS;
 }
 

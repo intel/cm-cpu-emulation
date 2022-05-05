@@ -33,18 +33,6 @@ public:
     //!
     CM_RT_API virtual int32_t GetIndex(SurfaceIndex *&pIndex) = 0;
 
-    //!
-    //! \brief      Selects one of the pre-defined memory object control
-    //!             settings for this buffer.
-    //! \param      [in] option
-    //!             Option of the pre-defined memory object control setting.
-    //! \retval     CM_SUCCESS if the memory object control is set successfully.
-    //! \retval     CM_FAILURE otherwise.
-    //! \note       This API is only supported for Gen9 and plus platform.
-    //!
-    CM_RT_API virtual int32_t
-    SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL option) = 0;
-
     virtual ~CmBufferUP () = default;
 };
 #endif // GUARD_common_type_buffer_up_base_h

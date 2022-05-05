@@ -10,15 +10,6 @@ find_package(LibFFI REQUIRED)
 
 
 
-if (NOT WIN32)
-  if (DEFINED LIBVA_INSTALL_PATH)
-    set(LIBVA_INCLUDE_DIRS ${LIBVA_INSTALL_PATH}/include)
-  else()
-    include(FindPkgConfig)
-    pkg_check_modules(LIBVA REQUIRED libva>=1.6.0)
-  endif()
-endif()
-
 set(LIBCM_SOURCE
   # NB: this shall go to a separate emu_common dll.
   ${COMMON_SRC_PATH}/emu_cfg.cpp
@@ -98,7 +89,6 @@ endif()
 
 
 if(NOT WIN32)
-  target_include_directories(libcm SYSTEM PUBLIC ${LIBVA_INCLUDE_DIRS})
   target_link_libraries(libcm PRIVATE dl pthread)
 endif()
 

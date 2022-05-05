@@ -5922,7 +5922,7 @@ read_scaled(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> eleme
 /* This funtion writes scattered DWords to genx dataport */
 template <typename T, uint N>
 CM_API bool
-write(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector_ref<T, N> out)
+write(SurfaceIndex & buf_id, uint global_offset, const vector_ref<uint, N> element_offset, const vector_ref<T, N> out)
 {
 	std::unique_lock<std::mutex> lk(mutexForWrite);
 
@@ -5965,21 +5965,21 @@ write(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> element_off
 
 template <typename T, uint N>
 CM_API bool
-write(SurfaceIndex & buf_id, uint global_offset, vector<uint, N> &element_offset, vector<T, N> &out)
+write(SurfaceIndex & buf_id, uint global_offset, const vector<uint, N> &element_offset, const vector<T, N> &out)
 {
     return write(buf_id, global_offset, element_offset.template select<N,1>(), out.template select<N,1>());
 }
 
 template <typename T, uint N>
 CM_API bool
-write(SurfaceIndex & buf_id, uint global_offset, vector<uint, N> &element_offset, vector_ref<T, N> out)
+write(SurfaceIndex & buf_id, uint global_offset, const vector<uint, N> &element_offset, const vector_ref<T, N> out)
 {
     return write(buf_id, global_offset, element_offset.template select<N, 1>(), out);
 }
 
 template <typename T, uint N>
 CM_API bool
-write(SurfaceIndex & buf_id, uint global_offset, vector_ref<uint, N> element_offset, vector<T, N> &out)
+write(SurfaceIndex & buf_id, uint global_offset, const vector_ref<uint, N> element_offset, const vector<T, N> &out)
 {
     return write(buf_id, global_offset, element_offset, out.template select<N, 1>());
 }
@@ -9657,7 +9657,7 @@ write_typed(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
 template <typename RT, uint N1, uint N2>
 CM_API bool
 read_untyped(SurfaceIndex &surfIndex, ChannelMaskType channelMask,
-     matrix_ref<RT, N1, N2> &m,
+     matrix_ref<RT, N1, N2> m,
      const vector<uint, N2> &u)
 {
     static const bool conformable1 = check_true<is_fp_or_dword_type<RT>::value>::value;

@@ -9,9 +9,9 @@ SPDX-License-Identifier: MIT
 #pragma once
 
 #include "cm_surface_emumode.h"
-#include "cm_memory_object_control.h"
 #include "cm_surface_2d_base.h"
 #include "cm_surface_2d_up_base.h"
+#include "cm_surface_2d_stateless_base.h"
 #include "emu_log.h"
 
 class CmSurface2D;
@@ -35,7 +35,8 @@ typedef enum _CmSurfacePlaneIndex_ CmSurfacePlaneIndex;
 class CmSurface2DEmu :
     public CmSurfaceEmu,
     public CmSurface2DUP,
-    public CmSurface2D
+    public CmSurface2D,
+    public CmSurface2DStateless
 {
 public:
     static int32_t Create( uint32_t index, uint32_t sizePerPixel, uint32_t width, uint32_t height, CM_SURFACE_FORMAT osApiSurfaceFormat, CmSurfaceFormatID surfFormat , bool isCmCreated, CmSurface2DEmu* &pSurface, void* &pSysMem, bool dummySurf=false, CmSurfaceManagerEmu* surfaceManager= nullptr);
@@ -81,8 +82,6 @@ bool doD3DCopy=true
     CM_RT_API  int32_t GetVaSurfaceID( VASurfaceID  &iVASurface) {return CmNotImplemented(__PRETTY_FUNCTION__);}
 #endif
 
-    CM_RT_API int32_t SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL mem_ctrl) { return CmNotImplemented(__PRETTY_FUNCTION__); }
-
     int32_t CreateSurface2DAlias(SurfaceIndex* & aliasIndex);
 
     int32_t RegisterAliasSurface(SurfaceIndex* & aliasIndex, const CM_SURFACE2D_STATE_PARAM *surfStateParam);
@@ -90,6 +89,9 @@ bool doD3DCopy=true
     std::vector<SurfaceIndex *> GetAliasIndices() { return m_aliasIndices; }
 
     int32_t GPUCopyForSurface2DAlias();
+
+    CM_RT_API int32_t GetGfxAddress(uint64_t &address);
+    int32_t SetGfxAddress(uint64_t address);
 
 protected:
     CmSurface2DEmu( uint32_t width, uint32_t height, CM_SURFACE_FORMAT osApiSurfaceFmt, CmSurfaceFormatID surfFormat, bool isCmCreated, uint32_t sizePerPixel,CmSurfaceManagerEmu* surfaceManager);
@@ -118,4 +120,6 @@ protected:
     uint32_t m_newHeight;
     CM_SURFACE_FORMAT m_newFormat;
 
+    // For stateless mode
+  	uint64_t m_gfxAddress;
 };

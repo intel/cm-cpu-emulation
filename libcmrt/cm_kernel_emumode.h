@@ -30,8 +30,8 @@ public:
     static int32_t Create( CmDeviceEmu *device, CmProgram* pProgram, const char* kernelName, const void *fncPnt, CmKernelEmu* &pKernel, const char* options );
     static int32_t Destroy( CmKernelEmu* &pKernel );
 
-    int Acquire();
-    int SafeRelease();
+    CM_RT_API int Acquire();
+    CM_RT_API int SafeRelease();
 
     int32_t GetBinary(void* & pBinary, uint32_t & size );
     //int32_t GetThreadCount(uint32_t& count );

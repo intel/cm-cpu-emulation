@@ -25,8 +25,8 @@ public:
     CM_RT_API int32_t GetExecutionTime(unsigned long long& time);
     CM_RT_API int32_t WaitForTaskFinished(uint32_t dwTimeOutMs);
 
-    int Acquire();
-    int SafeRelease();
+    CM_RT_API int Acquire();
+    CM_RT_API int SafeRelease();
 
     //GT-PIN
     CM_RT_API int32_t GetSurfaceDetails(uint32_t kernIndex, uint32_t surfBTI,CM_SURFACE_DETAILS& outDetails ) { return CmNotImplemented(__PRETTY_FUNCTION__); }

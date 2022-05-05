@@ -290,18 +290,6 @@ public:
                               unsigned int uiOption = 0) = 0;
 
     //!
-    //! \brief Selects one of the pre-defined memory object control settings for
-    //!        this CmSurface2D.
-    //! \note This function works only on Gen9+ paltforms.
-    //! \param [in] option
-    //!        Option of the pre-defined memory object control setting.
-    //! \retval CM_SUCCESS if the given parameter is valid
-    //! \retval CM_FAILURE otherwise.
-    //!
-    CM_RT_API virtual int32_t
-    SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL option) = 0;
-
-    //!
     //! \brief Sets frame type of this CmSurface2D.
     //! \details By default this CmSurface2D is a whole frame.
     //! \param [in] frameType

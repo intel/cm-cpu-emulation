@@ -103,18 +103,6 @@ public:
                                           CmEvent *pEvent) = 0;
 
     //!
-    //! \brief      Selects one of the pre-defined memory object control
-    //!             settings for this buffer.
-    //! \param      [in] optiom
-    //!             Option of the pre-defined memory object control setting.
-    //! \retval     CM_SUCCESS if the memory object control is set successfully.
-    //! \retval     CM_FAILURE otherwise.
-    //! \note       This API is only supported for Gen9 and plus platform.
-    //!
-    CM_RT_API virtual int32_t
-    SelectMemoryObjectControlSetting(MEMORY_OBJECT_CONTROL option) = 0;
-
-    //!
     //! \brief      Sets the surface state of this buffer.
     //! \details    Set the new size, offset, and mocs to the surface index,
     //!             so they will take effect during surface state setting.

@@ -35,8 +35,8 @@ class CmThreadGroupSpace;
 class CmQueueEmu : public CmQueue
 {
 public:
-    static int32_t Create( CmDeviceEmu* pDevice, CmQueueEmu* & pQueue );
-    static int32_t Destroy( CmQueueEmu* & pQueue );
+    CM_RT_API static int32_t Create( CmDeviceEmu* pDevice, CmQueueEmu* & pQueue );
+    CM_RT_API static int32_t Destroy( CmQueueEmu* & pQueue );
 
     //CM_RT_API int32_t Enqueue( CmKernel* pKernelArray[], CmEvent* & pEvent, bool flush = true, const CmThreadSpace* pTS = nullptr );
     CM_RT_API int32_t Enqueue( CmTask* pKernelArray, CmEvent* & pEvent, const CmThreadSpace* pTS = nullptr );

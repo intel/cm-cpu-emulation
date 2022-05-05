@@ -17,7 +17,6 @@
 - [libffi](https://github.com/libffi/libffi), latest version.
 - [OpenCL headers](https://github.com/KhronosGroup/OpenCL-Headers), latest version.
 - [Level Zero development package](https://github.com/intel/compute-runtime/releases), latest version.
-- [LibVA development package](https://github.com/intel/libva) with API version >= 1.6.0 (see va_version.h for **VA_VERSION**)
 
 
 
@@ -32,10 +31,6 @@
 >
 > - ### OpenCL headers path:
 > cmake -D**OPENCL_HEADERS_PATH**=\<PATH TO OPENCL HEADERS>
->
-> - ### LibVA installation prefix:
->
-> cmake -D**LIBVA_INSTALL_PATH**=\<e.g. /usr>
 >
 > - ### Level Zero headers and lib path:
 >

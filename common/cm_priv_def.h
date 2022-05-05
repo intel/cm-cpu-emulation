@@ -18,7 +18,6 @@ SPDX-License-Identifier: MIT
 #include "emu_platform.h"
 
 #include "type_gpu_platform.h"
-#include "type_gpu_gt_platform.h"
 
 #define CM_INIT_PROGRAM_COUNT 16
 #define CM_INIT_KERNEL_COUNT 64
@@ -87,6 +86,8 @@ SPDX-License-Identifier: MIT
 // 2047x2047 (max TS size) * 256 bytes(color bits) per walker, platform gen11+.
 #define CM_MAX_USER_THREADS_PER_MEDIA_WALKER_GEN11_PLUS (CM_MAX_THREADSPACE_WIDTH_SKLUP_FOR_MW * CM_MAX_THREADSPACE_HEIGHT_SKLUP_FOR_MW * CM_THREADSPACE_MAX_COLOR_COUNT_GEN11_PLUS)
 
+#define CM_BUFFER_STATELESS_LARGE_SIZE 0xfffffffc  // 4GB - 4B
+
 // to define frame type for interlace frame support
 #include "type_frame.h"
 
@@ -110,5 +111,12 @@ enum CM_ARG_KIND
     ARG_KIND_IMPLICT_GROUPSIZE = 0x2C,
     ARG_KIND_IMPLICIT_LOCALID = 0x2D
 };
+
+typedef enum _CM_STATELESS_SURFACE_TYPE
+{
+    CM_STATELESS_NONE        = 0,
+    CM_STATELESS_BUFFER     = 1,
+    CM_STATELESS_SURFACE_2D = 2
+} CM_STATELESS_SURFACE_TYPE;
 
 #endif  // #ifndef CMRTLIB____SHARE_CM_PRIV_DEF_H_

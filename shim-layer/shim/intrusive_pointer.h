@@ -19,8 +19,10 @@ class IntrusiveRefCounter {
   using Counter = std::atomic<unsigned>;
  public:
   IntrusiveRefCounter() noexcept = default;
-  IntrusiveRefCounter(const IntrusiveRefCounter &) noexcept = default;
-  IntrusiveRefCounter &operator=(const IntrusiveRefCounter &) noexcept = default;
+  IntrusiveRefCounter(const IntrusiveRefCounter &) noexcept = delete;
+  IntrusiveRefCounter(IntrusiveRefCounter &&) noexcept = delete;
+  IntrusiveRefCounter &operator=(const IntrusiveRefCounter &) noexcept = delete;
+  IntrusiveRefCounter &operator=(IntrusiveRefCounter &&) noexcept = delete;
   ~IntrusiveRefCounter() = default;
 
   unsigned UseCount() const noexcept { return counter_; }
@@ -36,9 +38,10 @@ void IntrusivePtrAddRef(IntrusiveRefCounter<T> *ptr) {
 }
 
 template <typename T>
-void IntrusivePtrRelease(T *ptr) {
+std::enable_if_t<std::is_base_of_v<IntrusiveRefCounter<T>, T>>
+IntrusivePtrRelease(T *ptr) {
   IntrusiveRefCounter<T> *p = ptr;
-  if (ptr && ptr->counter_-- == 1) {
+  if (p && p->counter_-- == 1) {
     delete ptr;
   }
 }
@@ -68,16 +71,19 @@ class IntrusivePtr {
 
   IntrusivePtr &operator=(IntrusivePtr r) noexcept {
     std::swap(ptr_, r.ptr_);
+    return *this;
   }
 
   template <typename U>
   IntrusivePtr &operator=(IntrusivePtr<U> r) noexcept {
     std::swap(ptr_, r.ptr_);
+    return *this;
   }
 
-  IntrusivePtr &operator=(T * r) noexcept {
-    ptr_ = r;
-    IntrusivePtrAddRef(ptr_);
+  IntrusivePtr &operator=(std::nullptr_t) noexcept {
+    IntrusivePtrRelease(ptr_);
+    ptr_ = nullptr;
+    return *this;
   }
 
   operator bool() const noexcept {
@@ -102,8 +108,9 @@ class IntrusivePtr {
 
   void reset(T *r, bool add_ref = true) {
     auto *old = ptr_;
+    ptr_ = r;
     if (add_ref) {
-      IntrusivePtrAddRef(ptr_ = r);
+      IntrusivePtrAddRef(ptr_);
     }
     IntrusivePtrRelease(old);
   }
@@ -144,6 +151,11 @@ bool operator!=(const T *a, const IntrusivePtr<T> &b) noexcept {
 template <typename T, typename U>
 void swap(IntrusivePtr<T> &a, IntrusivePtr<U> &b) noexcept {
   std::swap(a.ptr_, b.ptr_);
+}
+
+template <typename T, typename ... Args>
+IntrusivePtr<T> MakeIntrusive(Args &&...args) {
+  return new T(std::forward<Args>(args)...);
 }
 
 } // namespace shim

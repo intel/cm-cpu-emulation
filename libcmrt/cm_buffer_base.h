@@ -9,7 +9,6 @@ SPDX-License-Identifier: MIT
 #ifndef CMRTLIB____SHARE_CM_BUFFER_BASE_H_
 #define CMRTLIB____SHARE_CM_BUFFER_BASE_H_
 
-#include "cm_memory_object_control.h"
 #include "cm_surface_alias_table.h"
 
 class SurfaceIndex;
@@ -20,5 +19,6 @@ class CmEvent;
 #include "type_buffer_svm_base.h"
 #include "type_buffer_up_base.h"
 #include "type_buffer_base.h"
+#include "type_buffer_stateless_base.h"
 
 #endif  // #ifndef CMRTLIB____SHARE_CM_BUFFER_BASE_H_

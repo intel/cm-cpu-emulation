@@ -14,17 +14,10 @@ SPDX-License-Identifier: MIT
 #ifndef CMRTLIB_LINUX_SHARE_CM_INCLUDE_H_
 #define CMRTLIB_LINUX_SHARE_CM_INCLUDE_H_
 
+#include <va_stub.h>
 #include <dlfcn.h>
 
 #include "type_large_integer.h"
-
-#ifndef ANDROID
-#include "va/va.h"
-#else
-#include <va/va_android.h>
-#define Display unsigned int
-#define ANDROID_DISPLAY 0x18c34078
-#endif
 
 #define sprintf_s snprintf
 

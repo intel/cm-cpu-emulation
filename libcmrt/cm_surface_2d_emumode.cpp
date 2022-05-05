@@ -1055,3 +1055,15 @@ int32_t CmSurface2DEmu::GPUCopyForSurface2DAlias()
     }
     return CM_SUCCESS;
 }
+
+CM_RT_API int32_t CmSurface2DEmu::GetGfxAddress(uint64_t &address)
+{
+    address = m_gfxAddress;
+    return CM_SUCCESS;
+}
+
+int32_t CmSurface2DEmu::SetGfxAddress(uint64_t address)
+{
+    m_gfxAddress = address;
+    return CM_SUCCESS;
+}

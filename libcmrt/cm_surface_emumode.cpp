@@ -22,7 +22,8 @@ CmSurfaceEmu::CmSurfaceEmu( bool isCmCreated,
     m_IsCmCreated( isCmCreated ),
     m_OriginalWidth( 0 ),
     m_OriginalHeight( 0 ),
-    m_surfaceManager(surfaceManager)
+    m_surfaceManager(surfaceManager),
+    m_stateless_surface_type(CM_STATELESS_NONE)
 {
     m_SMUPSurface=false;
 }

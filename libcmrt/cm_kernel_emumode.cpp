@@ -164,6 +164,35 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArg(uint32_t index, size_t size, const v
 
     this->m_ArgCount++;
 
+    // Check if an argument that should have been passed through
+    // SetKernelArgPointer() is passed through SetKernelArg()
+    CmSurfaceManagerEmu* surfMgr = nullptr;
+    this->m_pCmDev->GetSurfManager(surfMgr);
+
+    std::set<CmSurfaceEmu *, CompareByGfxAddress> statelessSurfArray = surfMgr->GetStatelessSurfaceArray();
+
+    for (auto surface : statelessSurfArray)
+    {
+        uint64_t startAddress = -1;
+        if (surface->GetStatelessSurfaceType() == CM_STATELESS_BUFFER)
+        {
+            CmBufferEmu *bufferStateless = static_cast<CmBufferEmu *>(surface);
+            bufferStateless->GetGfxAddress(startAddress);
+        }
+        else if (surface->GetStatelessSurfaceType() == CM_STATELESS_SURFACE_2D)
+        {
+            CmSurface2DEmu *surf2DStateless = static_cast<CmSurface2DEmu *>(surface);
+            surf2DStateless->GetGfxAddress(startAddress);
+        }
+
+        if (*((uint64_t *)(pValue)) == startAddress)
+        {
+          GFX_EMU_ERROR_MESSAGE("A pointer kernel argument is passed through SetKernelArg()!! Use 'SetKernelArgPointer'!!");
+          GFX_EMU_ASSERT( 0 );
+          return CM_FAILURE;
+        }
+    }
+
     GFX_EMU_MESSAGE_SCOPE_PREFIX(std::string{"kernel "} + GetFunctionDesc ().name +
         " argument "  + std::to_string(index) + ": ");
 
@@ -683,9 +712,57 @@ CM_RT_API int32_t CmKernelEmu::SetKernelArgPointer(uint32_t index,
         return CM_INVALID_ARG_VALUE;
     }
 
-    CmSurfaceManagerEmu* surfMgr;
+    CmSurfaceManagerEmu* surfMgr = nullptr;
     uint64_t gfxAddress = 0;
     CmSafeMemCopy(&gfxAddress, pValue, size);
+
+    bool isValid = false;
+    this->m_pCmDev->GetSurfManager(surfMgr);
+    std::set<CmSurfaceEmu *, CompareByGfxAddress> statelessSurfArray = surfMgr->GetStatelessSurfaceArray();
+
+    for (auto surface : statelessSurfArray)
+    {
+        uint64_t startAddress = -1;
+        if (surface->GetStatelessSurfaceType() == CM_STATELESS_BUFFER)
+        {
+            CmBufferEmu *bufferStateless = static_cast<CmBufferEmu *>(surface);
+            bufferStateless->GetGfxAddress(startAddress);
+        }
+        else if (surface->GetStatelessSurfaceType() == CM_STATELESS_SURFACE_2D)
+        {
+            CmSurface2DEmu *surf2DStateless = static_cast<CmSurface2DEmu *>(surface);
+            surf2DStateless->GetGfxAddress(startAddress);
+        }
+
+        if (gfxAddress == startAddress)
+        {
+            SurfaceIndex *surfIndex = nullptr;
+            surface->GetIndex(surfIndex);
+
+            /* Get surf buffer only for emulation */
+            cm_list<CmEmulSys::iobuffer>::iterator buff_iter;
+            buff_iter = CmEmulSys::search_buffer(surfIndex->get_data());
+            if(buff_iter->p_volatile == nullptr)
+            {
+                GFX_EMU_ASSERT( 0 );
+                return CM_FAILURE;
+            }
+
+            uint64_t *bufferAddress = reinterpret_cast<uint64_t *>(buff_iter->p_volatile);
+            gfxAddress = reinterpret_cast<uint64_t>(bufferAddress);
+
+            isValid = true;
+
+            break;
+        }
+    }
+
+    if (!isValid)
+    {
+        GFX_EMU_ERROR_MESSAGE("Error: the kernel arg pointer is not valid.");
+        GFX_EMU_ASSERT(0);
+        return CM_INVALID_KERNEL_ARG_POINTER;
+    }
 
     return SetKernelArg(index, size, &gfxAddress);
 }

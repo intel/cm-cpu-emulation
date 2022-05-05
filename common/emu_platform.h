@@ -22,7 +22,10 @@ enum Id {
     KBL = 53,
     ICLLP = 71,
     XEHP_SDV = 80,
-    TGLLP = 81
+    TGLLP = 81,
+    DG1 = 82,
+    PVC = 83,
+    DG2 = 84
 
 };
 
@@ -35,12 +38,16 @@ inline std::map<std::string, int64_t>& StaticData_nameToInt() {
         MAP(ICLLP, GfxEmu::Platform),
         MAP(TGLLP, GfxEmu::Platform),
         MAP(XEHP_SDV, GfxEmu::Platform),
+        MAP(DG1, GfxEmu::Platform),
+        MAP(PVC, GfxEmu::Platform),
+        MAP(DG2, GfxEmu::Platform),
     }};
     return nameToInt;
 };
 
 namespace Sku {
 enum Id {
+  DEFAULT = -1,
   UNDEFINED = 0,
   GT1 = 1,
   GT2 = 2,
@@ -55,6 +62,7 @@ enum Id {
 
 inline std::map<std::string, int64_t>& StaticData_nameToInt() {
     static std::map<std::string, int64_t> nameToInt = {{
+        MAP(DEFAULT, GfxEmu::Platform::Sku),
         MAP(GT1, GfxEmu::Platform::Sku),
         MAP(GT2, GfxEmu::Platform::Sku),
         MAP(GT3, GfxEmu::Platform::Sku),

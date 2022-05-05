@@ -108,6 +108,7 @@ std::string_view Device::Name() const {
     P(ICLLP),
     P(TGLLP),
     P(XEHP_SDV),
+    P(DG1),
   };
 #undef P
 
@@ -131,7 +132,10 @@ std::string Device::CompilerCommand() const {
     P(KBL, "-DCM_GEN9 -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
     P(ICLLP, "-DCM_GEN11 -DHAS_LONG_LONG"sv),
     P(TGLLP, "-DCM_GEN12 -DHAS_LONG_LONG"sv),
-    P(XEHP_SDV, "-DCM_GEN12_5 -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
+    P(XEHP_SDV, "-DCM_XEHP -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
+    P(DG1, "-DCM_GEN12 -DHAS_LONG_LONG"sv),
+    P(DG2, "-DCM_XEHPG -DHAS_LONG_LONG"sv),
+    P(PVC, "-DCM_XEHPC -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
   };
 #undef P
   std::string result = "g++ -c -g2 -fPIC -rdynamic -x c++ -std=c++17 -Wno-attributes -DCMRT_EMU";

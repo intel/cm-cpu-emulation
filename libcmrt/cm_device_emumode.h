@@ -49,8 +49,8 @@ public:
 #endif
     static int32_t Destroy( CmDeviceEmu* &pDevice );
 
-    int32_t Acquire();
-    int32_t SafeRelease();
+    CM_RT_API int32_t Acquire();
+    CM_RT_API int32_t SafeRelease();
 
 #ifdef CM_DX9
     CM_RT_API int32_t GetD3DDeviceManager( IDirect3DDeviceManager9* & pDeviceManager );
@@ -136,6 +136,16 @@ public:
     CM_RT_API int32_t CreateQueueEx(CmQueue *&pQueue, CM_QUEUE_CREATE_OPTION QueueCreateOption = CM_DEFAULT_QUEUE_CREATE_OPTION) override;
     CM_RT_API int32_t CreateBufferEx(uint32_t size, CmBuffer* & pSurface,uint32_t id ) override;
     CM_RT_API int32_t DispatchTask() override { return CM_SUCCESS; };
+
+    CM_RT_API int32_t CreateBufferStateless(size_t size, uint32_t option, void *memAddress, CmBufferStateless *&pSurface) override;
+    CM_RT_API int32_t DestroyBufferStateless(CmBufferStateless *&pSurface) override;
+    CM_RT_API int32_t
+        CreateSurface2DStateless(uint32_t width,
+                                 uint32_t height,
+                                 uint32_t &pitch,
+                                 CmSurface2DStateless *&pSurface) override;
+    CM_RT_API int32_t
+        DestroySurface2DStateless(CmSurface2DStateless *&pSurface) override;
 
 protected:
 #ifdef CM_DX9

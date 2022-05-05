@@ -166,10 +166,6 @@ GFX_EMU_API const char* toStr(const GfxEmu::Log::Flags::Type flags) {
 
 };
 
-GFX_EMU_API bool warningsEnabled__ ( ) {
-    return !GfxEmu::Cfg::LogWarnings();
-}
-
 #define SIG_AND_NAME(v) {v, #v}
 const static std::unordered_map<int,const char*> signals = {
         SIG_AND_NAME(SIGABRT),

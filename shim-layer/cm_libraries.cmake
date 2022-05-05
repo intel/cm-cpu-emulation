@@ -105,11 +105,6 @@ endif()
 target_include_directories(${LIB_CMEMU_32} INTERFACE
     ${CMRT_INCLUDE_DIR}
 )
-if (UNIX)
-    target_include_directories(${LIB_CMEMU_32} INTERFACE
-        ${LIBVA_INCLUDE_DIRS}
-    )
-endif()
 target_link_libraries(${LIB_CMEMU_32} INTERFACE
     ${LIB_CM_32}
 )

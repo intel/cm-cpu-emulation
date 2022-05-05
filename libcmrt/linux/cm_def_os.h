@@ -11,15 +11,8 @@ SPDX-License-Identifier: MIT
 
 #include "cm_include.h"
 #include "cm_common.h"
-
 #include "cm_rt_def_os.h"
-
-#ifndef ANDROID
-#include <va/va.h>
-#else
-#include <va/va_android.h>
-#define Display unsigned int
-#endif
+#include "va_stub.h"
 
 #include <cstring>
 #include "pthread.h"

@@ -9,8 +9,10 @@ SPDX-License-Identifier: MIT
 #define CM_EMU
 
 #include <assert.h>
+#include <stdlib.h>
 #include "cm_lib.h"
 #include "cm_internal_emu.h"
+#include "emu_log.h"
 
 namespace __CMInternal__ {
 
@@ -18,6 +20,18 @@ thread_local bool outerloop_simd_size_determined = false;
 thread_local volatile uint __cm_internal_simd_marker = 0;
 thread_local Stack* workingStack = nullptr;
 thread_local Stack* breakStack = nullptr;
+
+template <typename T>
+inline
+T *pop(Stack *s)
+{
+    T *top = static_cast<T *>(s->pop());
+    if (top){
+        return top;
+    }
+    GFX_EMU_ERROR_MESSAGE("stack empty.");
+    exit(EXIT_FAILURE);
+}
 
 CM_API Stack* getWorkingStack()
 {
@@ -59,7 +73,7 @@ CM_API uint __cm_internal_simd()
 
 CM_API uint __cm_internal_simd_then_end()
 {
-    maskItem *it = (maskItem *)workingStack->pop();
+    maskItem *it = pop<maskItem>(workingStack);
     uint simd_mask = ~(it->getExecutedMask());
 
     it->setMask(simd_mask);
@@ -161,14 +175,14 @@ CM_API uint __cm_internal_simd_break()
 
     ((maskItem *)breakStack->top())->setMask(simd_mask & ((maskItem *)breakStack->top())->getMask());
 
-    tmp_mask = (maskItem *)workingStack->pop();
+    tmp_mask = pop<maskItem>(workingStack);
     tmp_mask->setMask(tmp_mask->getMask() & simd_mask);
 
     tmp_s = new Stack();
     tmp_s->push((void *)tmp_mask);
 
     while(depth) {
-        tmp_mask = (maskItem *)workingStack->pop();
+        tmp_mask = pop<maskItem>(workingStack);
         tmp_mask->setMask(tmp_mask->getMask() & simd_mask);
         tmp_s->push((void *)tmp_mask);
         depth --;
@@ -178,6 +192,8 @@ CM_API uint __cm_internal_simd_break()
         tmp_mask = (maskItem *)tmp_s->pop();
         workingStack->push((void *)tmp_mask);
     }
+
+    delete tmp_s;
 
     return ~simd_mask;
 }
@@ -191,13 +207,13 @@ CM_API uint __cm_internal_simd_continue()
 
     simd_mask = ~simd_mask;
 
-    tmp_mask = (maskItem *)workingStack->pop();
+    tmp_mask = pop<maskItem>(workingStack);
     tmp_mask->setMask(tmp_mask->getMask() & simd_mask);
 
     tmp_s = new Stack();
     tmp_s->push((void *)tmp_mask);
     while(depth) {
-        tmp_mask = (maskItem *)workingStack->pop();
+        tmp_mask = pop<maskItem>(workingStack);
         tmp_mask->setMask(tmp_mask->getMask() & simd_mask);
         tmp_s->push((void *)tmp_mask);
         depth --;
@@ -206,6 +222,8 @@ CM_API uint __cm_internal_simd_continue()
         tmp_mask = (maskItem *)tmp_s->pop();
         workingStack->push((void *)tmp_mask);
     }
+
+    delete tmp_s;
 
     return ~simd_mask;
 }

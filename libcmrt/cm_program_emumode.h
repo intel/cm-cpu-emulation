@@ -26,7 +26,7 @@ public:
         return m_programModule;
     }
 
-    static int32_t Create(
+    CM_RT_API static int32_t Create(
         CmDeviceEmu* pCmDev,
         CmProgramEmu*& pProgram,
         void *programAddr = nullptr,
@@ -34,8 +34,8 @@ public:
 
     static int32_t Destroy( CmProgramEmu* &pProgram );
 
-    int Acquire();
-    int SafeRelease();
+    CM_RT_API int Acquire();
+    CM_RT_API int SafeRelease();
 
     int32_t GetCommonISACode( void* & pCommonISACode, uint32_t & size ) {
         pCommonISACode = nullptr; size = 0;

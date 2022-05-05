@@ -26,6 +26,8 @@ class CmBufferUP;
 class CmSurface2DUP;
 class CmSurface3D;
 class SurfaceIndex;
+class CmBufferStateless;
+class CmSurface2DStateless;
 
 #ifndef _WIN32
 //! \brief  CmDevice class for Linux
@@ -577,13 +579,6 @@ public:
     //!     <td>uint32_t</td>
     //!     <td>Return GPU platform as an enum of type GPU_PLATFORM
     //!                  (PLATFORM_INTEL_BDW, PLATFORM_INTEL_SKL, etc) </td>
-    //!   </tr>
-    //!   <tr>
-    //!     <td>CAP_GT_PLATFORM </td>
-    //!     <td>4</td>
-    //!     <td>uint32_t</td>
-    //!     <td>Return GT platform (SKU) as an enum of type GPU_GT_PLATFORM
-    //!            (PLATFORM_INTEL_GT1, PLATFORM_INTEL_GT2, etc) </td>
     //!   </tr>
     //!   <tr>
     //!     <td>CAP_MIN_FREQUENCY </td>
@@ -1201,7 +1196,93 @@ public:
     //! \retval     CM_FAILURE otherwise.
     CM_RT_API virtual int32_t CreateBufferEx(uint32_t size, CmBuffer* & pSurface, uint32_t id )=0;
 
+    //!
+    //! \brief      It creates a CmBufferStateless of the specified size in bytes by
+    //!             using the vedio memory or the system memory.
+    //! \details    The stateless buffer means it is stateless-accessed by GPU. There
+    //!             are two ways to create a stateless buffer. One is to create from
+    //!             vedio memory, then it can be only accessed by GPU. The other way is
+    //!             to create from system memory, then it can be accessed by both GPU
+    //!             and CPU. In this way, The system memory will be allocated in runtime
+    //!             internally(if user pass nullptr pointer) or user provided (if user
+    //!             pass a valid pointer). And the system memory should be page aligned
+    //!             (4K bytes).
+    //! \param      [in] size
+    //!             Stateless buffer size in bytes.
+    //! \param      [in] option
+    //!             Stateless buffer create option.
+    //! \param      [in] sysMem
+    //!             Pointer to user provided system memory if option is system memory.
+    //! \param      [out] pSurface
+    //!             Reference to the pointer to the CmBufferStateless.
+    //! \retval     CM_SUCCESS if the CmBufferStateless is successfully created.
+    //! \retval     CM_SURFACE_ALLOCATION_FAILURE if creating the underneath 1D
+    //!             surface fails.
+    //! \retval     CM_OUT_OF_HOST_MEMORY if runtime can't allocate such size
+    //!             system memory.
+    //! \retval     CM_EXCEED_SURFACE_AMOUNT if maximum amount of 1D surfaces
+    //!             is exceeded. The amount is the amount of the surfaces that
+    //!             can co-exist. The amount can be obtained by querying the
+    //!             cap CAP_BUFFER_COUNT.
+    //! \retval     CM_INVALID_CREATE_OPTION_FOR_BUFFER_STATELESS if option is invalid.
+    //! \retval     CM_FAILURE otherwise.
+    CM_RT_API virtual int32_t CreateBufferStateless(size_t size,
+                                                    uint32_t option,
+                                                    void *sysMem,
+                                                    CmBufferStateless *&buffer) = 0;
+
+    //!
+    //! \brief      Destroy CmBufferStateless object and associated vedio/system memory.
+    //! \param      [in,out] pSurface
+    //!             Reference to the pointer pointing to CmBufferStateless, will be
+    //!             assigned to nullptr once it is destroyed successfully.
+    //! \retval     CM_SUCCESS if CmBufferStateless and associated vedio/system memory are
+    //!             successfully destroyed.
+    //! \retval     CM_FAILURE otherwise.
+    //!
+    CM_RT_API virtual int32_t DestroyBufferStateless(CmBufferStateless* &buffer) = 0;
+
     CM_RT_API virtual int32_t DispatchTask() = 0;
+
+    //!
+    //! \brief      It creates a CmSurface2DStateless of the specified width, height and
+    //!             pitch in bytes by using the vedio memory.
+    //! \details    The stateless surface means it is stateless-accessed by GPU. It is
+    //!             created from vedio memory, and can be only accessed by GPU.
+    //! \param      [in] width
+    //!             Surface width in bytes.
+    //! \param      [in] width
+    //!             Surface height in bytes.
+    //! \param      [out] pitch
+    //!             Surface pitch in bytes.
+    //! \param      [out] pSurface
+    //!             Reference to the pointer to the CmSurface2DStateless.
+    //! \retval     CM_SUCCESS if the CmSurface2DStateless is successfully created.
+    //! \retval     CM_SURFACE_ALLOCATION_FAILURE if creating the underneath 2D
+    //!             surface fails.
+    //! \retval     CM_OUT_OF_HOST_MEMORY if runtime can't allocate such size
+    //!             system memory.
+    //! \retval     CM_EXCEED_SURFACE_AMOUNT if maximum amount of 2D surfaces
+    //!             is exceeded. The amount is the amount of the surfaces that
+    //!             can co-exist. The amount can be obtained by querying the
+    //!             cap CAP_SURFACE2D_COUNT.
+    //! \retval     CM_FAILURE otherwise.
+    CM_RT_API virtual int32_t
+    CreateSurface2DStateless(uint32_t width,
+                             uint32_t height,
+                             uint32_t &pitch,
+                             CmSurface2DStateless *&pSurface) = 0;
+
+    //!
+    //! \brief      Destroy CmSurface2DStateless object and associated vedio memory.
+    //! \param      [in,out] pSurface
+    //!             Reference to the pointer pointing to CmSurface2DStateless, will be
+    //!             assigned to nullptr once it is destroyed successfully.
+    //! \retval     CM_SUCCESS if CmSurface2DStateless and associated vedio memory are
+    //!             successfully destroyed.
+    //! \retval     CM_FAILURE otherwise.
+    //!
+    CM_RT_API virtual int32_t DestroySurface2DStateless(CmSurface2DStateless *&pSurface) = 0;
 
 protected:
     virtual ~CmDevice() = default;
@@ -1867,13 +1948,6 @@ public:
     //!     <td>uint32_t</td>
     //!     <td>Return GPU platform as an enum of type GPU_PLATFORM
     //!                  (PLATFORM_INTEL_BDW, PLATFORM_INTEL_SKL, etc) </td>
-    //!   </tr>
-    //!   <tr>
-    //!     <td>CAP_GT_PLATFORM </td>
-    //!     <td>4</td>
-    //!     <td>uint32_t</td>
-    //!     <td>Return GT platform (SKU) as an enum of type GPU_GT_PLATFORM
-    //!            (PLATFORM_INTEL_GT1, PLATFORM_INTEL_GT2, etc) </td>
     //!   </tr>
     //!   <tr>
     //!     <td>CAP_MIN_FREQUENCY </td>
@@ -2548,6 +2622,93 @@ public:
     CM_RT_API virtual int32_t CreateBufferEx(uint32_t size, CmBuffer* & pSurface, uint32_t id )=0;
 
     CM_RT_API virtual int32_t DispatchTask() = 0;
+
+    //!
+    //! \brief      It creates a CmBufferStateless of the specified size in bytes by
+    //!             using the vedio memory or the system memory.
+    //! \details    The stateless buffer means it is stateless-accessed by GPU. There
+    //!             are two ways to create a stateless buffer. One is to create from
+    //!             vedio memory, then it can be only accessed by GPU. The other way is
+    //!             to create from system memory, then it can be accessed by both GPU
+    //!             and CPU. In this way, The system memory will be allocated in runtime
+    //!             internally(if user pass nullptr pointer) or user provided (if user
+    //!             pass a valid pointer). And the system memory should be page aligned
+    //!             (4K bytes).
+    //! \param      [in] size
+    //!             Stateless buffer size in bytes.
+    //! \param      [in] option
+    //!             Stateless buffer create option.
+    //! \param      [in] sysMem
+    //!             Pointer to user provided system memory if option is system memory.
+    //! \param      [out] pSurface
+    //!             Reference to the pointer to the CmBufferStateless.
+    //! \retval     CM_SUCCESS if the CmBufferStateless is successfully created.
+    //! \retval     CM_SURFACE_ALLOCATION_FAILURE if creating the underneath 1D
+    //!             surface fails.
+    //! \retval     CM_OUT_OF_HOST_MEMORY if runtime can't allocate such size
+    //!             system memory.
+    //! \retval     CM_EXCEED_SURFACE_AMOUNT if maximum amount of 1D surfaces
+    //!             is exceeded. The amount is the amount of the surfaces that
+    //!             can co-exist. The amount can be obtained by querying the
+    //!             cap CAP_BUFFER_COUNT.
+    //! \retval     CM_INVALID_CREATE_OPTION_FOR_BUFFER_STATELESS if option is invalid.
+    //! \retval     CM_FAILURE otherwise.
+    CM_RT_API virtual int32_t
+        CreateBufferStateless(size_t size,
+                              uint32_t option,
+                              void *sysMem,
+                              CmBufferStateless *&pSurface) = 0;
+
+    //!
+    //! \brief      Destroy CmBufferStateless object and associated vedio/system memory.
+    //! \param      [in,out] pSurface
+    //!             Reference to the pointer pointing to CmBufferStateless, will be
+    //!             assigned to nullptr once it is destroyed successfully.
+    //! \retval     CM_SUCCESS if CmBufferStateless and associated vedio/system memory are
+    //!             successfully destroyed.
+    //! \retval     CM_FAILURE otherwise.
+    //!
+    CM_RT_API virtual int32_t DestroyBufferStateless(CmBufferStateless* & pSurface) = 0;
+
+    //!
+    //! \brief      It creates a CmSurface2DStateless of the specified width, height and
+    //!             pitch in bytes by using the vedio memory.
+    //! \details    The stateless surface means it is stateless-accessed by GPU. It is
+    //!             created from vedio memory, and can be only accessed by GPU.
+    //! \param      [in] width
+    //!             Surface width in bytes.
+    //! \param      [in] width
+    //!             Surface height in bytes.
+    //! \param      [out] pitch
+    //!             Surface pitch in bytes.
+    //! \param      [out] pSurface
+    //!             Reference to the pointer to the CmSurface2DStateless.
+    //! \retval     CM_SUCCESS if the CmSurface2DStateless is successfully created.
+    //! \retval     CM_SURFACE_ALLOCATION_FAILURE if creating the underneath 2D
+    //!             surface fails.
+    //! \retval     CM_OUT_OF_HOST_MEMORY if runtime can't allocate such size
+    //!             system memory.
+    //! \retval     CM_EXCEED_SURFACE_AMOUNT if maximum amount of 2D surfaces
+    //!             is exceeded. The amount is the amount of the surfaces that
+    //!             can co-exist. The amount can be obtained by querying the
+    //!             cap CAP_SURFACE2D_COUNT.
+    //! \retval     CM_FAILURE otherwise.
+    CM_RT_API virtual int32_t
+    CreateSurface2DStateless(uint32_t width,
+                             uint32_t height,
+                             uint32_t &pitch,
+                             CmSurface2DStateless *&pSurface) = 0;
+
+    //!
+    //! \brief      Destroy CmSurface2DStateless object and associated vedio memory.
+    //! \param      [in,out] pSurface
+    //!             Reference to the pointer pointing to CmSurface2DStateless, will be
+    //!             assigned to nullptr once it is destroyed successfully.
+    //! \retval     CM_SUCCESS if CmSurface2DStateless and associated vedio memory are
+    //!             successfully destroyed.
+    //! \retval     CM_FAILURE otherwise.
+    //!
+    CM_RT_API virtual int32_t DestroySurface2DStateless(CmSurface2DStateless *&pSurface) = 0;
 
 protected:
     virtual ~CmDevice() = default;

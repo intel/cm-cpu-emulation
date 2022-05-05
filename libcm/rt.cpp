@@ -547,6 +547,125 @@ void CmEmuMt_GroupBarrier::wait(CmEmuMt_Thread *thread) {
 }
 
 //=============================================================================
+#define DBG_NBARRIER_(v,enabled) if(enabled){ std::lock_guard<std::mutex> lck (s_dbgMtx); \
+    std::cout << "[barrier " << m_id << "] tid " << get_thread ()->local_idx () << " " << v << \
+        " /cc: " << m_signaled_cons_count.load() << \
+        ", pc: " << m_signaled_prod_count.load() << \
+        ", is_cfgd: " << m_is_configured.load() << \
+        ", cfg_cookie: " << m_cfg_cookie.load() << \
+        " / " << std::endl;}
+#define DBG_NBARRIER(v) DBG_NBARRIER_(v,CmEmuMt_NamedBarrier::kDbgEnabled)
+#define ASSERT_NBARRIER(c,v) if (CmEmuMt_NamedBarrier::kAssertsEnabled && !(c)) { DBG_NBARRIER_(v,true); exit (-1);}
+
+std::mutex CmEmuMt_NamedBarrier::s_dbgMtx;
+
+CmEmuMt_NamedBarrier::CmEmuMt_NamedBarrier() {
+    if (CmEmuMt_NamedBarrier::kAssertsEnabled)
+    {
+        m_cons_tracking.fill(false);
+        m_prod_tracking.fill(false);
+    }
+}
+
+CmEmuMt_NamedBarrier::~CmEmuMt_NamedBarrier() {
+    //ASSERT_NBARRIER(!m_is_configured.load (std::memory_order_acquire), "destroyed while still being configured.");
+}
+
+inline bool CmEmuMt_NamedBarrier::is_ready() const {
+    return m_is_configured.load () &&
+           m_signaled_prod_count.load() == m_cfg_prod_count &&
+           m_pending_cons_count.load() == 0;
+}
+
+void CmEmuMt_NamedBarrier::signal(
+    const int tid,
+    const bool isProd,
+    const bool isCons,
+    const int numProd,
+    const int numCons)
+{
+    //ASSERT_NBARRIER (is_init(), "Barrier is not initialized. Use cm_nbarrier_init(count) to initialize enough barriers.");
+    ASSERT_NBARRIER (numProd && numCons, "can't configure with 0 producers or consumers.");
+    ASSERT_NBARRIER (!is_ready (), "signaling barrier while it is already (or still) in ready state.");
+
+    if (!m_is_configured.load ()) { // Barrier configuration. No need to make the whole signal a critical section. We can get away with this.
+        while (m_reconfLock.test_and_set ()) cmrt::this_thread_yield ();
+        if (!m_is_configured.load (std::memory_order_relaxed)) {
+            DBG_NBARRIER ("------ Configuring! -------");
+            m_cfg_prod_count = numProd;
+            m_cfg_cons_count = m_pending_cons_count = numCons;
+            m_signaled_cons_count = 0;
+            m_signaled_prod_count = 0;
+            if (CmEmuMt_NamedBarrier::kAssertsEnabled) m_prod_tracking.fill(false);
+            m_is_configured.store(true);
+        }
+        m_reconfLock.clear ();
+    }
+
+    ASSERT_NBARRIER (numProd == m_cfg_prod_count &&
+        numCons == m_cfg_cons_count, "barrier settings incompatible with currently active config are being used: " <<
+        "producers number: " << numProd << " vs " << m_cfg_prod_count << ", "
+        "consumers number: " << numCons << " vs " << m_cfg_cons_count << ".");
+
+    if (isCons)
+    {
+        ASSERT_NBARRIER(!m_cons_tracking[tid], "already signaled!");
+        if (CmEmuMt_NamedBarrier::kAssertsEnabled) m_cons_tracking[tid] = true;
+
+        m_signaled_cons_count += 1;
+
+        ASSERT_NBARRIER(m_signaled_cons_count.load () <= m_cfg_cons_count,
+            "Too much consumers! Expected per current config " << m_cfg_cons_count);
+    }
+
+    if (isProd)
+    {
+        ASSERT_NBARRIER(!m_prod_tracking[tid], "already signaled!");
+        if (CmEmuMt_NamedBarrier::kAssertsEnabled) m_prod_tracking[tid] = true;
+
+        m_signaled_prod_count += 1;
+
+        ASSERT_NBARRIER(m_signaled_prod_count <= m_cfg_prod_count,
+            "Too much producers! Expected per current config " << m_cfg_prod_count);
+    }
+
+    DBG_NBARRIER("Signal"
+        << " is producer: " << isProd
+        << ", is consumer: " << isCons
+        << ", cfg num prod: " << numProd
+        << ", cfg num cons: " << numCons);
+}
+
+void CmEmuMt_NamedBarrier::wait(const int tid)
+{
+    DBG_NBARRIER("wait.");
+    ASSERT_NBARRIER(m_is_configured.load (), "trying to wait on a non-configured barrier.");
+    ASSERT_NBARRIER(m_cons_tracking[tid], "trying to wait while not being a consumer.");
+    if (CmEmuMt_NamedBarrier::kAssertsEnabled) m_cons_tracking[tid] = false;
+
+    // The following order matters:
+    const auto curCfgCookie = m_cfg_cookie.load (); // 1. Presave current config identifier.
+    const auto chosen = m_pending_cons_count.fetch_sub(1) == 1; // 2. Register consumer wait.
+
+    while (m_cfg_cookie.load () == curCfgCookie)
+    {
+        if (chosen && is_ready ())
+        {
+            m_reconfLock.test_and_set ();
+            DBG_NBARRIER("deconfiguring.");
+            m_is_configured.store (false); // is_ready() -> false.
+            m_cfg_cookie.fetch_add (1); // break this loop for all the threads.
+            m_reconfLock.clear ();
+        }
+        else cmrt::this_thread_yield ();
+    }
+
+    DBG_NBARRIER("finished waiting. My cfg_cookie was: " << curCfgCookie);
+}
+#undef DBG_NBARRIER
+#undef ASSERT_NBARRIER
+
+//=============================================================================
 
 thread_local CmEmuMt_Thread *g_resident_thread{nullptr};
 
@@ -581,6 +700,33 @@ int32_t group_size () {
     return g_resident_thread->kernel()->group_size();
 }
 
+void group_named_barriers_init(uint count)
+{
+    const auto maxCount = platform_get_max_barriers_count ();
+
+    if (count > maxCount) {
+        GFX_EMU_ERROR_MESSAGE("*** Error: too many named barriers requested (%u"
+            "). Max supported is %u\n", count, maxCount);
+        exit(EXIT_FAILURE);
+    }
+
+    g_resident_thread->resources()->set_max_avail_barrier_id (count - 1);
+
+    //while(--count) g_resident_thread->barrier(count)->init(count);
+}
+
+void group_barrier_signal()
+{
+    const auto totalThreads = group_size ();
+
+    g_resident_thread->named_barrier(0)->signal(
+        g_resident_thread->local_idx (),
+        true,
+        true,
+        totalThreads,
+        totalThreads);
+}
+
 void simple_group_barrier_signal()
 {
     g_resident_thread->simple_barrier()->signal(g_resident_thread);
@@ -590,6 +736,57 @@ void simple_group_barrier_wait()
 {
     g_resident_thread->simple_barrier()->wait(g_resident_thread);
 }
+
+void group_barrier_wait()
+{
+    g_resident_thread->named_barrier(0)->wait(g_resident_thread->local_idx());
+}
+
+void assert_cm_nbarrier_init_api_usage()
+{
+    const auto maxAvailBarrierId = g_resident_thread->resources()->get_max_avail_barrier_id ();
+
+    if (maxAvailBarrierId == platform_get_max_barriers_count () - 1)
+    {
+        GFX_EMU_ERROR_MESSAGE("*** Error: using cm_barrier and cm_sbarrier is only compatible with cm_nbarrier_init called with "
+            "count < PLATFORM_MAX_BARRIERS, however cm_nbarrier_init was called with "
+            "%u\n", maxAvailBarrierId + 1);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void group_barrier_id_sanitize(uint barrierId)
+{
+    if (barrierId > g_resident_thread->resources()->get_max_avail_barrier_id ())
+    {
+        GFX_EMU_ERROR_MESSAGE("*** Error: trying to use uninitialized barrier %u"
+            ". Use cm_nbarrier_init(uint barriers_count) to init the required barriers number.\n"
+            , barrierId);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void group_barrier_signal(
+    uint barrierId,
+    bool isProducer,
+    bool isConsumer,
+    uint numProducers,
+    uint numConsumers)
+{
+    group_barrier_id_sanitize(barrierId);
+    g_resident_thread->named_barrier(barrierId)->signal(
+       g_resident_thread->local_idx (),
+       isProducer,
+       isConsumer,
+       numProducers,
+       numConsumers);
+};
+
+void group_barrier_wait(uint barrierId)
+{
+    group_barrier_id_sanitize(barrierId);
+    g_resident_thread->named_barrier(barrierId)->wait(g_resident_thread->local_idx ());
+};
 
 void aux_barrier_signal() { g_resident_thread->aux_barrier()->signal(g_resident_thread);}
 void aux_barrier_wait() { g_resident_thread->aux_barrier()->wait(g_resident_thread);}
@@ -621,6 +818,10 @@ unsigned int alloc_slm(unsigned int bufferSize){
     return g_resident_thread->alloc_slm(bufferSize);
 }
 
+XThreadBroadcastBuf& get_xthread_broadcast(){
+    return g_resident_thread->get_xthread_broadcast();
+}
+
 void this_thread_yield(){
     g_resident_thread->suspend();
 }
@@ -636,6 +837,7 @@ void CmEmuMt_SLM::set_size (unsigned int size)
     }
 
     const auto slm_max_size =
+        GfxEmu::Cfg::Platform ().getInt () == GfxEmu::Platform::PVC ? CmEmuMt_SLM::kPvcMaxSize :
         CmEmuMt_SLM::kDefaultMaxSize
     ;
 

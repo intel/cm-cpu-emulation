@@ -33,6 +33,7 @@ endif()
 # These headers are the accumulated set of those
 # interused between libcm, libcmrt and shim-layer.
 set(COMMON_HEADERS
+  ${COMMON_HEADERS_PATH}/va_stub.h
 
   ${COMMON_HEADERS_PATH}/kernel_utils.h
   ${COMMON_HEADERS_PATH}/os_utils.h
@@ -61,18 +62,16 @@ set(COMMON_HEADERS
 
   ${COMMON_HEADERS_PATH}/emu_kernel_arg.h
   ${COMMON_HEADERS_PATH}/type_frame.h
-  ${COMMON_HEADERS_PATH}/type_gpu_gt_platform.h
   ${COMMON_HEADERS_PATH}/type_gpu_platform.h
   ${COMMON_HEADERS_PATH}/type_large_integer.h
-  ${COMMON_HEADERS_PATH}/type_memory_object_control.h
   ${COMMON_HEADERS_PATH}/type_memory_type.h
-  ${COMMON_HEADERS_PATH}/type_surface_mem_obj_ctrl.h
   ${COMMON_HEADERS_PATH}/type_queue_priority.h
   ${COMMON_HEADERS_PATH}/type_queue_create_option.h
   ${COMMON_HEADERS_PATH}/type_task_config.h
   ${COMMON_HEADERS_PATH}/type_return_code.h
   ${COMMON_HEADERS_PATH}/type_buffer_base.h
   ${COMMON_HEADERS_PATH}/type_buffer_state_param.h
+  ${COMMON_HEADERS_PATH}/type_buffer_stateless_base.h
   ${COMMON_HEADERS_PATH}/type_buffer_svm_base.h
   ${COMMON_HEADERS_PATH}/type_buffer_up_base.h
   ${COMMON_HEADERS_PATH}/type_cond_end_operator_code.h
@@ -86,6 +85,7 @@ set(COMMON_HEADERS
   ${COMMON_HEADERS_PATH}/type_queue_base.h
   ${COMMON_HEADERS_PATH}/type_queue_type.h
   ${COMMON_HEADERS_PATH}/type_surface_2d_state_param.h
+  ${COMMON_HEADERS_PATH}/type_surface_2d_stateless_base.h
   ${COMMON_HEADERS_PATH}/type_surface_2d_up_base.h
   ${COMMON_HEADERS_PATH}/type_surface_3d_base.h
   ${COMMON_HEADERS_PATH}/type_surface_details.h
@@ -117,7 +117,6 @@ set(COMMON_HEADERS
 
   ${COMMON_HEADERS_PATH}/cm_version_defs.h
 
-  ${COMMON_HEADERS_PATH}/cm_rt_xe_hp_sdv.h
   ${COMMON_OS_HEADERS_PATH}/cm_include.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_def_os.h
   ${COMMON_OS_HEADERS_PATH}/cm_rt_api_os.h)

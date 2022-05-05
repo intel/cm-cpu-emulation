@@ -102,24 +102,6 @@ typedef struct _CmSupportedAdapterInfo
     UINT TileNumber = 0;
     UINT reserved[16];
 } CmSupportedAdapterInfo;
-
-typedef enum _AdapterInfoType
-{
-    Description,                    //    WCHAR Description[ 128 ];
-    VendorId,                       //    UINT VendorId;
-    DeviceId,                       //    UINT DeviceId;
-    SubSysId,                       //    UINT SubSysId;
-    Revision,                       //    UINT Revision;
-    DedicatedVideoMemory,           //    SIZE_T DedicatedVideoMemory;
-    DedicatedSystemMemory,          //    SIZE_T DedicatedSystemMemory;
-    SharedSystemMemory,             //    SIZE_T SharedSystemMemory;
-    AdapterLuid,                    //    LUID AdapterLuid;
-    isDiscreteGPU,                  //    bool
-    MaxThread,                      //    UINT
-    EuNumber,                       //    UINT
-    TileNumber,                     //    UINT
-    Reserved                        //    UINT
-} AdapterInfoType;
 #endif
 
 typedef struct tagDXVA2_SURFACE_REGISTRATION
