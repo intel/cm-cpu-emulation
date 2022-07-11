@@ -14,6 +14,7 @@ SPDX-License-Identifier: MIT
 #include <stdlib.h>
 
 #include "half_type.h"
+#include "cm_common_macros.h"
 
 class SurfaceIndex;
 
@@ -27,7 +28,9 @@ enum class CmPrecisionType {
     CM_Precision_S2 = 5,      // signed 2 bits
     CM_Precision_S4 = 6,      // signed 4 bits
     CM_Precision_S8 = 7,      // signed 8 bits
+#ifdef CM_HAS_BF16
     CM_Precision_BF16 = 8,    // bfloat 16
+#endif
     CM_Precision_FP16 = 9,    // half float
     CM_Precision_TF32 = 11,   // tensorfloat 32
 };
@@ -40,7 +43,9 @@ enum class CmPrecisionType {
 #define CM_PRECISION_S2 CmPrecisionType::CM_Precision_S2
 #define CM_PRECISION_S4 CmPrecisionType::CM_Precision_S4
 #define CM_PRECISION_S8 CmPrecisionType::CM_Precision_S8
+#ifdef CM_HAS_BF16
 #define CM_PRECISION_BF CmPrecisionType::CM_Precision_BF16
+#endif
 #define CM_PRECISION_HF CmPrecisionType::CM_Precision_FP16
 #define CM_PRECISION_TF32 CmPrecisionType::CM_Precision_TF32
 
@@ -433,6 +438,8 @@ template <> struct restype<char, short>           { typedef int type; };
 template <> struct restype<char, unsigned short>  { typedef int type; };
 template <> struct restype<char, int>             { typedef int   type; };
 template <> struct restype<char, unsigned int>    { typedef unsigned int   type; };
+template <> struct restype<char, long>            { typedef long   type; };
+template <> struct restype<char, unsigned long>   { typedef unsigned long   type; };
 template <> struct restype<char, half>            { typedef half type; };
 template <> struct restype<char, float>           { typedef float type; };
 template <> struct restype<char, double>          { typedef double type; };
@@ -445,6 +452,8 @@ template <> struct restype<unsigned char, short>           { typedef int type; }
 template <> struct restype<unsigned char, unsigned short>  { typedef int type; };
 template <> struct restype<unsigned char, int>             { typedef int   type; };
 template <> struct restype<unsigned char, unsigned int>    { typedef unsigned int   type; };
+template <> struct restype<unsigned char, long>            { typedef long   type; };
+template <> struct restype<unsigned char, unsigned long>   { typedef unsigned long   type; };
 template <> struct restype<unsigned char, half>            { typedef half type; };
 template <> struct restype<unsigned char, float>           { typedef float type; };
 template <> struct restype<unsigned char, double>          { typedef double type; };
@@ -457,6 +466,8 @@ template <> struct restype<short, short>           { typedef int type; };
 template <> struct restype<short, unsigned short>  { typedef int type; };
 template <> struct restype<short, int>             { typedef int   type; };
 template <> struct restype<short, unsigned int>    { typedef unsigned int   type; };
+template <> struct restype<short, long>            { typedef long   type; };
+template <> struct restype<short, unsigned long>   { typedef unsigned long   type; };
 template <> struct restype<short, half>            { typedef half type; };
 template <> struct restype<short, float>           { typedef float type; };
 template <> struct restype<short, double>          { typedef double type; };
@@ -469,6 +480,8 @@ template <> struct restype<unsigned short, short>           { typedef int type; 
 template <> struct restype<unsigned short, unsigned short>  { typedef int type; };
 template <> struct restype<unsigned short, int>             { typedef int type; };
 template <> struct restype<unsigned short, unsigned int>    { typedef unsigned int type; };
+template <> struct restype<unsigned short, long>            { typedef long type; };
+template <> struct restype<unsigned short, unsigned long>   { typedef unsigned long type; };
 template <> struct restype<unsigned short, half>            { typedef half type; };
 template <> struct restype<unsigned short, float>           { typedef float type; };
 template <> struct restype<unsigned short, double>          { typedef double type; };
@@ -481,6 +494,8 @@ template <> struct restype<int, short>           { typedef int type; };
 template <> struct restype<int, unsigned short>  { typedef int type; };
 template <> struct restype<int, int>             { typedef int type; };
 template <> struct restype<int, unsigned int>    { typedef unsigned int type; };
+template <> struct restype<int, long>            { typedef long type; };
+template <> struct restype<int, unsigned long>   { typedef unsigned long type; };
 template <> struct restype<int, half>            { typedef half type; };
 template <> struct restype<int, float>           { typedef float type; };
 template <> struct restype<int, double>          { typedef double type; };
@@ -493,11 +508,41 @@ template <> struct restype<unsigned int, short>           { typedef unsigned int
 template <> struct restype<unsigned int, unsigned short>  { typedef unsigned int type; };
 template <> struct restype<unsigned int, int>             { typedef unsigned int type; };
 template <> struct restype<unsigned int, unsigned int>    { typedef unsigned int type; };
+template <> struct restype<unsigned int, long>            { typedef long type; };
+template <> struct restype<unsigned int, unsigned long>   { typedef unsigned long type; };
 template <> struct restype<unsigned int, half>            { typedef half type; };
 template <> struct restype<unsigned int, float>           { typedef float type; };
 template <> struct restype<unsigned int, double>          { typedef double type; };
 template <> struct restype<unsigned int, long long>       { typedef long long type; };
 template <> struct restype<unsigned int, unsigned long long>           { typedef unsigned long long type; };
+
+template <> struct restype<long, char>            { typedef long type; };
+template <> struct restype<long, unsigned char>   { typedef long type; };
+template <> struct restype<long, short>           { typedef long type; };
+template <> struct restype<long, unsigned short>  { typedef long type; };
+template <> struct restype<long, int>             { typedef long type; };
+template <> struct restype<long, unsigned int>    { typedef long type; };
+template <> struct restype<long, long>            { typedef long type; };
+template <> struct restype<long, unsigned long>   { typedef unsigned long type; };
+template <> struct restype<long, half>            { typedef half type; };
+template <> struct restype<long, float>           { typedef float type; };
+template <> struct restype<long, double>          { typedef double type; };
+template <> struct restype<long, long long>       { typedef long long type; };
+template <> struct restype<long, unsigned long long>           { typedef unsigned long long type; };
+
+template <> struct restype<unsigned long, char>            { typedef unsigned long type; };
+template <> struct restype<unsigned long, unsigned char>   { typedef unsigned long type; };
+template <> struct restype<unsigned long, short>           { typedef unsigned long type; };
+template <> struct restype<unsigned long, unsigned short>  { typedef unsigned long type; };
+template <> struct restype<unsigned long, int>             { typedef unsigned long type; };
+template <> struct restype<unsigned long, unsigned int>    { typedef unsigned long type; };
+template <> struct restype<unsigned long, long>            { typedef unsigned long type; };
+template <> struct restype<unsigned long, unsigned long>   { typedef unsigned long type; };
+template <> struct restype<unsigned long, half>            { typedef half type; };
+template <> struct restype<unsigned long, float>           { typedef float type; };
+template <> struct restype<unsigned long, double>          { typedef double type; };
+template <> struct restype<unsigned long, long long>       { typedef long long type; };
+template <> struct restype<unsigned long, unsigned long long>           { typedef unsigned long long type; };
 
 template <> struct restype<half, char>             { typedef half type; };
 template <> struct restype<half, unsigned char>    { typedef half type; };
@@ -505,6 +550,8 @@ template <> struct restype<half, short>            { typedef half type; };
 template <> struct restype<half, unsigned short>   { typedef half type; };
 template <> struct restype<half, int>              { typedef half type; };
 template <> struct restype<half, unsigned int>     { typedef half type; };
+template <> struct restype<half, long>             { typedef half type; };
+template <> struct restype<half, unsigned long>    { typedef half type; };
 template <> struct restype<half, half>             { typedef half type; };
 template <> struct restype<half, float>            { typedef float type; };
 template <> struct restype<half, double>           { typedef double type; };
@@ -517,6 +564,8 @@ template <> struct restype<float, short>           { typedef float type; };
 template <> struct restype<float, unsigned short>  { typedef float type; };
 template <> struct restype<float, int>             { typedef float type; };
 template <> struct restype<float, unsigned int>    { typedef float type; };
+template <> struct restype<float, long>            { typedef float type; };
+template <> struct restype<float, unsigned long>   { typedef float type; };
 template <> struct restype<float, half>            { typedef float type; };
 template <> struct restype<float, float>           { typedef float type; };
 template <> struct restype<float, double>          { typedef double type; };
@@ -529,6 +578,8 @@ template <> struct restype<double, short>           { typedef double type; };
 template <> struct restype<double, unsigned short>  { typedef double type; };
 template <> struct restype<double, int>             { typedef double type; };
 template <> struct restype<double, unsigned int>    { typedef double type; };
+template <> struct restype<double, long>            { typedef double type; };
+template <> struct restype<double, unsigned long>   { typedef double type; };
 template <> struct restype<double, half>            { typedef double type; };
 template <> struct restype<double, float>           { typedef double type; };
 template <> struct restype<double, double>          { typedef double type; };
@@ -541,6 +592,8 @@ template <> struct restype<unsigned long long, short>           { typedef unsign
 template <> struct restype<unsigned long long, unsigned short>  { typedef unsigned long long type; };
 template <> struct restype<unsigned long long, int>             { typedef unsigned long long type; };
 template <> struct restype<unsigned long long, unsigned int>    { typedef unsigned long long type; };
+template <> struct restype<unsigned long long, long>            { typedef unsigned long long type; };
+template <> struct restype<unsigned long long, unsigned long>   { typedef unsigned long long type; };
 template <> struct restype<unsigned long long, half>            { typedef half type; };
 template <> struct restype<unsigned long long, float>           { typedef float type; };
 template <> struct restype<unsigned long long, double>          { typedef double type; };
@@ -553,6 +606,8 @@ template <> struct restype<long long, short>           { typedef long long type;
 template <> struct restype<long long, unsigned short>  { typedef long long type; };
 template <> struct restype<long long, int>             { typedef long long type; };
 template <> struct restype<long long, unsigned int>    { typedef long long type; };
+template <> struct restype<long long, long>            { typedef long long type; };
+template <> struct restype<long long, unsigned long>   { typedef long long type; };
 template <> struct restype<long long, half>            { typedef half type; };
 template <> struct restype<long long, float>           { typedef float type; };
 template <> struct restype<long long, double>          { typedef double type; };
@@ -707,6 +762,8 @@ template <> struct bitwise_restype<char, short>           { typedef short type; 
 template <> struct bitwise_restype<char, unsigned short>  { typedef unsigned short type; };
 template <> struct bitwise_restype<char, int>             { typedef int   type; };
 template <> struct bitwise_restype<char, unsigned int>    { typedef unsigned int   type; };
+template <> struct bitwise_restype<char, long>            { typedef long   type; };
+template <> struct bitwise_restype<char, unsigned long>   { typedef unsigned long   type; };
 template <> struct bitwise_restype<char, half>            { typedef half type; };
 template <> struct bitwise_restype<char, float>           { typedef float type; };
 template <> struct bitwise_restype<char, double>          { typedef double type; };
@@ -719,6 +776,8 @@ template <> struct bitwise_restype<unsigned char, short>           { typedef sho
 template <> struct bitwise_restype<unsigned char, unsigned short>  { typedef unsigned short type; };
 template <> struct bitwise_restype<unsigned char, int>             { typedef int   type; };
 template <> struct bitwise_restype<unsigned char, unsigned int>    { typedef unsigned int   type; };
+template <> struct bitwise_restype<unsigned char, long>            { typedef long   type; };
+template <> struct bitwise_restype<unsigned char, unsigned long>   { typedef unsigned long   type; };
 template <> struct bitwise_restype<unsigned char, half>            { typedef half type; };
 template <> struct bitwise_restype<unsigned char, float>           { typedef float type; };
 template <> struct bitwise_restype<unsigned char, double>          { typedef double type; };
@@ -731,6 +790,8 @@ template <> struct bitwise_restype<short, short>           { typedef short type;
 template <> struct bitwise_restype<short, unsigned short>  { typedef unsigned short type; };
 template <> struct bitwise_restype<short, int>             { typedef int   type; };
 template <> struct bitwise_restype<short, unsigned int>    { typedef unsigned int   type; };
+template <> struct bitwise_restype<short, long>            { typedef long   type; };
+template <> struct bitwise_restype<short, unsigned long>   { typedef unsigned long   type; };
 template <> struct bitwise_restype<short, half>            { typedef half type; };
 template <> struct bitwise_restype<short, float>           { typedef float type; };
 template <> struct bitwise_restype<short, double>          { typedef double type; };
@@ -743,6 +804,8 @@ template <> struct bitwise_restype<unsigned short, short>           { typedef un
 template <> struct bitwise_restype<unsigned short, unsigned short>  { typedef unsigned short type; };
 template <> struct bitwise_restype<unsigned short, int>             { typedef int type; };
 template <> struct bitwise_restype<unsigned short, unsigned int>    { typedef unsigned int type; };
+template <> struct bitwise_restype<unsigned short, long>            { typedef long type; };
+template <> struct bitwise_restype<unsigned short, unsigned long>   { typedef unsigned long type; };
 template <> struct bitwise_restype<unsigned short, half>            { typedef half type; };
 template <> struct bitwise_restype<unsigned short, float>           { typedef float type; };
 template <> struct bitwise_restype<unsigned short, double>          { typedef double type; };
@@ -755,6 +818,8 @@ template <> struct bitwise_restype<int, short>           { typedef int type; };
 template <> struct bitwise_restype<int, unsigned short>  { typedef int type; };
 template <> struct bitwise_restype<int, int>             { typedef int type; };
 template <> struct bitwise_restype<int, unsigned int>    { typedef unsigned int type; };
+template <> struct bitwise_restype<int, long>            { typedef long type; };
+template <> struct bitwise_restype<int, unsigned long>   { typedef unsigned long type; };
 template <> struct bitwise_restype<int, half>            { typedef half type; };
 template <> struct bitwise_restype<int, float>           { typedef float type; };
 template <> struct bitwise_restype<int, double>          { typedef double type; };
@@ -767,6 +832,8 @@ template <> struct bitwise_restype<unsigned int, short>           { typedef unsi
 template <> struct bitwise_restype<unsigned int, unsigned short>  { typedef unsigned int type; };
 template <> struct bitwise_restype<unsigned int, int>             { typedef unsigned int type; };
 template <> struct bitwise_restype<unsigned int, unsigned int>    { typedef unsigned int type; };
+template <> struct bitwise_restype<unsigned int, long>            { typedef unsigned long type; };
+template <> struct bitwise_restype<unsigned int, unsigned long>   { typedef unsigned long type; };
 template <> struct bitwise_restype<unsigned int, half>            { typedef half type; };
 template <> struct bitwise_restype<unsigned int, float>           { typedef float type; };
 template <> struct bitwise_restype<unsigned int, double>          { typedef double type; };
@@ -779,6 +846,8 @@ template <> struct bitwise_restype<half, short>            { typedef half type; 
 template <> struct bitwise_restype<half, unsigned short>   { typedef half type; };
 template <> struct bitwise_restype<half, int>              { typedef half type; };
 template <> struct bitwise_restype<half, unsigned int>     { typedef half type; };
+template <> struct bitwise_restype<half, long>             { typedef half type; };
+template <> struct bitwise_restype<half, unsigned long>    { typedef half type; };
 template <> struct bitwise_restype<half, half>             { typedef half type; };
 template <> struct bitwise_restype<half, float>            { typedef float type; };
 template <> struct bitwise_restype<half, double>           { typedef double type; };
@@ -791,6 +860,8 @@ template <> struct bitwise_restype<float, short>           { typedef float type;
 template <> struct bitwise_restype<float, unsigned short>  { typedef float type; };
 template <> struct bitwise_restype<float, int>             { typedef float type; };
 template <> struct bitwise_restype<float, unsigned int>    { typedef float type; };
+template <> struct bitwise_restype<float, long>            { typedef float type; };
+template <> struct bitwise_restype<float, unsigned long>   { typedef float type; };
 template <> struct bitwise_restype<float, half>            { typedef float type; };
 template <> struct bitwise_restype<float, float>           { typedef float type; };
 template <> struct bitwise_restype<float, double>          { typedef double type; };
@@ -803,6 +874,8 @@ template <> struct bitwise_restype<double, short>           { typedef double typ
 template <> struct bitwise_restype<double, unsigned short>  { typedef double type; };
 template <> struct bitwise_restype<double, int>             { typedef double type; };
 template <> struct bitwise_restype<double, unsigned int>    { typedef double type; };
+template <> struct bitwise_restype<double, long>            { typedef double type; };
+template <> struct bitwise_restype<double, unsigned long>   { typedef double type; };
 template <> struct bitwise_restype<double, half>            { typedef double type; };
 template <> struct bitwise_restype<double, float>           { typedef double type; };
 template <> struct bitwise_restype<double, double>          { typedef double type; };
@@ -815,6 +888,8 @@ template <> struct bitwise_restype<long long, short>           { typedef long lo
 template <> struct bitwise_restype<long long, unsigned short>  { typedef long long type; };
 template <> struct bitwise_restype<long long, int>             { typedef long long type; };
 template <> struct bitwise_restype<long long, unsigned int>    { typedef long long type; };
+template <> struct bitwise_restype<long long, long>            { typedef long long type; };
+template <> struct bitwise_restype<long long, unsigned long>   { typedef long long type; };
 template <> struct bitwise_restype<long long, half >           { typedef half type; };
 template <> struct bitwise_restype<long long, float>           { typedef float type; };
 template <> struct bitwise_restype<long long, double>          { typedef double type; };
@@ -827,6 +902,8 @@ template <> struct bitwise_restype<unsigned long long, short>           { typede
 template <> struct bitwise_restype<unsigned long long, unsigned short>  { typedef unsigned long long type; };
 template <> struct bitwise_restype<unsigned long long, int>             { typedef unsigned long long type; };
 template <> struct bitwise_restype<unsigned long long, unsigned int>    { typedef unsigned long long type; };
+template <> struct bitwise_restype<unsigned long long, long>            { typedef unsigned long long type; };
+template <> struct bitwise_restype<unsigned long long, unsigned long>   { typedef unsigned long long type; };
 template <> struct bitwise_restype<unsigned long long, half>            { typedef half type; };
 template <> struct bitwise_restype<unsigned long long, float>           { typedef float type; };
 template <> struct bitwise_restype<unsigned long long, double>          { typedef double type; };
@@ -847,6 +924,8 @@ template <> struct restype_ex<char, short>           { typedef int type; };
 template <> struct restype_ex<char, unsigned short>  { typedef int type; };
 template <> struct restype_ex<char, int>             { typedef long long   type; };
 template <> struct restype_ex<char, unsigned int>    { typedef long long   type; };
+template <> struct restype_ex<char, long>            { typedef long long   type; };
+template <> struct restype_ex<char, unsigned long>   { typedef long long   type; };
 template <> struct restype_ex<char, half>            { typedef half  type; };
 template <> struct restype_ex<char, float>           { typedef float type; };
 template <> struct restype_ex<char, double>           { typedef double type; };
@@ -859,6 +938,8 @@ template <> struct restype_ex<unsigned char, short>           { typedef int type
 template <> struct restype_ex<unsigned char, unsigned short>  { typedef int type; };
 template <> struct restype_ex<unsigned char, int>             { typedef long long   type; };
 template <> struct restype_ex<unsigned char, unsigned int>    { typedef long long   type; };
+template <> struct restype_ex<unsigned char, long>            { typedef long long   type; };
+template <> struct restype_ex<unsigned char, unsigned long>   { typedef long long   type; };
 template <> struct restype_ex<unsigned char, half>            { typedef half  type; };
 template <> struct restype_ex<unsigned char, float>           { typedef float type; };
 template <> struct restype_ex<unsigned char, double>          { typedef double type; };
@@ -871,6 +952,8 @@ template <> struct restype_ex<short, short>           { typedef int type; };
 template <> struct restype_ex<short, unsigned short>  { typedef int type; };
 template <> struct restype_ex<short, int>             { typedef long long   type; };
 template <> struct restype_ex<short, unsigned int>    { typedef long long   type; };
+template <> struct restype_ex<short, long>            { typedef long long   type; };
+template <> struct restype_ex<short, unsigned long>   { typedef long long   type; };
 template <> struct restype_ex<short, half>            { typedef half  type; };
 template <> struct restype_ex<short, float>           { typedef float type; };
 template <> struct restype_ex<short, double>          { typedef double type; };
@@ -883,6 +966,8 @@ template <> struct restype_ex<unsigned short, short>           { typedef int typ
 template <> struct restype_ex<unsigned short, unsigned short>  { typedef int type; };
 template <> struct restype_ex<unsigned short, int>             { typedef long long type; };
 template <> struct restype_ex<unsigned short, unsigned int>    { typedef long long type; };
+template <> struct restype_ex<unsigned short, long>            { typedef long long type; };
+template <> struct restype_ex<unsigned short, unsigned long>   { typedef long long type; };
 template <> struct restype_ex<unsigned short, half>            { typedef half type; };
 template <> struct restype_ex<unsigned short, float>           { typedef float type; };
 template <> struct restype_ex<unsigned short, double>          { typedef double type; };
@@ -895,6 +980,8 @@ template <> struct restype_ex<int, short>           { typedef long long type; };
 template <> struct restype_ex<int, unsigned short>  { typedef long long type; };
 template <> struct restype_ex<int, int>             { typedef long long type; };
 template <> struct restype_ex<int, unsigned int>    { typedef long long type; };
+template <> struct restype_ex<int, long>            { typedef long long type; };
+template <> struct restype_ex<int, unsigned long>   { typedef long long type; };
 template <> struct restype_ex<int, half>            { typedef half type; };
 template <> struct restype_ex<int, float>           { typedef float type; };
 template <> struct restype_ex<int, double>          { typedef double type; };
@@ -907,6 +994,8 @@ template <> struct restype_ex<unsigned int, short>           { typedef long long
 template <> struct restype_ex<unsigned int, unsigned short>  { typedef long long type; };
 template <> struct restype_ex<unsigned int, int>             { typedef long long type; };
 template <> struct restype_ex<unsigned int, unsigned int>    { typedef long long type; };
+template <> struct restype_ex<unsigned int, long>            { typedef long long type; };
+template <> struct restype_ex<unsigned int, unsigned long>   { typedef long long type; };
 template <> struct restype_ex<unsigned int, half>            { typedef half type; };
 template <> struct restype_ex<unsigned int, float>           { typedef float type; };
 template <> struct restype_ex<unsigned int, double>          { typedef double type; };
@@ -919,6 +1008,8 @@ template <> struct restype_ex<half, short>            { typedef half type; };
 template <> struct restype_ex<half, unsigned short>   { typedef half type; };
 template <> struct restype_ex<half, int>              { typedef half type; };
 template <> struct restype_ex<half, unsigned int>     { typedef half type; };
+template <> struct restype_ex<half, long>             { typedef half type; };
+template <> struct restype_ex<half, unsigned long>    { typedef half type; };
 template <> struct restype_ex<half, half>             { typedef half type; };
 template <> struct restype_ex<half, float>            { typedef float type; };
 template <> struct restype_ex<half, double>           { typedef double type; };
@@ -931,6 +1022,8 @@ template <> struct restype_ex<float, short>           { typedef float type; };
 template <> struct restype_ex<float, unsigned short>  { typedef float type; };
 template <> struct restype_ex<float, int>             { typedef float type; };
 template <> struct restype_ex<float, unsigned int>    { typedef float type; };
+template <> struct restype_ex<float, long>            { typedef float type; };
+template <> struct restype_ex<float, unsigned long>   { typedef float type; };
 template <> struct restype_ex<float, half>            { typedef float type; };
 template <> struct restype_ex<float, float>           { typedef float type; };
 template <> struct restype_ex<float, double>          { typedef double type; };
@@ -943,6 +1036,8 @@ template <> struct restype_ex<double, short>           { typedef double type; };
 template <> struct restype_ex<double, unsigned short>  { typedef double type; };
 template <> struct restype_ex<double, int>             { typedef double type; };
 template <> struct restype_ex<double, unsigned int>    { typedef double type; };
+template <> struct restype_ex<double, long>            { typedef double type; };
+template <> struct restype_ex<double, unsigned long>   { typedef double type; };
 template <> struct restype_ex<double, half>            { typedef double type; };
 template <> struct restype_ex<double, float>           { typedef double type; };
 template <> struct restype_ex<double, double>          { typedef double type; };
@@ -955,6 +1050,8 @@ template <> struct restype_ex<long long, short>           { typedef long long ty
 template <> struct restype_ex<long long, unsigned short>  { typedef long long type; };
 template <> struct restype_ex<long long, int>             { typedef long long type; };
 template <> struct restype_ex<long long, unsigned int>    { typedef long long type; };
+template <> struct restype_ex<long long, long>            { typedef long long type; };
+template <> struct restype_ex<long long, unsigned long>   { typedef long long type; };
 template <> struct restype_ex<long long, half>            { typedef half type; };
 template <> struct restype_ex<long long, float>           { typedef float type; };
 template <> struct restype_ex<long long, double>          { typedef double type; };
@@ -967,6 +1064,8 @@ template <> struct restype_ex<unsigned long long, short>           { typedef lon
 template <> struct restype_ex<unsigned long long, unsigned short>  { typedef long long type; };
 template <> struct restype_ex<unsigned long long, int>             { typedef long long type; };
 template <> struct restype_ex<unsigned long long, unsigned int>    { typedef long long type; };
+template <> struct restype_ex<unsigned long long, long>            { typedef long long type; };
+template <> struct restype_ex<unsigned long long, unsigned long>   { typedef long long type; };
 template <> struct restype_ex<unsigned long long, half>            { typedef half type; };
 template <> struct restype_ex<unsigned long long, float>           { typedef float type; };
 template <> struct restype_ex<unsigned long long, double>          { typedef double type; };

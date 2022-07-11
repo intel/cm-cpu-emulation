@@ -28,16 +28,16 @@ using CmEmuThreadBroadcastEl = uint32_t;
 class EsimdemuKernel
 {
  private:
-  const std::vector<uint32_t> &m_groupDim;
-  const std::vector<uint32_t> &m_localDim;
+  std::vector<uint32_t> m_groupDim;
+  std::vector<uint32_t> m_localDim;
   uint32_t m_parallel;
   fptrVoid m_entryPoint;
 
  public:
   ESIMD_API
   EsimdemuKernel(fptrVoid entryPoint,
-                 const std::vector<uint32_t> &groupDim,
-                 const std::vector<uint32_t> &localDim);
+                 const uint32_t *groupDim,
+                 const uint32_t *localDim);
 
   ESIMD_API
   void launchMT(const uint32_t argSize,

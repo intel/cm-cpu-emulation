@@ -1,8 +1,4 @@
 
-if(WIN32)
-        message(FATAL_ERROR "\nWindows build is not supported yet.\n")
-endif()
-
 include(FindPackageHandleStandardArgs)
 
 find_path(LibFFI_INCLUDE_DIR

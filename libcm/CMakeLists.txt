@@ -35,6 +35,7 @@ set(LIBCM_HEADERS
   cm_color.h
   libcm_common.h
   libcm_def.h
+  cm_has_instr.h
   cm_common_macros.h
   cm_internal.h
   cm_internal_emu.h

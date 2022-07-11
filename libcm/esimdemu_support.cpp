@@ -41,9 +41,11 @@ std::vector<CmEmuThreadBroadcastEl> esimd_xthread_broadcast_buffer;
 
 ESIMD_API
 EsimdemuKernel::EsimdemuKernel(const fptrVoid entryPoint,
-                               const std::vector<uint32_t> &groupDim,
-                               const std::vector<uint32_t> &localDim)
-  : m_entryPoint(entryPoint), m_groupDim(groupDim), m_localDim(localDim)
+                               const uint32_t *groupDim,
+                               const uint32_t *localDim)
+  : m_entryPoint(entryPoint) ,
+    m_groupDim({groupDim[0], groupDim[1], groupDim[2]}),
+    m_localDim({localDim[0], localDim[1], localDim[2]})
 {
   m_parallel = (uint32_t)std::thread::hardware_concurrency();
   if (m_parallel == 0)

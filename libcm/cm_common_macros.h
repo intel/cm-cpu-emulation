@@ -35,7 +35,7 @@ struct WarnMe{ \
 #ifndef AUTO_CM_MODE_SET
     /// Defined these macros for MSVC and GCC.
 #if !defined(CM_GENX)
-    #define CM_GENX
+    #define CM_GENX 0xffff
 #endif // !defined(CM_GENX)
     #define CM_EMU
     #define _GENX_MAIN_
@@ -125,3 +125,5 @@ do {                                                            \
 #elif defined(gen9)
 #define CM_GEN9
 #endif
+
+#include "cm_has_instr.h"

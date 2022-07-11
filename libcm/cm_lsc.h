@@ -783,22 +783,20 @@ CM_INLINE
     return cm_emu_ptr_load<T, VS, N, MASK>(Ptr, Offset, Pred);
 }
 
-// Block-load with a base-pointer to the buffer
-//template <typename T, unsigned NElts, DataSize DS = DataSize::Default,
-//    CacheHint L1H = CacheHint::Default,
-//    CacheHint L3H = CacheHint::Default>
-//    CM_INLINE
-//    auto cm_ptr_load(T* Ptr, unsigned Offset) {
-//    constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
-//    constexpr DataSize DS = details::lsc_data_size<T, DataSize::Default>();
-//
-//    vector<unsigned, 1> _offsets = Offset;
-//    vector<short, 1> _pred = 1;
-//
-//    constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, 1>();
-//
-//    return cm_emu_ptr_load<T, VS, 1, MASK>(Ptr, _offsets, _pred);
-//}
+template <typename T, unsigned NElts,
+    DataSize DS = DataSize::Default, CacheHint L1H = CacheHint::Default,
+    CacheHint L3H = CacheHint::Default>
+CM_INLINE
+auto cm_ptr_load(T* Ptr, unsigned Offset)
+{
+    constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
+    constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, 1>();
+
+    vector<unsigned, 1> _offsets = Offset;
+    vector<ushort, 1> _pred = 1;
+
+    return cm_emu_ptr_load<T, VS, 1, MASK>(Ptr, _offsets, _pred);
+}
 
 template <typename T, VectorSize VS, DataSize DS = details::lsc_data_size<T, DataSize::Default>(),
     CacheHint L1H = CacheHint::Default,

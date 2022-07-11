@@ -1399,7 +1399,10 @@ constexpr uint cm_dpas_bits_precision(CmPrecisionType precisionType)
     return
         precisionType == CM_PRECISION_TF32 ?
             32 :
-        precisionType == CM_PRECISION_BF || precisionType == CM_PRECISION_HF ?
+#ifdef CM_HAS_BF16
+        precisionType == CM_PRECISION_BF ||
+#endif
+        precisionType == CM_PRECISION_HF ?
             16 :
         precisionType == CM_PRECISION_S8 || precisionType == CM_PRECISION_U8
             ? 8 :
@@ -1431,8 +1434,14 @@ template <
     constexpr uint ops_per_chan =
         src1_precision == CM_PRECISION_TF32 || src2_precision == CM_PRECISION_TF32 ?
         1 :
-        src1_precision == CM_PRECISION_BF || src1_precision == CM_PRECISION_HF ||
-        src2_precision == CM_PRECISION_BF || src2_precision == CM_PRECISION_HF ?
+#ifdef CM_HAS_BF16
+        src1_precision == CM_PRECISION_BF ||
+#endif
+        src1_precision == CM_PRECISION_HF ||
+#ifdef CM_HAS_BF16
+        src2_precision == CM_PRECISION_BF ||
+#endif
+        src2_precision == CM_PRECISION_HF ?
         2 :
         src1_precision == CM_PRECISION_S8 || src1_precision == CM_PRECISION_U8 ||
         src2_precision == CM_PRECISION_S8 ||
@@ -1470,16 +1479,24 @@ template <
         pvcBfOrHfDest = pvcBfDest || pvcHfDest,
 
         pvcBfDestChecks =
+#ifdef CM_HAS_BF16
             pvcBfDest &&
             src1_precision == CM_PRECISION_BF &&
-            src2_precision == CM_PRECISION_BF,
+            src2_precision == CM_PRECISION_BF
+#else
+            false
+#endif
+            ,
 
         pvcHfDestChecks =
             pvcHfDest && (
             (src1_precision == CM_PRECISION_HF &&
-             src2_precision == CM_PRECISION_HF) ||
-            (src1_precision == CM_PRECISION_BF &&
-             src2_precision == CM_PRECISION_BF)),
+             src2_precision == CM_PRECISION_HF)
+#ifdef CM_HAS_BF16
+            || (src1_precision == CM_PRECISION_BF &&
+             src2_precision == CM_PRECISION_BF)
+#endif
+            ),
 
         destTypeChk =
             (!pvcBfOrHfDest && is_fp_or_dword_type<RT>::value) ||
@@ -1559,6 +1576,7 @@ template <
                                 src2.get(V * 8 + k / ops_per_chan), src2_signed);
                         simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
                     }
+#ifdef CM_HAS_BF16
                     else if (src2_precision == CM_PRECISION_BF)
                     {
                         static_assert(std::is_standard_layout_v<float> && sizeof(uint32_t) == sizeof(float));
@@ -1568,6 +1586,7 @@ template <
                                 src2.get(V * 8 + k / ops_per_chan), src2_signed) << 16;
                         simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
                     }
+#endif
                     else if (src2_precision == CM_PRECISION_HF)
                     {
                         static_assert(std::is_standard_layout_v<half> && sizeof(short) == sizeof(half));
@@ -3707,15 +3726,22 @@ void assert_slm_access () {
 }
 
 template <typename T, uint N, typename S,
-          template<typename ElmTy1, unsigned SZ> typename AddrTy,
-          template<typename ElmTy2, unsigned SZ> typename DestTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
+          template<typename ElmTy1, unsigned SZ> typename AddrTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
 CM_API typename std::enable_if<std::is_same<S, uint>::value || std::is_same<S, ushort>::value>::type
-cm_slm_read(uint slmBuffer, const AddrTy<S, N> &offsets, DestTy<T, N> &dst) {
+cm_slm_read(uint slmBuffer, const AddrTy<S, N> &offsets, vector_ref<T, N> dst) {
     static_assert((N == 8 || N == 16 || N == 32) && ((sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4)));
     assert_slm_access<T, N>();
     const auto base = __cm_emu_get_slm() + slmBuffer;
     for (int i = 0; i < N; i++) // NB: implemented with Byte-Scattered-Read in Gen7+
         dst(i) = *reinterpret_cast<T*>(base + sizeof(T) * offsets(i));
+}
+
+template <typename T, uint N, typename S,
+          template<typename ElmTy1, unsigned SZ> typename AddrTy> // Supported: N = 8 or 16; T = Byte, Word, or Dword
+CM_API typename std::enable_if<std::is_same<S, uint>::value || std::is_same<S, ushort>::value>::type
+cm_slm_read(uint slmBuffer, const AddrTy<S, N> &offsets, vector<T, N> &dst) {
+    vector_ref<T, N> dest = dst;
+    cm_slm_read(slmBuffer, offsets, dest);
 }
 
 template <class T, uint SZ>
@@ -5437,7 +5463,8 @@ template <typename T, uint R, uint C> _GENX_ inline void cm_svm_scatter_read(mat
     cm_svm_scatter_read64(v_Addr64, v_Dst);
 }
 
-template <typename T, uint N> _GENX_ inline void cm_svm_scatter_write(vector<svmptr_t, N> v_Addr, vector_ref<T, N> v_Dst)
+template <typename T, uint N, template <typename T2, unsigned N2> typename AddrTy>
+_GENX_ inline void cm_svm_scatter_write(const AddrTy<svmptr_t, N> &v_Addr, vector_ref<T, N> v_Dst)
 {   vector<uint64_t, N> v_Addr64(v_Addr);
     cm_svm_scatter_write64(v_Addr64, v_Dst);
 }
@@ -5727,12 +5754,11 @@ cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr,
     cm_svm_atomic_generic(op, v_Addr, v_Src0, src1, v_Dst);
 }
 
-template <typename T1>
+template <typename T, unsigned N>
 CM_API void
-cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr, T1 &v_Dst)
+cm_svm_atomic64(CmAtomicOpType op, vector<uint64_t, 8> &v_Addr, vector_ref<T, N> v_Dst)
 {
-    T1 src0 = 0;
-    T1 src1 = 0;
+    vector<T, N> src0 = 0, src1 = 0;
     switch (op) {
         case ATOMIC_INC:
         case ATOMIC_DEC:
@@ -5774,8 +5800,8 @@ _GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, 
     cm_svm_atomic64(op, v_Addr64, v_Dst, v_Src0);
 }
 
-template <typename T1>
-_GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, T1 &v_Dst)
+template <typename T, unsigned N>
+_GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, vector_ref<T, N> v_Dst)
 {
     vector<uint64_t, 8> v_Addr64;
     v_Addr64[0] = v_Addr[0];
@@ -5787,6 +5813,13 @@ _GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, 
     v_Addr64[6] = v_Addr[6];
     v_Addr64[7] = v_Addr[7];
     cm_svm_atomic64(op, v_Addr64, v_Dst);
+}
+
+template <typename T, unsigned N>
+_GENX_ inline void cm_svm_atomic(CmAtomicOpType op, vector<svmptr_t, 8> v_Addr, vector<T, N> &v_Dst)
+{
+    vector_ref<T, N> tmp_Dst = v_Dst;
+    cm_svm_atomic(op, v_Addr, tmp_Dst);
 }
 
 #endif /* CM_INTRIN_H */
