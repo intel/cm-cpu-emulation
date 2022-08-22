@@ -21,8 +21,7 @@ SHIM_EXPORT(zeContextEvictImage);
 } // extern "C"
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextCreate)(
-    ze_driver_handle_t hDriver,
-    const ze_context_desc_t *desc,
+    ze_driver_handle_t hDriver, const ze_context_desc_t *desc,
     ze_context_handle_t *phContext) {
   auto &driver = shim::ze::Driver::Instance();
 
@@ -45,7 +44,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextCreate)(
     return ZE_RESULT_ERROR_DEVICE_LOST;
   }
 
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hdev));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hdev));
 
   try {
     auto ctx = shim::MakeIntrusive<shim::ze::Context>(dev);
@@ -58,24 +57,26 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextDestroy)(
-    ze_context_handle_t hContext) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeContextDestroy)(ze_context_handle_t hContext) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext), false);
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext), false);
 
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextGetStatus)(
-    ze_context_handle_t hContext) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeContextGetStatus)(ze_context_handle_t hContext) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
 
   return ZE_RESULT_SUCCESS;
 }

@@ -112,12 +112,15 @@ private:
         bool fromCallback = (bool)(params & kFromCallback),
         class T>
     void set_(T v) {
-        if constexpr (setDefaults)
-            isSettingDefaults_ = true;
-        else
-            isUserDefined_ = true;
 
-        Value& target = setDefaults ? defaultV : actualV;
+        if (!isSettingDefaults_){
+            if constexpr (setDefaults)
+                isSettingDefaults_ = true;
+            else
+                isUserDefined_ = true;
+        }
+
+        Value& target = isSettingDefaults_ ? defaultV : actualV;
         if constexpr (std::is_same_v<bool,T>) {
             if constexpr (setDefaults) type = Type::Bool;
             if(setAll) {

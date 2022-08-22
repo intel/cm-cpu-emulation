@@ -174,28 +174,21 @@ template <AtomicOp Op> constexpr int lsc_atomic_nsrcs() {
 
 // Return the default SIMT width.
 template <typename T = void> constexpr int lsc_default_simt() {
-#if defined(CM_XEHPG)
-  return 16; // DG2, SIMD16
-#elif defined(CM_XEHPC)
-  return 32; // PVC+, SIMD32
-#else
-  // static_assert(false, "Target Platform definition is missing - CM_XEHPG/7");
-  return 0;
-#endif
+#if CM_GENX >= 1280
+  return 32; // SIMD32: PVC and later
+#else // CM_GENX < 1280
+  return 16; // SIMD16: DG2
+#endif // CM_GENX >= 1280
 }
 
-// SIMD/SIMT width sanity check
+// Check for valid SIMT width.
 template <int N>
-constexpr bool lsc_check_simt()
-{
-#if defined(CM_XEHPG)
-  return ((N == 16) || (N == 8)); // DG2, SIMD8/16
-#elif defined(CM_XEHPC)
-  return ((N == 32) || (N == 16)); // PVC+, SIMD16/32
-#else
-  // static_assert(false, "Target Platform definition is missing - CM_XEHPG/7");
-  return false;
-#endif
+constexpr bool lsc_check_simt() {
+#if CM_GENX >= 1280
+  return ((N == 32) || (N == 16)); // SIMD32: PVC
+#else // CM_GENX < 1280
+  return ((N == 16) || (N == 8)); // SIMD16: DG2
+#endif // CM_GENX >= 1280
 }
 
 // Load/Store align bitmask generator for 1-D vector load/store

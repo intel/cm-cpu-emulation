@@ -16,31 +16,24 @@ struct _cl_platform_id {
   cl_icd_dispatch *dispatch;
 };
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clGetPlatformIDs)(cl_uint          num_entries,
-                            cl_platform_id * platforms,
-                            cl_uint *        num_platforms) CL_API_SUFFIX__VERSION_1_0;
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetPlatformIDs)(
+    cl_uint num_entries, cl_platform_id *platforms,
+    cl_uint *num_platforms) CL_API_SUFFIX__VERSION_1_0;
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clGetPlatformInfo)(cl_platform_id   platform,
-                             cl_platform_info param_name,
-                             size_t           param_value_size,
-                             void *           param_value,
-                             size_t *         param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetPlatformInfo)(
+    cl_platform_id platform, cl_platform_info param_name,
+    size_t param_value_size, void *param_value,
+    size_t *param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clIcdGetPlatformIDsKHR)(cl_uint          num_entries,
-                                  cl_platform_id * platforms,
-                                  cl_uint *        num_platforms);
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clIcdGetPlatformIDsKHR)(
+    cl_uint num_entries, cl_platform_id *platforms, cl_uint *num_platforms);
 }
 
 namespace shim {
 namespace cl {
 
 struct Platform : public _cl_platform_id {
-  Platform(cl_icd_dispatch *dispatch) {
-    this->dispatch = dispatch;
-  }
+  Platform(cl_icd_dispatch *dispatch) { this->dispatch = dispatch; }
 };
 
 } // namespace cl

@@ -9,13 +9,12 @@ SPDX-License-Identifier: MIT
 #ifndef CM_EMU_SHIM_ZE_SAMPLER_H
 #define CM_EMU_SHIM_ZE_SAMPLER_H
 
-#include "ze.h"
 #include "intrusive_pointer.h"
+#include "ze.h"
 
 namespace shim {
 namespace ze {
-struct Sampler : public IntrusiveRefCounter<Sampler> {
-};
+struct Sampler : public IntrusiveRefCounter<Sampler> {};
 } // namespace ze
 } // namespace shim
 
@@ -23,7 +22,7 @@ extern "C" {
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeSamplerCreate)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice,
     const ze_sampler_desc_t *desc, ze_sampler_handle_t *phSampler);
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeSamplerDestroy)(
-    ze_sampler_handle_t hSampler);
+ZE_APIEXPORT ze_result_t ZE_APICALL
+    SHIM_CALL(zeSamplerDestroy)(ze_sampler_handle_t hSampler);
 } // extern "C"
 #endif // CM_EMU_SHIM_ZE_SAMPLER_H

@@ -1467,11 +1467,11 @@ template <
 
 #if defined(CM_XEHPC)
     constexpr bool isPvc = true;
-    constexpr size_t SIMDSize = 16;
 #else
     constexpr bool isPvc = false;
-    constexpr size_t SIMDSize = 8;
 #endif
+    constexpr size_t SIMDSize = CM_GENX >= 1280
+        ? 16 : 8;
 
     constexpr bool
         pvcHfDest = isPvc && std::is_same<RT, half>::value,
@@ -1503,7 +1503,7 @@ template <
             (pvcBfOrHfDest && (pvcBfDestChecks || pvcHfDestChecks)),
 
         srcTypeChk =
-            is_dword_type<T1>::value && is_dword_type<T2>::value,
+            (is_dword_type<T1>::value && is_dword_type<T2>::value),
 
         destSizeChk = SZ >= SIMDSize * repeat_count,
 
@@ -1524,10 +1524,11 @@ template <
     CM_STATIC_ERROR (src2CountChk, "dpas: invalid size for src2.");
 
     using TmpAccEl = typename std::conditional<
-            pvcBfOrHfDest,
-            float,
-            typename restype_ex<RT, typename restype_ex<T1, T2>::type>::type
-        >::type;
+                pvcBfOrHfDest,
+                float,
+                typename restype_ex<RT, typename restype_ex<T1, T2>::type>::type
+            >::type
+        ;
 
     vector<
         TmpAccEl,
@@ -1557,7 +1558,8 @@ template <
 
         for (uint s = 0; s < systolic_depth; s++)
         {
-            src1_ops_per_dword = 32 / (ops_per_chan * src1_el_bits);
+            src1_ops_per_dword =
+                32 / (ops_per_chan * src1_el_bits);
             //U = s / src1_ops_per_dword;
             U = s >> uint(log2(src1_ops_per_dword));
 
@@ -1567,7 +1569,7 @@ template <
                 {
                     p = d + (s % src1_ops_per_dword) * ops_per_chan;
 
-                    if (src2_precision == CM_PRECISION_TF32)
+                    if constexpr (src2_precision == CM_PRECISION_TF32)
                     {
                         static_assert(std::is_standard_layout_v<float> && sizeof(uint32_t) == sizeof(float));
                         const auto s1 = extract<uint32_t>(src1_el_bits, p*src1_el_bits,
@@ -1577,7 +1579,7 @@ template <
                         simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
                     }
 #ifdef CM_HAS_BF16
-                    else if (src2_precision == CM_PRECISION_BF)
+                    else if constexpr (src2_precision == CM_PRECISION_BF)
                     {
                         static_assert(std::is_standard_layout_v<float> && sizeof(uint32_t) == sizeof(float));
                         const auto s1 = extract<uint32_t>(src1_el_bits, p*src1_el_bits,
@@ -1587,7 +1589,7 @@ template <
                         simdAcc(n) += reinterpret_cast<const float&>(s2) * reinterpret_cast<const float&>(s1);
                     }
 #endif
-                    else if (src2_precision == CM_PRECISION_HF)
+                    else if constexpr (src2_precision == CM_PRECISION_HF)
                     {
                         static_assert(std::is_standard_layout_v<half> && sizeof(short) == sizeof(half));
                         const auto s1 = extract<short>(src1_el_bits, p*src1_el_bits,
@@ -2697,6 +2699,20 @@ cm_sqrt(const T& src0, const typename uint_type<T, T>::type flags = 0)
     return v(0);
 }
 
+template <typename S, uint SZ>
+CM_API typename std::enable_if_t<std::is_same_v<S, float>
+    || std::is_same_v<S, double>, vector<S, SZ>>
+cm_sqrt_ieee(const stream<S, SZ>& src0, const uint flags = 0)
+{
+    vector<S, SZ> retv;
+
+    for (int i = 0; i < SZ; i++) {
+        SIMDCF_ELEMENT_SKIP(i);
+        retv(i) = CmEmulSys::satur<S>::saturate(sqrt(src0.get(i)), flags);
+    }
+    return retv;
+}
+
 //dst = 1.0/sqrt(src)
 template <uint SZ>
 CM_API vector<float, SZ>
@@ -2807,16 +2823,16 @@ cm_pow(const T& src0, const T& src1,
 #endif
 
 /// cm_div_ieee : start
-
-template <uint SZ>
-CM_API vector<float, SZ>
-cm_div_ieee(const stream<float, SZ>& src0,
-            const stream<float, SZ>& src1,
+template <typename S, uint SZ>
+CM_API typename std::enable_if_t<std::is_same_v<S, float>
+    || std::is_same_v<S, double>, vector<S, SZ>>
+cm_div_ieee(const stream<S, SZ>& src0,
+            const stream<S, SZ>& src1,
             const uint flags = 0)
 {
-    vector<float, SZ> divinv;
-    vector<float, SZ> retv;
-    float             oneret;
+    vector<S, SZ> divinv;
+    vector<S, SZ> retv;
+    S             oneret;
 
     for (int idx = 0; idx < SZ; idx += 1)
     {
@@ -2824,27 +2840,39 @@ cm_div_ieee(const stream<float, SZ>& src0,
         if (src1.get(idx) == 0.0f)
         {
             /// Handle Divide-by-zero
-            retv(idx) = (src0.get(idx) < 0) ? (-INFINITY) : INFINITY;
+            if (std::isnan(src0.get(idx)))
+            {
+                retv(idx) = src0.get(idx);
+            }
+            else if (src0.get(idx) == 0.0)
+            {
+                retv(idx) = -NAN;
+            }
+            else
+            {
+                retv(idx) = (std::signbit(src0.get(idx)) ^ std::signbit(src1.get(idx))) ? (-INFINITY) : INFINITY;
+            }
         }
         else
         {
             oneret = src0.get(idx) / src1.get(idx);
-            retv(idx) = CmEmulSys::satur<float>::saturate(oneret, flags);
+            retv(idx) = CmEmulSys::satur<S>::saturate(oneret, flags);
         }
     }
 
     return retv;
 }
 
-template <uint SZ>
-CM_API vector<float, SZ>
-cm_div_ieee(const float& src0,
-            const stream<float, SZ>& src1,
+template <typename S, uint SZ>
+CM_API typename std::enable_if_t<std::is_same_v<S, float>
+    || std::is_same_v<S, double>, vector<S, SZ>>
+cm_div_ieee(const S& src0,
+            const stream<S, SZ>& src1,
             const uint flags = 0)
 {
-    vector<float, SZ> v0;
-    vector<float, SZ> v1;
-    vector<float, SZ> retv;
+    vector<S, SZ> v0;
+    vector<S, SZ> v1;
+    vector<S, SZ> retv;
 
     for (int i = 0; i < SZ; i += 1)
     {
@@ -2857,15 +2885,16 @@ cm_div_ieee(const float& src0,
     return retv;
 }
 
-template <uint SZ>
-CM_API vector<float, SZ>
-cm_div_ieee(const stream<float, SZ>& src0,
-            const float& src1,
+template <typename S, uint SZ>
+CM_API typename std::enable_if_t<std::is_same_v<S, float>
+    || std::is_same_v<S, double>, vector<S, SZ>>
+cm_div_ieee(const stream<S, SZ>& src0,
+            const S& src1,
             const uint flags = 0)
 {
-    vector<float, SZ> v0;
-    vector<float, SZ> v1;
-    vector<float, SZ> retv;
+    vector<S, SZ> v0;
+    vector<S, SZ> v1;
+    vector<S, SZ> retv;
 
     for (int i = 0; i < SZ; i += 1)
     {
@@ -2878,15 +2907,16 @@ cm_div_ieee(const stream<float, SZ>& src0,
     return retv;
 }
 
-template <typename T>
-CM_API float
+template <typename S, typename T>
+CM_API typename std::enable_if_t<std::is_same_v<S, float>
+    || std::is_same_v<S, double>, S>
 cm_div_ieee(const T& src0,
             const T& src1,
             const typename uint_type<T, T>::type flags = 0)
 {
     static const bool conformable1 = fptype<T>::value;
-    vector<float, 1> v(src0);
-    vector<float, 1> v1(src1);
+    vector<S, 1> v(src0);
+    vector<S, 1> v1(src1);
     v = cm_div_ieee(v, v1, flags);
     return v(0);
 }

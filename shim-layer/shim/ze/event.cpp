@@ -43,7 +43,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventPoolCreate)(
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx = reinterpret_cast<shim::ze::Context*>(hContext);
+  shim::IntrusivePtr<shim::ze::Context> ctx =
+      reinterpret_cast<shim::ze::Context *>(hContext);
 
   try {
     auto pool = shim::MakeIntrusive<shim::ze::EventPool>(ctx, desc->count);
@@ -57,13 +58,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventPoolCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventPoolDestroy)(
-    ze_event_pool_handle_t hEventPool) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventPoolDestroy)(ze_event_pool_handle_t hEventPool) {
   if (hEventPool == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::EventPool> pool(reinterpret_cast<shim::ze::EventPool*>(hEventPool), false);
+  shim::IntrusivePtr<shim::ze::EventPool> pool(
+      reinterpret_cast<shim::ze::EventPool *>(hEventPool), false);
 
   return ZE_RESULT_SUCCESS;
 }
@@ -83,7 +85,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventCreate)(
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::EventPool> pool(reinterpret_cast<shim::ze::EventPool*>(hEventPool));
+  shim::IntrusivePtr<shim::ze::EventPool> pool(
+      reinterpret_cast<shim::ze::EventPool *>(hEventPool));
 
   if (desc->index >= pool->pool_.size()) {
     return ZE_RESULT_ERROR_INVALID_ARGUMENT;
@@ -105,13 +108,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventDestroy)(
-    ze_event_handle_t hEvent) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventDestroy)(ze_event_handle_t hEvent) {
   if (hEvent == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Event> event(reinterpret_cast<shim::ze::Event*>(hEvent), false);
+  shim::IntrusivePtr<shim::ze::Event> event(
+      reinterpret_cast<shim::ze::Event *>(hEvent), false);
 
   // Event is used only by pool and current thread
   if (event->UseCount() == 2) {
@@ -132,30 +136,32 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventPoolOpenIpcHandle)(
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventPoolCloseIpcHandle)(
-    ze_event_pool_handle_t hEventPool) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventPoolCloseIpcHandle)(ze_event_pool_handle_t hEventPool) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventHostSignal)(
-    ze_event_handle_t hEvent) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventHostSignal)(ze_event_handle_t hEvent) {
   if (hEvent == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Event> event(reinterpret_cast<shim::ze::Event*>(hEvent));
+  shim::IntrusivePtr<shim::ze::Event> event(
+      reinterpret_cast<shim::ze::Event *>(hEvent));
   event->signalled_ = true;
 
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventHostSynchronize)(
-    ze_event_handle_t hEvent, uint64_t timeout) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventHostSynchronize)(ze_event_handle_t hEvent, uint64_t timeout) {
   if (hEvent == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Event> event(reinterpret_cast<shim::ze::Event*>(hEvent));
+  shim::IntrusivePtr<shim::ze::Event> event(
+      reinterpret_cast<shim::ze::Event *>(hEvent));
 
   if (event->signalled_) {
     return ZE_RESULT_SUCCESS;
@@ -181,13 +187,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventHostSynchronize)(
   return ZE_RESULT_NOT_READY;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventQueryStatus)(
-    ze_event_handle_t hEvent) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventQueryStatus)(ze_event_handle_t hEvent) {
   if (hEvent == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Event> event(reinterpret_cast<shim::ze::Event*>(hEvent));
+  shim::IntrusivePtr<shim::ze::Event> event(
+      reinterpret_cast<shim::ze::Event *>(hEvent));
 
   if (event->signalled_) {
     return ZE_RESULT_SUCCESS;
@@ -205,13 +212,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventQueryStatus)(
   return ZE_RESULT_NOT_READY;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeEventHostReset)(
-    ze_event_handle_t hEvent) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeEventHostReset)(ze_event_handle_t hEvent) {
   if (hEvent == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Event> event(reinterpret_cast<shim::ze::Event*>(hEvent));
+  shim::IntrusivePtr<shim::ze::Event> event(
+      reinterpret_cast<shim::ze::Event *>(hEvent));
   event->signalled_ = false;
   event->event_ = nullptr;
 

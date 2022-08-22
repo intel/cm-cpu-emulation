@@ -655,6 +655,9 @@ int32_t CmSurfaceManagerEmu::MoveSurface( uint32_t src_index, uint32_t dst_index
         }
     }
 
+    SurfaceIndex * pdst_surf_index= new SurfaceIndex(dst_index);
+    SurfaceIndex * psrc_surf_index= new SurfaceIndex(src_index);
+
     for( int i=0;i<=additional_increment;i++)
     {
         //change in m_SurfaceArray
@@ -664,15 +667,18 @@ int32_t CmSurfaceManagerEmu::MoveSurface( uint32_t src_index, uint32_t dst_index
         m_SurfaceArray.SetElement(src_index+i,nullptr);
 
         //change in Surface itself
-        SurfaceIndex * pdst_surf_index= new SurfaceIndex(dst_index+i);
+        (*pdst_surf_index) = dst_index+i;
         pCurSurface->SetIndex(pdst_surf_index);
         pCurSurface->SetArrayIndex(dst_index+i);
 
         //change in iobuffers
-        SurfaceIndex * psrc_surf_index= new SurfaceIndex(src_index+i);
+        (*psrc_surf_index) = src_index+i;
         CmBufferDescField type=GEN4_FIELD_SURFACE_ID;
         CM_modify_buffer_emu(*psrc_surf_index, type, dst_index+i);
     }
+
+    delete pdst_surf_index;
+    delete psrc_surf_index;
 
     return CM_SUCCESS;
 }

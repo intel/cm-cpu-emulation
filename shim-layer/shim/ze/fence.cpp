@@ -31,7 +31,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceCreate)(
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::Queue> queue(reinterpret_cast<shim::ze::Queue*>(hCommandQueue));
+  shim::IntrusivePtr<shim::ze::Queue> queue(
+      reinterpret_cast<shim::ze::Queue *>(hCommandQueue));
 
   try {
     auto fence = shim::MakeIntrusive<shim::ze::Fence>(
@@ -45,26 +46,26 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceDestroy)(
-    ze_fence_handle_t hFence) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeFenceDestroy)(ze_fence_handle_t hFence) {
   if (hFence == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
   shim::IntrusivePtr<shim::ze::Fence> fence(
-      reinterpret_cast<shim::ze::Fence*>(hFence), false);
+      reinterpret_cast<shim::ze::Fence *>(hFence), false);
 
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceHostSynchronize)(
-    ze_fence_handle_t hFence, uint64_t timeout) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeFenceHostSynchronize)(ze_fence_handle_t hFence, uint64_t timeout) {
   if (hFence == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
   shim::IntrusivePtr<shim::ze::Fence> fence =
-      reinterpret_cast<shim::ze::Fence*>(hFence);
+      reinterpret_cast<shim::ze::Fence *>(hFence);
 
   if (fence->signalled_) {
     return ZE_RESULT_SUCCESS;
@@ -83,14 +84,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceHostSynchronize)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceQueryStatus)(
-    ze_fence_handle_t hFence) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeFenceQueryStatus)(ze_fence_handle_t hFence) {
   if (hFence == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
   shim::IntrusivePtr<shim::ze::Fence> fence =
-      reinterpret_cast<shim::ze::Fence*>(hFence);
+      reinterpret_cast<shim::ze::Fence *>(hFence);
 
   if (fence->signalled_) {
     return ZE_RESULT_SUCCESS;
@@ -109,14 +110,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceQueryStatus)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeFenceReset)(
-    ze_fence_handle_t hFence) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeFenceReset)(ze_fence_handle_t hFence) {
   if (hFence == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
   shim::IntrusivePtr<shim::ze::Fence> fence =
-      reinterpret_cast<shim::ze::Fence*>(hFence);
+      reinterpret_cast<shim::ze::Fence *>(hFence);
 
   fence->signalled_ = false;
   return ZE_RESULT_SUCCESS;

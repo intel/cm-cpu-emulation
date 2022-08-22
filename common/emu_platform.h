@@ -26,7 +26,9 @@ enum Id {
     DG1 = 82,
     PVC = 83,
     DG2 = 84,
+    MTL = 87,
     RKL = 90,
+    ADLN = 91,
     ADLP = 92,
     ADLS = 93
 };
@@ -43,7 +45,9 @@ inline std::map<std::string, int64_t>& StaticData_nameToInt() {
         MAP(DG1, GfxEmu::Platform),
         MAP(PVC, GfxEmu::Platform),
         MAP(DG2, GfxEmu::Platform),
+        MAP(MTL, GfxEmu::Platform),
         MAP(RKL, GfxEmu::Platform),
+        MAP(ADLN, GfxEmu::Platform),
         MAP(ADLP, GfxEmu::Platform),
         MAP(ADLS, GfxEmu::Platform)
     }};

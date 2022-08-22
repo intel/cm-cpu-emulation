@@ -20,8 +20,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeSamplerCreate)(
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeSamplerDestroy)(
-    ze_sampler_handle_t hSampler) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeSamplerDestroy)(ze_sampler_handle_t hSampler) {
   GFX_EMU_WARNING_MESSAGE(fShim, "sampler support is not implemented\n");
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }

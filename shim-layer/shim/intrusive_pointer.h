@@ -13,11 +13,11 @@ SPDX-License-Identifier: MIT
 
 namespace shim {
 
-template <typename DerivedT>
-class IntrusiveRefCounter {
- private:
+template <typename DerivedT> class IntrusiveRefCounter {
+private:
   using Counter = std::atomic<unsigned>;
- public:
+
+public:
   IntrusiveRefCounter() noexcept = default;
   IntrusiveRefCounter(const IntrusiveRefCounter &) noexcept = delete;
   IntrusiveRefCounter(IntrusiveRefCounter &&) noexcept = delete;
@@ -30,8 +30,7 @@ class IntrusiveRefCounter {
   Counter counter_ = 0;
 };
 
-template <typename T>
-void IntrusivePtrAddRef(IntrusiveRefCounter<T> *ptr) {
+template <typename T> void IntrusivePtrAddRef(IntrusiveRefCounter<T> *ptr) {
   if (ptr) {
     ptr->counter_++;
   }
@@ -46,9 +45,8 @@ IntrusivePtrRelease(T *ptr) {
   }
 }
 
-template <typename T>
-class IntrusivePtr {
- public:
+template <typename T> class IntrusivePtr {
+public:
   using element_type = T;
 
   IntrusivePtr() noexcept : ptr_(nullptr) {}
@@ -74,8 +72,7 @@ class IntrusivePtr {
     return *this;
   }
 
-  template <typename U>
-  IntrusivePtr &operator=(IntrusivePtr<U> r) noexcept {
+  template <typename U> IntrusivePtr &operator=(IntrusivePtr<U> r) noexcept {
     std::swap(ptr_, r.ptr_);
     return *this;
   }
@@ -86,25 +83,15 @@ class IntrusivePtr {
     return *this;
   }
 
-  operator bool() const noexcept {
-    return bool(ptr_);
-  }
+  operator bool() const noexcept { return bool(ptr_); }
 
-  bool operator!() const noexcept {
-    return !ptr_;
-  }
+  bool operator!() const noexcept { return !ptr_; }
 
-  T &operator*() const noexcept {
-    return *ptr_;
-  }
+  T &operator*() const noexcept { return *ptr_; }
 
-  T *operator->() const noexcept {
-    return ptr_;
-  }
+  T *operator->() const noexcept { return ptr_; }
 
-  T *get() const noexcept {
-    return ptr_;
-  }
+  T *get() const noexcept { return ptr_; }
 
   void reset(T *r, bool add_ref = true) {
     auto *old = ptr_;
@@ -153,7 +140,7 @@ void swap(IntrusivePtr<T> &a, IntrusivePtr<U> &b) noexcept {
   std::swap(a.ptr_, b.ptr_);
 }
 
-template <typename T, typename ... Args>
+template <typename T, typename... Args>
 IntrusivePtr<T> MakeIntrusive(Args &&...args) {
   return new T(std::forward<Args>(args)...);
 }

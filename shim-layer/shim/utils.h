@@ -12,15 +12,14 @@ SPDX-License-Identifier: MIT
 namespace shim {
 
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-template <class Action>
-class FinalAction {
- public:
+template <class Action> class FinalAction {
+public:
   FinalAction(Action a) : action_(a) {}
   ~FinalAction() { action_(); }
 
- private:
+private:
   Action action_;
 };
 

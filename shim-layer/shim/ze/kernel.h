@@ -12,9 +12,9 @@ SPDX-License-Identifier: MIT
 #include <unordered_map>
 #include <vector>
 
-#include "ze.h"
 #include "intrusive_pointer.h"
 
+#include "context.h"
 #include "image.h"
 
 namespace shim {
@@ -36,7 +36,7 @@ struct Kernel : public IntrusiveRefCounter<Kernel> {
 
   ze_kernel_indirect_access_flags_t indirect_access_flags_ = 0;
 
-  static thread_local std::unordered_map<CmKernelEmu*, GroupSize> group_size_;
+  static thread_local std::unordered_map<CmKernelEmu *, GroupSize> group_size_;
 };
 } // namespace ze
 } // namespace shim

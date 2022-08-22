@@ -6,14 +6,13 @@ SPDX-License-Identifier: MIT
 
 ============================= end_copyright_notice ===========================*/
 
-#include "device.h"
 #include "driver.h"
+#include "device.h"
 
 namespace shim {
 namespace ze {
 
-Driver::Driver() {
-}
+Driver::Driver() {}
 
 Driver &Driver::Instance() {
   static Driver driver;
@@ -35,9 +34,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeInit)(ze_init_flags_t flags) {
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGet)(
-    uint32_t *pCount,
-    ze_driver_handle_t *phDrivers) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDriverGet)(uint32_t *pCount, ze_driver_handle_t *phDrivers) {
   if (pCount == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -55,8 +53,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGet)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetApiVersion)(
-    ze_driver_handle_t hDriver,
-    ze_api_version_t *version) {
+    ze_driver_handle_t hDriver, ze_api_version_t *version) {
   if (hDriver == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -71,8 +68,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetApiVersion)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetProperties)(
-    ze_driver_handle_t hDriver,
-    ze_driver_properties_t *pDriverProperties) {
+    ze_driver_handle_t hDriver, ze_driver_properties_t *pDriverProperties) {
   if (hDriver == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -88,8 +84,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetProperties)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetIpcProperties)(
-    ze_driver_handle_t hDriver,
-    ze_driver_ipc_properties_t *pIpcProperties) {
+    ze_driver_handle_t hDriver, ze_driver_ipc_properties_t *pIpcProperties) {
   if (hDriver == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -100,8 +95,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetIpcProperties)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDriverGetExtensionProperties)(
-    ze_driver_handle_t hDriver,
-    uint32_t *pCount,
+    ze_driver_handle_t hDriver, uint32_t *pCount,
     ze_driver_extension_properties_t *pExtensionProperties) {
   if (hDriver == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;

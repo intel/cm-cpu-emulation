@@ -12,52 +12,41 @@ SPDX-License-Identifier: MIT
 
 #include "device.h"
 #include "intrusive_pointer.h"
+#include "memory_manager.h"
 
 extern "C" {
 struct _cl_context {
   cl_icd_dispatch *dispatch;
 };
 
-extern CL_API_ENTRY cl_context CL_API_CALL
-SHIM_CALL(clCreateContext)(const cl_context_properties * properties,
-                           cl_uint              num_devices,
-                           const cl_device_id * devices,
-                           void (CL_CALLBACK * pfn_notify)(const char * errinfo,
-                                                           const void * private_info,
-                                                           size_t       cb,
-                                                           void *       user_data),
-                           void *               user_data,
-                           cl_int *             errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_context CL_API_CALL SHIM_CALL(clCreateContext)(
+    const cl_context_properties *properties, cl_uint num_devices,
+    const cl_device_id *devices,
+    void(CL_CALLBACK *pfn_notify)(const char *errinfo, const void *private_info,
+                                  size_t cb, void *user_data),
+    void *user_data, cl_int *errcode_ret) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_context CL_API_CALL
-SHIM_CALL(clCreateContextFromType)(const cl_context_properties * properties,
-                                   cl_device_type      device_type,
-                                   void (CL_CALLBACK * pfn_notify)(const char * errinfo,
-                                                                   const void * private_info,
-                                                                   size_t       cb,
-                                                                   void *       user_data),
-                                   void *              user_data,
-                                   cl_int *            errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_context CL_API_CALL SHIM_CALL(clCreateContextFromType)(
+    const cl_context_properties *properties, cl_device_type device_type,
+    void(CL_CALLBACK *pfn_notify)(const char *errinfo, const void *private_info,
+                                  size_t cb, void *user_data),
+    void *user_data, cl_int *errcode_ret) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clRetainContext)(cl_context context) CL_API_SUFFIX__VERSION_1_0;
+    SHIM_CALL(clRetainContext)(cl_context context) CL_API_SUFFIX__VERSION_1_0;
 
 extern CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clReleaseContext)(cl_context context) CL_API_SUFFIX__VERSION_1_0;
+    SHIM_CALL(clReleaseContext)(cl_context context) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clGetContextInfo)(cl_context         context,
-                            cl_context_info    param_name,
-                            size_t             param_value_size,
-                            void *             param_value,
-                            size_t *           param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
+extern CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetContextInfo)(
+    cl_context context, cl_context_info param_name, size_t param_value_size,
+    void *param_value, size_t *param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clSetContextDestructorCallback)(cl_context         context,
-                                          void (CL_CALLBACK* pfn_notify)(cl_context context,
-                                                                         void* user_data),
-                                          void*              user_data) CL_API_SUFFIX__VERSION_3_0;
-
+extern CL_API_ENTRY
+    cl_int CL_API_CALL SHIM_CALL(clSetContextDestructorCallback)(
+        cl_context context,
+        void(CL_CALLBACK *pfn_notify)(cl_context context, void *user_data),
+        void *user_data) CL_API_SUFFIX__VERSION_3_0;
 }
 
 namespace shim {
@@ -76,7 +65,9 @@ struct Context : public _cl_context, public IntrusiveRefCounter<Context> {
 
   Device &dev_;
 
-  void (CL_CALLBACK* pfn_notify)(cl_context context, void* user_data);
+  MemoryManager mm_;
+
+  void(CL_CALLBACK *pfn_notify)(cl_context context, void *user_data);
   void *user_data;
 };
 

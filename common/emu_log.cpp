@@ -274,7 +274,7 @@ void printBacktrace() {
                 status == 0 ? demangled :
                               info.dli_sname == 0 ?
                               symbols[i] : info.dli_sname,
-                (char *)callstack[i] - (char *)info.dli_saddr
+                     (size_t)((char *)callstack[i] - (char *)info.dli_saddr)
             );
 
             free(demangled);

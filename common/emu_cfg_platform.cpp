@@ -102,86 +102,76 @@ const PlatformConfig& getPlatformConfig(GfxEmu::Platform::Id id) {
         /*.threadsPerEu =*/  {{GT1, 7},  {GT2,  7}},
         /*.euPerSubslice =*/ {{GT1, 16}, {GT2,  16}},
     }},
+#define PLACEHOLDER_CONFIG \
+        /*.skuVariants =*/ {DEFAULT}, \
+        /*.defaultSku =*/   DEFAULT, \
+        /*.maxThreads =*/    {{DEFAULT,1024}}, \
+        /*.threadsPerEu =*/  {{DEFAULT,8}}, \
+        /*.euPerSubslice =*/ {{DEFAULT,8}}, \
+        /*.maxCcsIndex =*/   {{DEFAULT,1}}
+
     {GfxEmu::Platform::RKL, {
         /*.name =*/ "RKL",
-        /*.archid =*/ 0,
+        /*.archid =*/ 1201,
         /*.hwSimd =*/ 8,
         /*.flags =*/ PlatformFlags::None,
-        /*.skuVariants =*/ {DEFAULT},
-        /*.defaultSku =*/   DEFAULT,
-        /*.maxThreads =*/    {{DEFAULT,1024}},
-        /*.threadsPerEu =*/  {{DEFAULT,8}},
-        /*.euPerSubslice =*/ {{DEFAULT,8}},
-    }},
-    {GfxEmu::Platform::ADLP, {
-        /*.name =*/ "ADLP",
-        /*.archid =*/ 0,
-        /*.hwSimd =*/ 8,
-        /*.flags =*/ PlatformFlags::None,
-        /*.skuVariants =*/ {DEFAULT},
-        /*.defaultSku =*/   DEFAULT,
-        /*.maxThreads =*/    {{DEFAULT,1024}},
-        /*.threadsPerEu =*/  {{DEFAULT,8}},
-        /*.euPerSubslice =*/ {{DEFAULT,8}},
-    }},
-    {GfxEmu::Platform::ADLS, {
-        /*.name =*/ "ADLS",
-        /*.archid =*/ 0,
-        /*.hwSimd =*/ 8,
-        /*.flags =*/ PlatformFlags::None,
-        /*.skuVariants =*/ {DEFAULT},
-        /*.defaultSku =*/   DEFAULT,
-        /*.maxThreads =*/    {{DEFAULT,1024}},
-        /*.threadsPerEu =*/  {{DEFAULT,8}},
-        /*.euPerSubslice =*/ {{DEFAULT,8}},
-    }},
-    {GfxEmu::Platform::XEHP_SDV, {
-        /*.name =*/ "XEHP_SDV",
-        /*.archid =*/ 1270,
-        /*.hwSimd =*/ 8,
-        /*.flags =*/ PlatformFlags::Fp64 | PlatformFlags::IeeeDivSqrt | PlatformFlags::Dp4a,
-        /*.skuVariants =*/ {GT1,GT2,GT3},
-        /*.defaultSku =*/ GT2,
-        /*.maxThreads =*/    {{GT1, 1024},{GT2,2048},{GT3,4096}},
-        /*.threadsPerEu =*/  {{GT1, 8},   {GT2,  8}, {GT3,  8}},
-        /*.euPerSubslice =*/ {{GT1, 16},  {GT2,  16},{GT3,  16}},
-        /*.maxCcsIndex =*/   {{GT1, 1},   {GT2,2},   {GT3,4}},
+        PLACEHOLDER_CONFIG
     }},
     {GfxEmu::Platform::DG1, {
         /*.name =*/ "DG1",
         /*.archid =*/ 1210,
         /*.hwSimd =*/ 8,
         /*.flags =*/ PlatformFlags::Dp4a,
-        /*.skuVariants =*/ {GT1},
-        /*.defaultSku =*/ GT1,
-        /*.maxThreads =*/    {{GT1, 672}},
-        /*.threadsPerEu =*/  {{GT1, 7}},
-        /*.euPerSubslice =*/ {{GT1, 16}},
-        /*.maxCcsIndex =*/   {{GT1, 1}},
+        PLACEHOLDER_CONFIG
     }},
-    {GfxEmu::Platform::PVC, {
-        /*.name =*/ "PVC",
-        /*.archid =*/ 0,
-        /*.hwSimd =*/ 16,
+    {GfxEmu::Platform::ADLP, {
+        /*.name =*/ "ADLP",
+        /*.archid =*/ 1220,
+        /*.hwSimd =*/ 8,
+        /*.flags =*/ PlatformFlags::Dp4a,
+        PLACEHOLDER_CONFIG
+    }},
+    {GfxEmu::Platform::ADLS, {
+        /*.name =*/ "ADLS",
+        /*.archid =*/ 1230,
+        /*.hwSimd =*/ 8,
+        /*.flags =*/ PlatformFlags::Dp4a,
+        PLACEHOLDER_CONFIG
+    }},
+    {GfxEmu::Platform::ADLN, {
+        /*.name =*/ "ADLN",
+        /*.archid =*/ 1240,
+        /*.hwSimd =*/ 8,
+        /*.flags =*/ PlatformFlags::Dp4a,
+        PLACEHOLDER_CONFIG
+    }},
+    {GfxEmu::Platform::XEHP_SDV, {
+        /*.name =*/ "XEHP_SDV",
+        /*.archid =*/ 1270,
+        /*.hwSimd =*/ 8,
         /*.flags =*/ PlatformFlags::Fp64 | PlatformFlags::IeeeDivSqrt | PlatformFlags::Dp4a,
-        /*.skuVariants =*/ {DEFAULT},
-        /*.defaultSku =*/ DEFAULT,
-        /*.maxThreads =*/    {{DEFAULT,1024}},
-        /*.threadsPerEu =*/  {{DEFAULT,8}},
-        /*.euPerSubslice =*/ {{DEFAULT,8}},
-        /*.maxCcsIndex =*/   {{DEFAULT,1}},
+        PLACEHOLDER_CONFIG
     }},
     {GfxEmu::Platform::DG2, {
         /*.name =*/ "DG2",
-        /*.archid =*/ 0,
+        /*.archid =*/ 1271,
         /*.hwSimd =*/ 8,
         /*.flags =*/ PlatformFlags::Dp4a,
-        /*.skuVariants =*/ {DEFAULT},
-        /*.defaultSku =*/ DEFAULT,
-        /*.maxThreads =*/    {{DEFAULT,1024}},
-        /*.threadsPerEu =*/  {{DEFAULT,8}},
-        /*.euPerSubslice =*/ {{DEFAULT,8}},
-        /*.maxCcsIndex =*/   {{DEFAULT,1}},
+        PLACEHOLDER_CONFIG
+    }},
+    {GfxEmu::Platform::MTL, {
+        /*.name =*/ "MTL",
+        /*.archid =*/ 1275,
+        /*.hwSimd =*/ 8,
+        /*.flags =*/ PlatformFlags::Fp64 | PlatformFlags::Dp4a,
+        PLACEHOLDER_CONFIG
+    }},
+    {GfxEmu::Platform::PVC, {
+        /*.name =*/ "PVC",
+        /*.archid =*/ 1280,
+        /*.hwSimd =*/ 16,
+        /*.flags =*/ PlatformFlags::Fp64 | PlatformFlags::IeeeDivSqrt | PlatformFlags::Dp4a,
+        PLACEHOLDER_CONFIG
     }},
     };
 

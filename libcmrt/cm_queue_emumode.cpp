@@ -1154,7 +1154,7 @@ int32_t CmQueueEmu::ExecuteScoreBoard_1(CmThreadSpaceEmu *threadSpace, bool be_w
     while (((global_outer_x >= globalresX) && (global_inner_stepx < 0)) ||
            (((global_outer_x + localblockresX) < 0) && (global_inner_stepx > 0)) ||
            ((global_outer_y >= globalresY) && (global_inner_stepy < 0)) ||
-           (((global_outer_x + localblockresY) < 0) && (global_inner_stepy > 0)))
+           (((global_outer_y + localblockresY) < 0) && (global_inner_stepy > 0)))
     {
         global_outer_x += global_inner_stepx;
         global_outer_y += global_inner_stepy;

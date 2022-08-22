@@ -48,7 +48,8 @@ SHIM_EXPORT(zeCommandListAppendQueryKernelTimestamps);
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreate)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice,
-    const ze_command_list_desc_t* desc, ze_command_list_handle_t* phCommandList) {
+    const ze_command_list_desc_t *desc,
+    ze_command_list_handle_t *phCommandList) {
   if (hContext == nullptr || hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -61,8 +62,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreate)(
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   try {
     auto list = shim::MakeIntrusive<shim::ze::CommandList>(ctx);
@@ -77,7 +79,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreate)(
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreateImmediate)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice,
-    const ze_command_queue_desc_t* altdesc, ze_command_list_handle_t* phCommandList) {
+    const ze_command_queue_desc_t *altdesc,
+    ze_command_list_handle_t *phCommandList) {
   if (hContext == nullptr || hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -86,13 +89,15 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreateImmediate)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  if (altdesc->flags > 0x1 || altdesc->mode > ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS ||
+  if (altdesc->flags > 0x1 ||
+      altdesc->mode > ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS ||
       altdesc->priority > ZE_COMMAND_QUEUE_PRIORITY_PRIORITY_HIGH) {
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   try {
     auto queue = shim::MakeIntrusive<shim::ze::Queue>(ctx, dev);
@@ -106,19 +111,20 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListCreateImmediate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListDestroy)(
-    ze_command_list_handle_t hCommandList) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListDestroy)(ze_command_list_handle_t hCommandList) {
   if (hCommandList == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list(reinterpret_cast<shim::ze::CommandList*>(hCommandList), false);
+  shim::IntrusivePtr<shim::ze::CommandList> list(
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList), false);
 
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListClose)(
-    ze_command_list_handle_t hCommandList) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListClose)(ze_command_list_handle_t hCommandList) {
   if (hCommandList == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -126,42 +132,45 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListClose)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListReset)(
-    ze_command_list_handle_t hCommandList) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListReset)(ze_command_list_handle_t hCommandList) {
   if (hCommandList == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
   list->Reset();
 
   return ZE_RESULT_SUCCESS;
 }
 
 namespace {
-std::vector<shim::IntrusivePtr<shim::ze::Event>> GetEvents(size_t num, ze_event_handle_t *phEvents) {
+std::vector<shim::IntrusivePtr<shim::ze::Event>>
+GetEvents(size_t num, ze_event_handle_t *phEvents) {
   std::vector<shim::IntrusivePtr<shim::ze::Event>> events;
 
   std::transform(phEvents, phEvents + num, std::back_inserter(events),
                  [](ze_event_handle_t h) {
-                   return reinterpret_cast<shim::ze::Event*>(h);
+                   return reinterpret_cast<shim::ze::Event *>(h);
                  });
 
   return events;
 }
 } // namespace
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendWriteGlobalTimestamp)(
-    ze_command_list_handle_t hCommandList, uint64_t* dstptr,
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendWriteGlobalTimestamp)(
+    ze_command_list_handle_t hCommandList, uint64_t *dstptr,
     ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
-    ze_event_handle_t* phWaitEvents) {
+    ze_event_handle_t *phWaitEvents) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryCopy)(
-    ze_command_list_handle_t hCommandList, void *dstptr,
-    const void *srcptr, size_t size, ze_event_handle_t hSignalEvent,
-    uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+    ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr,
+    size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
+    ze_event_handle_t *phWaitEvents) {
   if (hCommandList == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -174,10 +183,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryCopy)(
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
     return list->Emplace(dstptr, srcptr, size, signal, std::move(wait));
   } catch (std::bad_alloc &e) {
@@ -201,18 +212,22 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryFill)(
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
-    return list->Emplace(ptr, *static_cast<const uint8_t *>(pattern), size, signal, std::move(wait));
+    return list->Emplace(ptr, *static_cast<const uint8_t *>(pattern), size,
+                         signal, std::move(wait));
   } catch (std::bad_alloc &e) {
     return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryCopyRegion)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendMemoryCopyRegion)(
     ze_command_list_handle_t hCommandList, void *dstptr,
     const ze_copy_region_t *dstRegion, uint32_t dstPitch,
     uint32_t dstSlicePitch, const void *srcptr,
@@ -222,11 +237,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryCopyRegio
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryCopyFromContext)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendMemoryCopyFromContext)(
     ze_command_list_handle_t hCommandList, void *dstptr,
-    ze_context_handle_t hContextSrc, const void *srcptr,
-    size_t size, ze_event_handle_t hSignalEvent,
-    uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+    ze_context_handle_t hContextSrc, const void *srcptr, size_t size,
+    ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
+    ze_event_handle_t *phWaitEvents) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
@@ -237,7 +253,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopy)(
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyRegion)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendImageCopyRegion)(
     ze_command_list_handle_t hCommandList, ze_image_handle_t hDstImage,
     ze_image_handle_t hSrcImage, const ze_image_region_t *pDstRegion,
     const ze_image_region_t *pSrcRegion, ze_event_handle_t hSignalEvent,
@@ -245,11 +262,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyRegion
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyToMemory)(
-    ze_command_list_handle_t hCommandList, void *dstptr,
-    ze_image_handle_t hSrcImage, const ze_image_region_t *pSrcRegion,
-    ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
-    ze_event_handle_t *phWaitEvents) {
+ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(
+    zeCommandListAppendImageCopyToMemory)(ze_command_list_handle_t hCommandList,
+                                          void *dstptr,
+                                          ze_image_handle_t hSrcImage,
+                                          const ze_image_region_t *pSrcRegion,
+                                          ze_event_handle_t hSignalEvent,
+                                          uint32_t numWaitEvents,
+                                          ze_event_handle_t *phWaitEvents) {
   if (hCommandList == nullptr || hSrcImage == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -267,11 +287,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyToMemo
     return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
-  shim::IntrusivePtr<shim::ze::Image> image = reinterpret_cast<shim::ze::Image*>(hSrcImage);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
+  shim::IntrusivePtr<shim::ze::Image> image =
+      reinterpret_cast<shim::ze::Image *>(hSrcImage);
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
     return list->Emplace(dstptr, image, signal, std::move(wait));
   } catch (std::bad_alloc &e) {
@@ -279,7 +302,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyToMemo
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyFromMemory)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendImageCopyFromMemory)(
     ze_command_list_handle_t hCommandList, ze_image_handle_t hDstImage,
     const void *srcptr, const ze_image_region_t *pDstRegion,
     ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
@@ -301,11 +325,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyFromMe
     return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
-  shim::IntrusivePtr<shim::ze::Image> image = reinterpret_cast<shim::ze::Image*>(hDstImage);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
+  shim::IntrusivePtr<shim::ze::Image> image =
+      reinterpret_cast<shim::ze::Image *>(hDstImage);
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
     return list->Emplace(image, srcptr, signal, std::move(wait));
   } catch (std::bad_alloc &e) {
@@ -313,8 +340,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendImageCopyFromMe
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryPrefetch)(
-    ze_command_list_handle_t hCommandList, const void *ptr, size_t size) {
+ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(
+    zeCommandListAppendMemoryPrefetch)(ze_command_list_handle_t hCommandList,
+                                       const void *ptr, size_t size) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
@@ -335,10 +363,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendBarrier)(
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
     return list->Emplace(signal, std::move(wait));
   } catch (std::bad_alloc &e) {
@@ -346,7 +376,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendBarrier)(
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryRangesBarrier)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendMemoryRangesBarrier)(
     ze_command_list_handle_t hCommandList, uint32_t numRanges,
     const size_t *pRangeSizes, const void **pRanges,
     ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
@@ -355,8 +386,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendMemoryRangesBar
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  return SHIM_CALL(zeCommandListAppendBarrier)(
-      hCommandList, hSignalEvent, numWaitEvents, phWaitEvents);
+  return SHIM_CALL(zeCommandListAppendBarrier)(hCommandList, hSignalEvent,
+                                               numWaitEvents, phWaitEvents);
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchKernel)(
@@ -375,16 +406,20 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchKernel)(
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
-  shim::IntrusivePtr<shim::ze::Kernel> kernel = reinterpret_cast<shim::ze::Kernel*>(hKernel);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
+  shim::IntrusivePtr<shim::ze::Kernel> kernel =
+      reinterpret_cast<shim::ze::Kernel *>(hKernel);
 
   // Group size is not set for the kernel
-  if (kernel->group_size_.find(kernel->kernel_.get()) == kernel->group_size_.end()) {
+  if (kernel->group_size_.find(kernel->kernel_.get()) ==
+      kernel->group_size_.end()) {
     return ZE_RESULT_ERROR_INVALID_ARGUMENT;
   }
 
   try {
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
     return list->Emplace(kernel, *pLaunchFuncArgs, signal, std::move(wait));
   } catch (std::bad_alloc &e) {
@@ -392,25 +427,30 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchKernel)(
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchCooperativeKernel)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendLaunchCooperativeKernel)(
     ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel,
     const ze_group_count_t *pLaunchFuncArgs, ze_event_handle_t hSignalEvent,
     uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchKernelIndirect)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendLaunchKernelIndirect)(
     ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel,
-    const ze_group_count_t *pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent,
-    uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+    const ze_group_count_t *pLaunchArgumentsBuffer,
+    ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
+    ze_event_handle_t *phWaitEvents) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendLaunchMultipleKernelsIndirect)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendLaunchMultipleKernelsIndirect)(
     ze_command_list_handle_t hCommandList, uint32_t numKernels,
     ze_kernel_handle_t *phKernels, const uint32_t *pCountBuffer,
-    const ze_group_count_t *pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent,
-    uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+    const ze_group_count_t *pLaunchArgumentsBuffer,
+    ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
+    ze_event_handle_t *phWaitEvents) {
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
@@ -420,18 +460,19 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendSignalEvent)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  return SHIM_CALL(zeCommandListAppendBarrier)(
-      hCommandList, hEvent, 0, nullptr);
+  return SHIM_CALL(zeCommandListAppendBarrier)(hCommandList, hEvent, 0,
+                                               nullptr);
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendWaitOnEvents)(
-    ze_command_list_handle_t hCommandList, uint32_t numEvents, ze_event_handle_t *phEvents) {
+    ze_command_list_handle_t hCommandList, uint32_t numEvents,
+    ze_event_handle_t *phEvents) {
   if (phEvents == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  return SHIM_CALL(zeCommandListAppendBarrier)(
-      hCommandList, nullptr, numEvents, phEvents);
+  return SHIM_CALL(zeCommandListAppendBarrier)(hCommandList, nullptr, numEvents,
+                                               phEvents);
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendEventReset)(
@@ -440,8 +481,10 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendEventReset)(
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
-  shim::IntrusivePtr<shim::ze::Event> event = reinterpret_cast<shim::ze::Event*>(hEvent);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
+  shim::IntrusivePtr<shim::ze::Event> event =
+      reinterpret_cast<shim::ze::Event *>(hEvent);
 
   try {
     return list->Emplace(event);
@@ -450,11 +493,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendEventReset)(
   }
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendQueryKernelTimestamps)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeCommandListAppendQueryKernelTimestamps)(
     ze_command_list_handle_t hCommandList, uint32_t numEvents,
-    ze_event_handle_t *phEvents, void *dstptr,
-    const size_t *pOffsets, ze_event_handle_t hSignalEvent,
-    uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+    ze_event_handle_t *phEvents, void *dstptr, const size_t *pOffsets,
+    ze_event_handle_t hSignalEvent, uint32_t numWaitEvents,
+    ze_event_handle_t *phWaitEvents) {
   if (hCommandList == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -467,13 +511,16 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeCommandListAppendQueryKernelTime
     return ZE_RESULT_ERROR_INVALID_SIZE;
   }
 
-  shim::IntrusivePtr<shim::ze::CommandList> list = reinterpret_cast<shim::ze::CommandList*>(hCommandList);
+  shim::IntrusivePtr<shim::ze::CommandList> list =
+      reinterpret_cast<shim::ze::CommandList *>(hCommandList);
 
   try {
     auto events = GetEvents(numEvents, phEvents);
-    shim::IntrusivePtr<shim::ze::Event> signal = reinterpret_cast<shim::ze::Event*>(hSignalEvent);
+    shim::IntrusivePtr<shim::ze::Event> signal =
+        reinterpret_cast<shim::ze::Event *>(hSignalEvent);
     auto wait = GetEvents(numWaitEvents, phWaitEvents);
-    return list->Emplace(std::move(events), dstptr, pOffsets, signal, std::move(wait));
+    return list->Emplace(std::move(events), dstptr, pOffsets, signal,
+                         std::move(wait));
   } catch (std::bad_alloc &e) {
     return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
   }

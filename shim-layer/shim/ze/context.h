@@ -13,16 +13,17 @@ SPDX-License-Identifier: MIT
 #include "memory.h"
 
 #include "intrusive_pointer.h"
+#include "memory_manager.h"
 
 namespace shim {
 namespace ze {
 class Context : public IntrusiveRefCounter<Context> {
- public:
+public:
   Context(IntrusivePtr<CmDeviceEmu> dev) : dev_(dev) {}
   Context(const Context &) = delete;
   Context(Context &&) = delete;
-  Context &operator =(const Context &) = delete;
-  Context &operator =(Context &&) = delete;
+  Context &operator=(const Context &) = delete;
+  Context &operator=(Context &&) = delete;
   ~Context() = default;
 
   IntrusivePtr<CmDeviceEmu> dev_;
@@ -33,13 +34,12 @@ class Context : public IntrusiveRefCounter<Context> {
 
 extern "C" {
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextCreate)(
-    ze_driver_handle_t hDriver,
-    const ze_context_desc_t *desc,
+    ze_driver_handle_t hDriver, const ze_context_desc_t *desc,
     ze_context_handle_t *phContext);
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextDestroy)(
-    ze_context_handle_t hContext);
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextGetStatus)(
-    ze_context_handle_t hContext);
+ZE_APIEXPORT ze_result_t ZE_APICALL
+    SHIM_CALL(zeContextDestroy)(ze_context_handle_t hContext);
+ZE_APIEXPORT ze_result_t ZE_APICALL
+    SHIM_CALL(zeContextGetStatus)(ze_context_handle_t hContext);
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextSystemBarrier)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice);
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeContextMakeMemoryResident)(

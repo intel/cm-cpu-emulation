@@ -8,65 +8,10 @@ SPDX-License-Identifier: MIT
 
 #include <new>
 
-#include "memory.h"
 #include "context.h"
+#include "memory.h"
 
-void *shim::ze::MemoryManager::Alloc(IntrusivePtr<CmDeviceEmu> dev, size_t size, size_t alignment) {
-  try {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    const auto align = static_cast<std::align_val_t>(alignment);
-
-    std::unique_ptr<void, std::function<void(void*)>> ptr(::operator new(size, align),
-                                                          [this, size, align](void *p) {
-                                                            ::operator delete(p, size, align);
-                                                          });
-
-    CmBufferUP *buffer = nullptr;
-    if (auto r = dev->CreateBufferUP(size, ptr.get(), buffer); r != CM_SUCCESS) {
-      return nullptr;
-    }
-
-    BufferAllocT buf(BufferPtrT(buffer, [dev](CmBufferUP *p) { dev->DestroyBufferUP(p); }),
-                     size, alignment);
-    buffers_.emplace(ptr.get(), std::move(buf));
-
-    return ptr.release();
-  } catch (std::bad_alloc &e) {
-    return nullptr;
-  }
-}
-
-void shim::ze::MemoryManager::Free(void *ptr) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-
-  auto it = buffers_.find(ptr);
-  if (it == std::end(buffers_)) {
-    return;
-  }
-
-  const auto align = static_cast<std::align_val_t>(it->second.alignment_);
-
-  ::operator delete(ptr, it->second.size_, align);
-  buffers_.erase(it);
-}
-
-SurfaceIndex *shim::ze::MemoryManager::GetIndex(void *ptr) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  auto it = buffers_.find(ptr);
-
-  if (it == std::end(buffers_)) {
-    return nullptr;
-  }
-
-  SurfaceIndex *index = nullptr;
-  auto r = it->second.buffer_->GetIndex(index);
-
-  if (r != CM_SUCCESS) {
-    return nullptr;
-  }
-
-  return index;
-}
+#include "memory_manager.h"
 
 extern "C" {
 SHIM_EXPORT(zeMemAllocShared);
@@ -103,8 +48,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemAllocShared)(
     return ZE_RESULT_ERROR_UNSUPPORTED_ALIGNMENT;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   if (!dev) {
     dev = ctx->dev_;
@@ -127,10 +73,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemAllocDevice)(
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  ze_host_mem_alloc_desc_t host_desc = {
-    ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
-    nullptr, 0
-  };
+  ze_host_mem_alloc_desc_t host_desc = {ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
+                                        nullptr, 0};
 
   return SHIM_CALL(zeMemAllocShared)(hContext, device_desc, &host_desc, size,
                                      alignment, hDevice, pptr);
@@ -140,16 +84,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemAllocHost)(
     ze_context_handle_t hContext, const ze_host_mem_alloc_desc_t *host_desc,
     size_t size, size_t alignment, void **pptr) {
   ze_device_mem_alloc_desc_t device_desc = {
-    ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
-    nullptr, 0, 0
-  };
+      ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC, nullptr, 0, 0};
 
   return SHIM_CALL(zeMemAllocShared)(hContext, &device_desc, host_desc, size,
                                      alignment, nullptr, pptr);
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemFree)(
-    ze_context_handle_t hContext, void *ptr) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeMemFree)(ze_context_handle_t hContext, void *ptr) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -158,7 +100,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemFree)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
 
   auto &mm = ctx->mm_;
   mm.Free(ptr);
@@ -178,10 +121,11 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetAllocProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
   auto &mm = ctx->mm_;
 
-  SurfaceIndex *surf = mm.GetIndex(const_cast<void*>(ptr));
+  SurfaceIndex *surf = mm.GetIndex(const_cast<void *>(ptr));
 
   if (surf == nullptr) {
     pMemAllocProperties->type = ZE_MEMORY_TYPE_UNKNOWN;
@@ -198,8 +142,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetAllocProperties)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetAddressRange)(
-    ze_context_handle_t hContext, const void *ptr, void **pBase, size_t *pSize) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeMemGetAddressRange)(ze_context_handle_t hContext, const void *ptr,
+                                void **pBase, size_t *pSize) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -208,16 +153,16 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetAddressRange)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
   auto &mm = ctx->mm_;
 
-  auto it = std::find_if(std::begin(mm), std::end(mm),
-                         [&](const auto &node) {
-                           uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-                           uintptr_t base = reinterpret_cast<uintptr_t>(node.first);
-                           uintptr_t limit = base + node.second.size_;
-                           return (base <= addr) && (addr < limit);
-                         });
+  auto it = std::find_if(std::begin(mm), std::end(mm), [&](const auto &node) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
+    uintptr_t base = reinterpret_cast<uintptr_t>(node.first);
+    uintptr_t limit = base + node.second.size_;
+    return (base <= addr) && (addr < limit);
+  });
 
   void *base = nullptr;
   size_t size = 0;
@@ -238,8 +183,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetAddressRange)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemGetIpcHandle)(
-    ze_context_handle_t hContext, const void *ptr, ze_ipc_mem_handle_t *pIpcHandle) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeMemGetIpcHandle)(ze_context_handle_t hContext, const void *ptr,
+                             ze_ipc_mem_handle_t *pIpcHandle) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -269,8 +215,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemOpenIpcHandle)(
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeMemCloseIpcHandle)(
-    ze_context_handle_t hContext, const void *ptr) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeMemCloseIpcHandle)(ze_context_handle_t hContext, const void *ptr) {
   if (hContext == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }

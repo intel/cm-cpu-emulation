@@ -9,8 +9,8 @@ SPDX-License-Identifier: MIT
 #include <cassert>
 
 #include "device.h"
-#include "module.h"
 #include "kernel.h"
+#include "module.h"
 
 #include "build_log.h"
 #include "context.h"
@@ -18,7 +18,8 @@ SPDX-License-Identifier: MIT
 
 #include "utils.h"
 
-thread_local std::unordered_map<CmKernelEmu*, shim::ze::Kernel::GroupSize> shim::ze::Kernel::group_size_;
+thread_local std::unordered_map<CmKernelEmu *, shim::ze::Kernel::GroupSize>
+    shim::ze::Kernel::group_size_;
 
 extern "C" {
 SHIM_EXPORT(zeModuleCreate);
@@ -46,14 +47,15 @@ SHIM_EXPORT(zeKernelGetName);
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleCreate)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice,
-    const ze_module_desc_t* desc, ze_module_handle_t* phModule,
-    ze_module_build_log_handle_t* phBuildLog) {
+    const ze_module_desc_t *desc, ze_module_handle_t *phModule,
+    ze_module_build_log_handle_t *phBuildLog) {
   if (hContext == nullptr || hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Context> ctx(reinterpret_cast<shim::ze::Context*>(hContext));
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<shim::ze::Context> ctx(
+      reinterpret_cast<shim::ze::Context *>(hContext));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   if (desc == nullptr || desc->pInputModule == nullptr || phModule == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
@@ -81,15 +83,16 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleCreate)(
     }
 
     CmProgramEmu *prog = nullptr;
-    auto r = CmProgramEmu::Create(dev.get(), prog, const_cast<uint8_t*>(desc->pInputModule),
+    auto r = CmProgramEmu::Create(dev.get(), prog,
+                                  const_cast<uint8_t *>(desc->pInputModule),
                                   desc->inputSize);
     switch (r) {
-      case CM_SUCCESS:
-        break;
-      case CM_OUT_OF_HOST_MEMORY:
-        return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
-      default:
-        return ZE_RESULT_ERROR_INVALID_NATIVE_BINARY;
+    case CM_SUCCESS:
+      break;
+    case CM_OUT_OF_HOST_MEMORY:
+      return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
+    default:
+      return ZE_RESULT_ERROR_INVALID_NATIVE_BINARY;
     }
 
     auto program = shim::IntrusivePtr<CmProgramEmu>(prog, false);
@@ -104,13 +107,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleDestroy)(
-    ze_module_handle_t hModule) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeModuleDestroy)(ze_module_handle_t hModule) {
   if (hModule == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule), false);
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule), false);
 
   return ZE_RESULT_SUCCESS;
 }
@@ -145,13 +149,15 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleBuildLogDestroy)(
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::BuildLog> log(reinterpret_cast<shim::ze::BuildLog*>(hModuleBuildLog), false);
+  shim::IntrusivePtr<shim::ze::BuildLog> log(
+      reinterpret_cast<shim::ze::BuildLog *>(hModuleBuildLog), false);
 
   return ZE_RESULT_SUCCESS;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleBuildLogGetString)(
-    ze_module_build_log_handle_t hModuleBuildLog, size_t *pSize, char *pBuildLog) {
+    ze_module_build_log_handle_t hModuleBuildLog, size_t *pSize,
+    char *pBuildLog) {
   if (hModuleBuildLog == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -160,7 +166,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleBuildLogGetString)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::BuildLog> log(reinterpret_cast<shim::ze::BuildLog*>(hModuleBuildLog));
+  shim::IntrusivePtr<shim::ze::BuildLog> log(
+      reinterpret_cast<shim::ze::BuildLog *>(hModuleBuildLog));
 
   if (*pSize == 0) {
     *pSize = log->str.length() + 1;
@@ -185,14 +192,16 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetNativeBinary)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
 
   // Cannot get a binary in current implementation
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetGlobalPointer)(
-    ze_module_handle_t hModule, const char *pGlobalName, size_t *pSize, void **pptr) {
+    ze_module_handle_t hModule, const char *pGlobalName, size_t *pSize,
+    void **pptr) {
   if (hModule == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -201,7 +210,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetGlobalPointer)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
 
   // CM does not support global variables so far
   return ZE_RESULT_ERROR_INVALID_GLOBAL_NAME;
@@ -217,7 +227,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetKernelNames)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
 
   // CM EMU does not support kernels enumeration
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
@@ -233,7 +244,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
 
   // Dynamic Linking is not supported
   pModuleProperties->flags = 0;
@@ -256,17 +268,19 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelCreate)(
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
   auto dev = module->ctx_->dev_;
 
   CmKernel *k = nullptr;
 
-  auto r = dev->CreateKernel(module->module_.get(), desc->pKernelName, k, nullptr);
+  auto r =
+      dev->CreateKernel(module->module_.get(), desc->pKernelName, k, nullptr);
   if (r != CM_SUCCESS) {
     return ZE_RESULT_ERROR_INVALID_KERNEL_NAME;
   }
 
-  shim::IntrusivePtr<CmKernelEmu> kptr(dynamic_cast<CmKernelEmu*>(k), false);
+  shim::IntrusivePtr<CmKernelEmu> kptr(dynamic_cast<CmKernelEmu *>(k), false);
 
   try {
     auto kernel = shim::MakeIntrusive<shim::ze::Kernel>(module->ctx_, kptr);
@@ -279,13 +293,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelCreate)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelDestroy)(
-    ze_kernel_handle_t hKernel) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeKernelDestroy)(ze_kernel_handle_t hKernel) {
   if (hKernel == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel), false);
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel), false);
 
   if (kernel->UseCount() == 1) {
     shim::ze::Kernel::group_size_.erase(kernel->kernel_.get());
@@ -295,8 +310,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelDestroy)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetFunctionPointer)(
-    ze_module_handle_t hModule, const char *pFunctionName,
-    void **pfnFunction) {
+    ze_module_handle_t hModule, const char *pFunctionName, void **pfnFunction) {
   if (hModule == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -305,56 +319,66 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeModuleGetFunctionPointer)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Module> module(reinterpret_cast<shim::ze::Module*>(hModule));
+  shim::IntrusivePtr<shim::ze::Module> module(
+      reinterpret_cast<shim::ze::Module *>(hModule));
 
   // This feature is not implemented
   return ZE_RESULT_ERROR_INVALID_FUNCTION_NAME;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetGroupSize)(
-    ze_kernel_handle_t hKernel, uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeKernelSetGroupSize)(ze_kernel_handle_t hKernel, uint32_t groupSizeX,
+                                uint32_t groupSizeY, uint32_t groupSizeZ) {
   if (hKernel == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
-  shim::ze::Kernel::group_size_[kernel->kernel_.get()] = { groupSizeX, groupSizeY, groupSizeZ };
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
+  shim::ze::Kernel::group_size_[kernel->kernel_.get()] = {
+      groupSizeX, groupSizeY, groupSizeZ};
 
   return ZE_RESULT_SUCCESS;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSuggestGroupSize)(
-    ze_kernel_handle_t hKernel, uint32_t globalSizeX, uint32_t globalSizeY, uint32_t globalSizeZ,
-    uint32_t *groupSizeX, uint32_t *groupSizeY, uint32_t *groupSizeZ) {
+    ze_kernel_handle_t hKernel, uint32_t globalSizeX, uint32_t globalSizeY,
+    uint32_t globalSizeZ, uint32_t *groupSizeX, uint32_t *groupSizeY,
+    uint32_t *groupSizeZ) {
   if (hKernel == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
 
   // Suggestion is not supported
   return ZE_RESULT_ERROR_INVALID_GLOBAL_WIDTH_DIMENSION;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSuggestMaxCooperativeGroupCount)(
-    ze_kernel_handle_t hKernel, uint32_t *totalGroupCount) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeKernelSuggestMaxCooperativeGroupCount)(ze_kernel_handle_t hKernel,
+                                                   uint32_t *totalGroupCount) {
   if (hKernel == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
 
   // Suggestion is not supported
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetArgumentValue)(
-    ze_kernel_handle_t hKernel, uint32_t argIndex, size_t argSize, const void *pArgValue) {
+    ze_kernel_handle_t hKernel, uint32_t argIndex, size_t argSize,
+    const void *pArgValue) {
   if (hKernel == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
 
   auto fdesc = kernel->kernel_->GetFunctionDesc();
 
@@ -370,8 +394,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetArgumentValue)(
     }
 
     if (argdesc.typeName == "SurfaceIndex" || // Workaround for kernel<half>
-        (argdesc.typeName == "" && argSize == sizeof(void*))) {
-      if (sizeof(void*) != argSize) {
+        (argdesc.typeName == "" && argSize == sizeof(void *))) {
+      if (sizeof(void *) != argSize) {
         return ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE;
       }
 
@@ -385,17 +409,20 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetArgumentValue)(
       auto &mm = kernel->ctx_->mm_;
 
       if (auto *buffer = mm.GetIndex(ptr); buffer) {
-        auto r = kernel->kernel_->SetKernelArg(argIndex, sizeof(SurfaceIndex), buffer);
+        auto r = kernel->kernel_->SetKernelArg(argIndex, sizeof(SurfaceIndex),
+                                               buffer);
         if (r != CM_SUCCESS) {
           return ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE;
         }
       } else { // Image
-        shim::IntrusivePtr<shim::ze::Image> image(reinterpret_cast<shim::ze::Image*>(ptr));
+        shim::IntrusivePtr<shim::ze::Image> image(
+            reinterpret_cast<shim::ze::Image *>(ptr));
         kernel->images_.push_back(image);
 
         SurfaceIndex *surf = image->GetIndex();
 
-        auto r = kernel->kernel_->SetKernelArg(argIndex, sizeof(SurfaceIndex), surf);
+        auto r =
+            kernel->kernel_->SetKernelArg(argIndex, sizeof(SurfaceIndex), surf);
         if (r != CM_SUCCESS) {
           return ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE;
         }
@@ -433,7 +460,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetIndirectAccess)(
     return ZE_RESULT_ERROR_INVALID_ENUMERATION;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
 
   kernel->indirect_access_flags_ = flags;
 
@@ -450,7 +478,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelGetIndirectAccess)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
 
   *pFlags = kernel->indirect_access_flags_;
 
@@ -470,7 +499,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelGetSourceAttributes)(
   }
 
   *pSize = sizeof(empty);
-  *pString = const_cast<char*>(empty);
+  *pString = const_cast<char *>(empty);
 
   return ZE_RESULT_SUCCESS;
 }
@@ -498,7 +527,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelGetProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
   auto fdesc = kernel->kernel_->GetFunctionDesc();
 
   pKernelProperties->numKernelArgs = fdesc.params.size();
@@ -508,7 +538,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelGetProperties)(
   pKernelProperties->requiredNumSubGroups = 0;
   pKernelProperties->requiredSubgroupSize = 0;
   pKernelProperties->maxSubgroupSize = 32;
-  pKernelProperties->localMemSize = 0; // We cannot detect SLM size before a kernel execution
+  pKernelProperties->localMemSize =
+      0; // We cannot detect SLM size before a kernel execution
   pKernelProperties->privateMemSize = 0;
   kernel->kernel_->QuerySpillSize(pKernelProperties->spillMemSize);
   pKernelProperties->uuid = {{0xff}, {0xff}};
@@ -526,7 +557,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelGetName)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<shim::ze::Kernel> kernel(reinterpret_cast<shim::ze::Kernel*>(hKernel));
+  shim::IntrusivePtr<shim::ze::Kernel> kernel(
+      reinterpret_cast<shim::ze::Kernel *>(hKernel));
   std::string name = kernel->kernel_->GetName();
 
   if (*pSize == 0) {

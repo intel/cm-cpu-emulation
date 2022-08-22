@@ -17,13 +17,14 @@ SPDX-License-Identifier: MIT
 namespace shim {
 namespace ze {
 class Image : public IntrusiveRefCounter<Image> {
- private:
+private:
   class Deleter {
-   public:
+  public:
     Deleter(IntrusivePtr<CmDeviceEmu> dev) : dev_(dev) {}
 
     template <typename T>
-    using EnableForCmSurface = std::void_t<decltype(std::declval<CmDeviceEmu*>()->DestroySurface(std::declval<T*&>()))>;
+    using EnableForCmSurface = std::void_t<decltype(
+        std::declval<CmDeviceEmu *>()->DestroySurface(std::declval<T *&>()))>;
 
     template <typename T, typename = EnableForCmSurface<T>>
     void operator()(T *ptr) {
@@ -32,11 +33,11 @@ class Image : public IntrusiveRefCounter<Image> {
       }
     }
 
-   private:
+  private:
     IntrusivePtr<CmDeviceEmu> dev_;
   };
 
- public:
+public:
   enum class Type {
     k1D,
     k1DArray,
@@ -47,8 +48,10 @@ class Image : public IntrusiveRefCounter<Image> {
   };
 
   Image(IntrusivePtr<CmDeviceEmu> dev, uint32_t size);
-  Image(IntrusivePtr<CmDeviceEmu> dev, uint32_t width, uint32_t height, CM_SURFACE_FORMAT format);
-  Image(IntrusivePtr<CmDeviceEmu> dev, uint32_t width, uint32_t height, uint32_t depth, CM_SURFACE_FORMAT format);
+  Image(IntrusivePtr<CmDeviceEmu> dev, uint32_t width, uint32_t height,
+        CM_SURFACE_FORMAT format);
+  Image(IntrusivePtr<CmDeviceEmu> dev, uint32_t width, uint32_t height,
+        uint32_t depth, CM_SURFACE_FORMAT format);
 
   SurfaceIndex *GetIndex();
 
@@ -71,8 +74,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeImageGetProperties)(
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeImageCreate)(
     ze_context_handle_t hContext, ze_device_handle_t hDevice,
     const ze_image_desc_t *desc, ze_image_handle_t *phImage);
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeImageDestroy)(
-    ze_image_handle_t hImage);
+ZE_APIEXPORT
+    ze_result_t ZE_APICALL SHIM_CALL(zeImageDestroy)(ze_image_handle_t hImage);
 } // extern "C"
 
 #endif // CM_EMU_SHIM_ZE_IMAGE_H

@@ -60,6 +60,9 @@ ESIMD_API
 size_t get_group_count(uint32_t dim);
 
 ESIMD_API
+char *get_xthread_broadcast_buf();
+
+ESIMD_API
 char *get_surface_base_addr(int index);
 
 ESIMD_API

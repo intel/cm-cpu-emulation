@@ -12,20 +12,20 @@ SPDX-License-Identifier: MIT
 #include "kernel.h"
 #include "memory.h"
 
-CL_API_ENTRY cl_command_queue CL_API_CALL
-SHIM_CALL(clCreateCommandQueue)(cl_context                     context,
-                                cl_device_id                   device,
-                                cl_command_queue_properties    properties,
-                                cl_int *                       errcode_ret) {
-  return SHIM_CALL(clCreateCommandQueueWithProperties)(context, device, nullptr, errcode_ret);
+CL_API_ENTRY cl_command_queue CL_API_CALL SHIM_CALL(clCreateCommandQueue)(
+    cl_context context, cl_device_id device,
+    cl_command_queue_properties properties, cl_int *errcode_ret) {
+  return SHIM_CALL(clCreateCommandQueueWithProperties)(context, device, nullptr,
+                                                       errcode_ret);
 }
 
-CL_API_ENTRY cl_command_queue CL_API_CALL
-SHIM_CALL(clCreateCommandQueueWithProperties)(cl_context               context,
-                                              cl_device_id             device,
-                                              const cl_queue_properties *    properties,
-                                              cl_int *                 errcode_ret) CL_API_SUFFIX__VERSION_2_0 {
-  shim::IntrusivePtr<shim::cl::Context> ctx(static_cast<shim::cl::Context*>(context));
+CL_API_ENTRY cl_command_queue CL_API_CALL SHIM_CALL(
+    clCreateCommandQueueWithProperties)(cl_context context, cl_device_id device,
+                                        const cl_queue_properties *properties,
+                                        cl_int *errcode_ret)
+    CL_API_SUFFIX__VERSION_2_0 {
+  shim::IntrusivePtr<shim::cl::Context> ctx(
+      static_cast<shim::cl::Context *>(context));
 
   ERRCODE(CL_SUCCESS);
 
@@ -39,7 +39,8 @@ SHIM_CALL(clCreateCommandQueueWithProperties)(cl_context               context,
     return nullptr;
   }
 
-  shim::IntrusivePtr<shim::cl::Queue> queue = new(std::nothrow) shim::cl::Queue(ctx);
+  shim::IntrusivePtr<shim::cl::Queue> queue =
+      new (std::nothrow) shim::cl::Queue(ctx);
 
   if (!queue) {
     ERRCODE(CL_OUT_OF_HOST_MEMORY);
@@ -50,32 +51,29 @@ SHIM_CALL(clCreateCommandQueueWithProperties)(cl_context               context,
   return queue.get();
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clRetainCommandQueue)(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtrAddRef(static_cast<shim::cl::Queue*>(command_queue));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clRetainCommandQueue)(
+    cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtrAddRef(static_cast<shim::cl::Queue *>(command_queue));
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clReleaseCommandQueue)(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue), false);
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clReleaseCommandQueue)(
+    cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue), false);
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clGetCommandQueueInfo)(cl_command_queue      command_queue,
-                                 cl_command_queue_info param_name,
-                                 size_t                param_value_size,
-                                 void *                param_value,
-                                 size_t *              param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetCommandQueueInfo)(
+    cl_command_queue command_queue, cl_command_queue_info param_name,
+    size_t param_value_size, void *param_value,
+    size_t *param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
   return CL_INVALID_VALUE;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clSetCommandQueueProperty)(cl_command_queue              command_queue,
-                                     cl_command_queue_properties   properties,
-                                     cl_bool                       enable,
-                                     cl_command_queue_properties * old_properties) {
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clSetCommandQueueProperty)(
+    cl_command_queue command_queue, cl_command_queue_properties properties,
+    cl_bool enable, cl_command_queue_properties *old_properties) {
   return CL_INVALID_VALUE;
 }
 
@@ -89,20 +87,18 @@ SHIM_CALL(clFinish)(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0 {
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueReadBuffer)(cl_command_queue    command_queue,
-                               cl_mem              buffer,
-                               cl_bool             blocking_read,
-                               size_t              offset,
-                               size_t              size,
-                               void *              ptr,
-                               cl_uint             num_events_in_wait_list,
-                               const cl_event *    event_wait_list,
-                               cl_event *          event) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-  shim::IntrusivePtr<shim::cl::Memory> memory(static_cast<shim::cl::Memory*>(buffer));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueReadBuffer)(
+    cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_read,
+    size_t offset, size_t size, void *ptr, cl_uint num_events_in_wait_list,
+    const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue));
+  shim::IntrusivePtr<shim::cl::Memory> memory(
+      static_cast<shim::cl::Memory *>(buffer));
 
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
@@ -111,13 +107,15 @@ SHIM_CALL(clEnqueueReadBuffer)(cl_command_queue    command_queue,
     return CL_INVALID_VALUE;
   }
 
-  if (auto **buf = std::get_if<CmBuffer*>(&memory->buffer_);
-      !buf || (*buf)->ReadSurface(static_cast<unsigned char*>(ptr), nullptr, size) != CL_SUCCESS) {
+  void **buf = std::get_if<void *>(&memory->buffer_);
+  if (!buf || !*buf) {
     return CL_INVALID_MEM_OBJECT;
   }
+  std::memcpy(ptr, *buf, size);
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }
@@ -125,20 +123,18 @@ SHIM_CALL(clEnqueueReadBuffer)(cl_command_queue    command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueWriteBuffer)(cl_command_queue    command_queue,
-                                cl_mem              buffer,
-                                cl_bool             blocking_read,
-                                size_t              offset,
-                                size_t              size,
-                                const void *        ptr,
-                                cl_uint             num_events_in_wait_list,
-                                const cl_event *    event_wait_list,
-                                cl_event *          event) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-  shim::IntrusivePtr<shim::cl::Memory> memory(static_cast<shim::cl::Memory*>(buffer));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueWriteBuffer)(
+    cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_read,
+    size_t offset, size_t size, const void *ptr,
+    cl_uint num_events_in_wait_list, const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue));
+  shim::IntrusivePtr<shim::cl::Memory> memory(
+      static_cast<shim::cl::Memory *>(buffer));
 
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
@@ -147,13 +143,15 @@ SHIM_CALL(clEnqueueWriteBuffer)(cl_command_queue    command_queue,
     return CL_INVALID_VALUE;
   }
 
-  if (auto **buf = std::get_if<CmBuffer*>(&memory->buffer_);
-      !buf || (*buf)->WriteSurface(static_cast<const unsigned char*>(ptr), nullptr, size) != CL_SUCCESS) {
+  void **buf = std::get_if<void *>(&memory->buffer_);
+  if (!buf || !*buf) {
     return CL_INVALID_MEM_OBJECT;
   }
+  std::memcpy(*buf, ptr, size);
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }
@@ -161,37 +159,37 @@ SHIM_CALL(clEnqueueWriteBuffer)(cl_command_queue    command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueNDRangeKernel)(cl_command_queue command_queue,
-                                  cl_kernel        kernel,
-                                  cl_uint          work_dim,
-                                  const size_t *   global_work_offset,
-                                  const size_t *   global_work_size,
-                                  const size_t *   local_work_size,
-                                  cl_uint          num_events_in_wait_list,
-                                  const cl_event * event_wait_list,
-                                  cl_event *       event) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-  shim::IntrusivePtr<shim::cl::Kernel> kern(static_cast<shim::cl::Kernel*>(kernel));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueNDRangeKernel)(
+    cl_command_queue command_queue, cl_kernel kernel, cl_uint work_dim,
+    const size_t *global_work_offset, const size_t *global_work_size,
+    const size_t *local_work_size, cl_uint num_events_in_wait_list,
+    const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue));
+  shim::IntrusivePtr<shim::cl::Kernel> kern(
+      static_cast<shim::cl::Kernel *>(kernel));
 
-  if (work_dim > 3 || (work_dim == 3 && (global_work_size[2] > 1 || local_work_size[2] > 1))) {
+  if (work_dim > 3 ||
+      (work_dim == 3 && (global_work_size[2] > 1 || local_work_size[2] > 1))) {
     return CL_OUT_OF_RESOURCES;
   }
 
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
 
   size_t groups[2] = {
-    global_work_size[0] / local_work_size[0],
-    work_dim > 1 ? global_work_size[1] / local_work_size[1] : 1,
+      global_work_size[0] / local_work_size[0],
+      work_dim > 1 ? global_work_size[1] / local_work_size[1] : 1,
   };
 
   CmThreadGroupSpace *thread_group_space = nullptr;
   if (queue->ctx_->dev_.device->CreateThreadGroupSpace(
-          local_work_size[0], work_dim > 1 ? local_work_size[1] : 1,
-          groups[0], groups[1], thread_group_space) != CM_SUCCESS) {
+          local_work_size[0], work_dim > 1 ? local_work_size[1] : 1, groups[0],
+          groups[1], thread_group_space) != CM_SUCCESS) {
     return CL_OUT_OF_RESOURCES;
   }
 
@@ -215,7 +213,8 @@ SHIM_CALL(clEnqueueNDRangeKernel)(cl_command_queue command_queue,
   }
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue, e, thread_group_space, task);
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue, e, thread_group_space, task);
     if (!evt) {
       e->WaitForTaskFinished();
     } else {
@@ -229,22 +228,19 @@ SHIM_CALL(clEnqueueNDRangeKernel)(cl_command_queue command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueReadImage)(cl_command_queue     command_queue,
-                              cl_mem               image,
-                              cl_bool              blocking_read,
-                              const size_t *       origin,
-                              const size_t *       region,
-                              size_t               row_pitch,
-                              size_t               slice_pitch,
-                              void *               ptr,
-                              cl_uint              num_events_in_wait_list,
-                              const cl_event *     event_wait_list,
-                              cl_event *           event) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-  shim::IntrusivePtr<shim::cl::Memory> memory(static_cast<shim::cl::Memory*>(image));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueReadImage)(
+    cl_command_queue command_queue, cl_mem image, cl_bool blocking_read,
+    const size_t *origin, const size_t *region, size_t row_pitch,
+    size_t slice_pitch, void *ptr, cl_uint num_events_in_wait_list,
+    const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue));
+  shim::IntrusivePtr<shim::cl::Memory> memory(
+      static_cast<shim::cl::Memory *>(image));
 
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
@@ -252,13 +248,15 @@ SHIM_CALL(clEnqueueReadImage)(cl_command_queue     command_queue,
     return CL_OUT_OF_RESOURCES;
   }
 
-  if (auto **buf = std::get_if<CmSurface2D*>(&memory->buffer_);
-      !buf || (*buf)->ReadSurface(static_cast<unsigned char*>(ptr), nullptr) != CL_SUCCESS) {
+  if (auto **buf = std::get_if<CmSurface2D *>(&memory->buffer_);
+      !buf || (*buf)->ReadSurface(static_cast<unsigned char *>(ptr), nullptr) !=
+                  CL_SUCCESS) {
     return CL_INVALID_MEM_OBJECT;
   }
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }
@@ -266,22 +264,19 @@ SHIM_CALL(clEnqueueReadImage)(cl_command_queue     command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueWriteImage)(cl_command_queue    command_queue,
-                               cl_mem              image,
-                               cl_bool             blocking_write,
-                               const size_t *      origin,
-                               const size_t *      region,
-                               size_t              input_row_pitch,
-                               size_t              input_slice_pitch,
-                               const void *        ptr,
-                               cl_uint             num_events_in_wait_list,
-                               const cl_event *    event_wait_list,
-                               cl_event *          event) CL_API_SUFFIX__VERSION_1_0 {
-  shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-  shim::IntrusivePtr<shim::cl::Memory> memory(static_cast<shim::cl::Memory*>(image));
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueWriteImage)(
+    cl_command_queue command_queue, cl_mem image, cl_bool blocking_write,
+    const size_t *origin, const size_t *region, size_t input_row_pitch,
+    size_t input_slice_pitch, const void *ptr, cl_uint num_events_in_wait_list,
+    const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_1_0 {
+  shim::IntrusivePtr<shim::cl::Queue> queue(
+      static_cast<shim::cl::Queue *>(command_queue));
+  shim::IntrusivePtr<shim::cl::Memory> memory(
+      static_cast<shim::cl::Memory *>(image));
 
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
@@ -289,13 +284,15 @@ SHIM_CALL(clEnqueueWriteImage)(cl_command_queue    command_queue,
     return CL_OUT_OF_RESOURCES;
   }
 
-  if (auto **buf = std::get_if<CmSurface2D*>(&memory->buffer_);
-      !buf || (*buf)->WriteSurface(static_cast<const unsigned char*>(ptr), nullptr) != CL_SUCCESS) {
+  if (auto **buf = std::get_if<CmSurface2D *>(&memory->buffer_);
+      !buf || (*buf)->WriteSurface(static_cast<const unsigned char *>(ptr),
+                                   nullptr) != CL_SUCCESS) {
     return CL_INVALID_MEM_OBJECT;
   }
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }
@@ -303,23 +300,22 @@ SHIM_CALL(clEnqueueWriteImage)(cl_command_queue    command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueSVMMap)(cl_command_queue  command_queue,
-                           cl_bool           blocking_map,
-                           cl_map_flags      flags,
-                           void *            svm_ptr,
-                           size_t            size,
-                           cl_uint           num_events_in_wait_list,
-                           const cl_event *  event_wait_list,
-                           cl_event *        event) CL_API_SUFFIX__VERSION_2_0 {
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueSVMMap)(
+    cl_command_queue command_queue, cl_bool blocking_map, cl_map_flags flags,
+    void *svm_ptr, size_t size, cl_uint num_events_in_wait_list,
+    const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_2_0 {
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Queue> queue(
+        static_cast<shim::cl::Queue *>(command_queue));
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }
@@ -327,20 +323,21 @@ SHIM_CALL(clEnqueueSVMMap)(cl_command_queue  command_queue,
   return CL_SUCCESS;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
-SHIM_CALL(clEnqueueSVMUnmap)(cl_command_queue  command_queue,
-                             void *            svm_ptr,
-                             cl_uint           num_events_in_wait_list,
-                             const cl_event *  event_wait_list,
-                             cl_event *        event) CL_API_SUFFIX__VERSION_2_0 {
-  if (auto status = SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
+CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clEnqueueSVMUnmap)(
+    cl_command_queue command_queue, void *svm_ptr,
+    cl_uint num_events_in_wait_list, const cl_event *event_wait_list,
+    cl_event *event) CL_API_SUFFIX__VERSION_2_0 {
+  if (auto status =
+          SHIM_CALL(clWaitForEvents)(num_events_in_wait_list, event_wait_list);
       status != CL_SUCCESS) {
     return status;
   }
 
   if (event) {
-    shim::IntrusivePtr<shim::cl::Queue> queue(static_cast<shim::cl::Queue*>(command_queue));
-    shim::IntrusivePtr<shim::cl::Event> evt = new(std::nothrow) shim::cl::Event(queue);
+    shim::IntrusivePtr<shim::cl::Queue> queue(
+        static_cast<shim::cl::Queue *>(command_queue));
+    shim::IntrusivePtr<shim::cl::Event> evt =
+        new (std::nothrow) shim::cl::Event(queue);
     shim::IntrusivePtrAddRef(evt.get());
     *event = evt.get();
   }

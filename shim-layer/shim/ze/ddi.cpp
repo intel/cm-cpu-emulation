@@ -19,7 +19,7 @@ SPDX-License-Identifier: MIT
 #include "queue.h"
 #include "sampler.h"
 
-#define DDIX(type, func) pDdiTable->pfn ## func = SHIM_CALL(ze ## type ## func)
+#define DDIX(type, func) pDdiTable->pfn##func = SHIM_CALL(ze##type##func)
 
 namespace {
 ze_result_t CheckVersion(ze_api_version_t version) {
@@ -77,7 +77,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetDriverProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetDeviceProcAddrTable(
-    ze_api_version_t version, ze_device_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_device_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -107,7 +107,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetDeviceProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetContextProcAddrTable(
-    ze_api_version_t version, ze_context_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_context_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -131,7 +131,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetContextProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetCommandQueueProcAddrTable(
-    ze_api_version_t version, ze_command_queue_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_command_queue_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -151,7 +151,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetCommandQueueProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetCommandListProcAddrTable(
-    ze_api_version_t version, ze_command_list_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_command_list_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -192,7 +192,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetCommandListProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetEventProcAddrTable(
-    ze_api_version_t version, ze_event_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_event_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -215,7 +215,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetEventProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetEventPoolProcAddrTable(
-    ze_api_version_t version, ze_event_pool_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_event_pool_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -236,7 +236,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetEventPoolProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetFenceProcAddrTable(
-    ze_api_version_t version, ze_fence_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_fence_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -257,7 +257,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetFenceProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetImageProcAddrTable(
-    ze_api_version_t version, ze_image_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_image_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -276,7 +276,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetImageProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetKernelProcAddrTable(
-    ze_api_version_t version, ze_kernel_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_kernel_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -303,8 +303,8 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetKernelProcAddrTable(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetMemProcAddrTable(
-    ze_api_version_t version, ze_mem_dditable_t* pDdiTable) {
+ZE_DLLEXPORT ze_result_t ZE_APICALL
+zeGetMemProcAddrTable(ze_api_version_t version, ze_mem_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -329,7 +329,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetMemProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetModuleProcAddrTable(
-    ze_api_version_t version, ze_module_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_module_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -353,7 +353,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetModuleProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetModuleBuildLogProcAddrTable(
-    ze_api_version_t version, ze_module_build_log_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_module_build_log_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
@@ -371,7 +371,7 @@ ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetModuleBuildLogProcAddrTable(
 }
 
 ZE_DLLEXPORT ze_result_t ZE_APICALL zeGetSamplerProcAddrTable(
-    ze_api_version_t version, ze_sampler_dditable_t* pDdiTable) {
+    ze_api_version_t version, ze_sampler_dditable_t *pDdiTable) {
   if (pDdiTable == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }

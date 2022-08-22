@@ -24,7 +24,7 @@ shim::IntrusivePtr<CmDeviceEmu> GetDevice() {
 
   if (auto r = ::CreateCmDevice(dev, version);
       r == CM_SUCCESS && version >= CM_1_0) {
-    device.reset(dynamic_cast<CmDeviceEmu*>(dev), false);
+    device.reset(dynamic_cast<CmDeviceEmu *>(dev), false);
   }
 
   return device;
@@ -47,8 +47,9 @@ SHIM_EXPORT(zeDeviceGetP2PProperties);
 SHIM_EXPORT(zeDeviceCanAccessPeer);
 SHIM_EXPORT(zeDeviceGetStatus);
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGet)(
-    ze_driver_handle_t hDriver, uint32_t *pCount, ze_device_handle_t *phDevices) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGet)(ze_driver_handle_t hDriver, uint32_t *pCount,
+                       ze_device_handle_t *phDevices) {
   static shim::IntrusivePtr<CmDeviceEmu> dev = GetDevice();
 
   if (hDriver == nullptr) {
@@ -75,10 +76,9 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGet)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetSubDevices)(
-    ze_device_handle_t hDevice,
-    uint32_t *pCount,
-    ze_device_handle_t *phSubdevices) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetSubDevices)(ze_device_handle_t hDevice, uint32_t *pCount,
+                                 ze_device_handle_t *phSubdevices) {
   if (hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -87,7 +87,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetSubDevices)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
   if (*pCount == 0) {
     *pCount = 0;
   }
@@ -96,8 +96,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetSubDevices)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetProperties)(
-    ze_device_handle_t hDevice,
-    ze_device_properties_t *pDeviceProperties) {
+    ze_device_handle_t hDevice, ze_device_properties_t *pDeviceProperties) {
   if (hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }
@@ -106,11 +105,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
-  const auto sku = GfxEmu::Cfg::Sku().getInt<GfxEmu::Platform::Sku::Id>();
   const auto &cfg = GfxEmu::Cfg::getPlatformConfig(platform);
+  const auto sku = cfg.getValidSkuOrDefault(
+          GfxEmu::Cfg::Sku().getInt<GfxEmu::Platform::Sku::Id>());
 
   pDeviceProperties->type = ZE_DEVICE_TYPE_GPU;
   pDeviceProperties->vendorId = 0x8086;
@@ -153,7 +153,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetComputeProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
   const auto sku = GfxEmu::Cfg::Sku().getInt<GfxEmu::Platform::Sku::Id>();
@@ -191,7 +191,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetModuleProperties)(
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu*>(hDevice));
+  shim::IntrusivePtr<CmDeviceEmu> dev(reinterpret_cast<CmDeviceEmu *>(hDevice));
 
   const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
   const auto sku = GfxEmu::Cfg::Sku().getInt<GfxEmu::Platform::Sku::Id>();
@@ -200,19 +200,17 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetModuleProperties)(
   // SPIR-V will be never supported by EMU
   pModuleProperties->spirvVersionSupported = 0;
 
-  pModuleProperties->flags = ZE_DEVICE_MODULE_FLAG_FP16
-                           | ZE_DEVICE_MODULE_FLAG_INT64_ATOMICS;
+  pModuleProperties->flags =
+      ZE_DEVICE_MODULE_FLAG_FP16 | ZE_DEVICE_MODULE_FLAG_INT64_ATOMICS;
 
   if (cfg.flags & GfxEmu::Cfg::PlatformFlags::Dp4a) {
     pModuleProperties->flags |= ZE_DEVICE_MODULE_FLAG_DP4A;
   }
 
-  constexpr uint32_t fpflags = ZE_DEVICE_FP_FLAG_DENORM
-                             | ZE_DEVICE_FP_FLAG_INF_NAN
-                             | ZE_DEVICE_FP_FLAG_ROUND_TO_NEAREST
-                             | ZE_DEVICE_FP_FLAG_ROUND_TO_ZERO
-                             | ZE_DEVICE_FP_FLAG_ROUND_TO_INF
-                             | ZE_DEVICE_FP_FLAG_FMA;
+  constexpr uint32_t fpflags =
+      ZE_DEVICE_FP_FLAG_DENORM | ZE_DEVICE_FP_FLAG_INF_NAN |
+      ZE_DEVICE_FP_FLAG_ROUND_TO_NEAREST | ZE_DEVICE_FP_FLAG_ROUND_TO_ZERO |
+      ZE_DEVICE_FP_FLAG_ROUND_TO_INF | ZE_DEVICE_FP_FLAG_FMA;
 
   pModuleProperties->fp16flags = fpflags;
   pModuleProperties->fp32flags = fpflags;
@@ -236,7 +234,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetModuleProperties)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetCommandQueueGroupProperties)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetCommandQueueGroupProperties)(
     ze_device_handle_t hDevice, uint32_t *pCount,
     ze_command_queue_group_properties_t *pCommandQueueGroupProperties) {
   if (hDevice == nullptr) {
@@ -252,9 +251,10 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetCommandQueueGroupProper
   }
 
   if (pCommandQueueGroupProperties != nullptr) {
-    pCommandQueueGroupProperties[0].flags = ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE
-        | ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COPY
-        | ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_METRICS;
+    pCommandQueueGroupProperties[0].flags =
+        ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE |
+        ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COPY |
+        ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_METRICS;
     pCommandQueueGroupProperties[0].maxMemoryFillPatternSize = 1;
     pCommandQueueGroupProperties[0].numQueues = 1;
   }
@@ -282,13 +282,15 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetMemoryProperties)(
     pMemProperties[0].maxClockRate = 1 << 20;
     pMemProperties[0].maxBusWidth = 64;
     pMemProperties[0].totalSize = 1ull << 48;
-    std::strncpy(pMemProperties[0].name, "CM EMU host memory", ZE_MAX_DEVICE_NAME);
+    std::strncpy(pMemProperties[0].name, "CM EMU host memory",
+                 ZE_MAX_DEVICE_NAME);
   }
 
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetMemoryAccessProperties)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetMemoryAccessProperties)(
     ze_device_handle_t hDevice,
     ze_device_memory_access_properties_t *pMemAccessProperties) {
   if (hDevice == nullptr) {
@@ -299,16 +301,16 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetMemoryAccessProperties)
     return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
   }
 
-  auto caps = ZE_MEMORY_ACCESS_CAP_FLAG_RW
-      | ZE_MEMORY_ACCESS_CAP_FLAG_ATOMIC
-      | ZE_MEMORY_ACCESS_CAP_FLAG_CONCURRENT
-      | ZE_MEMORY_ACCESS_CAP_FLAG_CONCURRENT_ATOMIC;
+  auto caps = ZE_MEMORY_ACCESS_CAP_FLAG_RW | ZE_MEMORY_ACCESS_CAP_FLAG_ATOMIC |
+              ZE_MEMORY_ACCESS_CAP_FLAG_CONCURRENT |
+              ZE_MEMORY_ACCESS_CAP_FLAG_CONCURRENT_ATOMIC;
 
   pMemAccessProperties->hostAllocCapabilities = caps;
   pMemAccessProperties->deviceAllocCapabilities = caps;
   pMemAccessProperties->sharedSingleDeviceAllocCapabilities = caps;
   pMemAccessProperties->sharedCrossDeviceAllocCapabilities = 0;
-  pMemAccessProperties->sharedSystemAllocCapabilities = ZE_MEMORY_ACCESS_CAP_FLAG_RW;
+  pMemAccessProperties->sharedSystemAllocCapabilities =
+      ZE_MEMORY_ACCESS_CAP_FLAG_RW;
 
   return ZE_RESULT_SUCCESS;
 }
@@ -343,7 +345,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetImageProperties)(
   return ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetExternalMemoryProperties)(
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetExternalMemoryProperties)(
     ze_device_handle_t hDevice,
     ze_device_external_memory_properties_t *pExternalMemoryProperties) {
   if (hDevice == nullptr) {
@@ -363,8 +366,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetExternalMemoryPropertie
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetP2PProperties)(
-    ze_device_handle_t hDevice,
-    ze_device_handle_t hPeerDevice,
+    ze_device_handle_t hDevice, ze_device_handle_t hPeerDevice,
     ze_device_p2p_properties_t *pP2PProperties) {
   if (hDevice == nullptr || hPeerDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
@@ -384,8 +386,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetP2PProperties)(
 }
 
 ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceCanAccessPeer)(
-    ze_device_handle_t hDevice,
-    ze_device_handle_t hPeerDevice,
+    ze_device_handle_t hDevice, ze_device_handle_t hPeerDevice,
     ze_bool_t *value) {
   if (hDevice == nullptr || hPeerDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
@@ -404,8 +405,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceCanAccessPeer)(
   return ZE_RESULT_SUCCESS;
 }
 
-ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetStatus)(
-    ze_device_handle_t hDevice) {
+ZE_APIEXPORT ze_result_t ZE_APICALL
+SHIM_CALL(zeDeviceGetStatus)(ze_device_handle_t hDevice) {
   if (hDevice == nullptr) {
     return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
   }

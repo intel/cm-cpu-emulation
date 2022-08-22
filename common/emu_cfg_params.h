@@ -71,7 +71,7 @@ CFG_PARAM( Sku,
         p.set(GfxEmu::Utils::toLower(p.getStr ()));
         const auto it = GfxEmu::Platform::Sku::StaticData_nameToInt ().find(GfxEmu::Utils::toUpper(p.getStr ()));
         if(it == GfxEmu::Platform::Sku::StaticData_nameToInt ().end ()) {
-            p.setSubValue(GfxEmu::Platform::Sku::UNDEFINED);
+            p.setSubValue(static_cast<int64_t>(GfxEmu::Platform::Sku::UNDEFINED));
             return p.isSettingDefaults () ? true : false;
         }
         p.setSubValue(it->second);
