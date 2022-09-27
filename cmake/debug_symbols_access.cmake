@@ -1,0 +1,35 @@
+if(NOT DBGSYMB_PROVIDER_LIB_FOUND)
+
+if (UNIX)
+  find_package("LibDw")
+  if (LibDw_FOUND)
+    message("[info] LibDw lib and include dir: ${LibDw_LIBRARY} ${LibDw_INCLUDE_DIR}/\n")
+    add_definitions(-DLIBDW_FOUND)
+    set(DBGSYMB_PROVIDER_LIB_FOUND TRUE)
+    set(DBGSYMB_PROVIDER_LIB ${LibDw_LIBRARY})
+    set(DBGSYMB_PROVIDER_INCLUDE_DIR ${LibDw_INCLUDE_DIR})
+  endif()
+else ()
+  find_package("DbgHelp")
+  if (DbgHelp_FOUND)
+    message("[info] DbgHelp lib and include dir: ${DbgHelp_LIBRARY} ${DbgHelp_INCLUDE_DIR}/\n")
+    add_definitions(-DDBGHELP_FOUND)
+    add_definitions(-D_NO_CVCONST_H)
+    set(DBGSYMB_PROVIDER_LIB_FOUND TRUE)
+    set(DBGSYMB_PROVIDER_LIB ${DbgHelp_LIBRARY})
+    set(DBGSYMB_PROVIDER_INCLUDE_DIR ${DbgHelp_INCLUDE_DIR})
+  endif()
+endif()
+
+if(DBGSYMB_PROVIDER_LIB_FOUND)
+  add_definitions(-DGFX_EMU_DEBUG_SYMBOLS_ACCESS_ENABLED)
+endif()
+
+if(DBGSYMB_PROVIDER_LIB_FOUND)
+  add_library(DbgSymb::Provider INTERFACE IMPORTED)
+  set_target_properties(DbgSymb::Provider PROPERTIES
+    INTERFACE_LINK_LIBRARIES "${DBGSYMB_PROVIDER_LIB}"
+    INTERFACE_INCLUDE_DIRECTORIES "${DBGSYMB_PROVIDER_INCLUDE_DIR}")
+endif()
+
+endif()

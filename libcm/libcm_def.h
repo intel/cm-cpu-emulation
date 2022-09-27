@@ -53,6 +53,10 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 
+typedef unsigned char U8;
+typedef unsigned short U16;
+typedef unsigned int U32;
+
 #ifdef __GNUC__
 #ifndef __int8
 typedef char __int8;

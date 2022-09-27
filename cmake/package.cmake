@@ -50,7 +50,11 @@ set(CPACK_DEBIAN_COMPRESSION_TYPE "xz")
 set(CPACK_RPM_PACKAGE_RELEASE 1)
 set(CPACK_RPM_COMPRESSION_TYPE "xz")
 
-#set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE.TXT)
+if(WIN32)
+  set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license/windows/binary/C_for_Metal_Binary_Intel_Redist_License_Agreement_04.06.22_Final.md)
+else()
+  set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/license/linux/LICENSE.md)
+endif()
 
 if(NOT DEFINED DISTRO_NAME)
   find_program(LSB_RELEASE_EXEC lsb_release)

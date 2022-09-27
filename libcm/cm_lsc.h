@@ -41,7 +41,7 @@ enum class CacheHint : uint8_t {
   WriteBack = 3,
   WriteThrough = 4,
   Streaming = 5,
-  ReadInvalidate = 6
+  ReadInvalidate = 6,
 };
 
 // Data size or format to read or store.
@@ -316,6 +316,70 @@ constexpr unsigned atomicAlignMask()
     static_assert(DS != DS, "Atomic operation not supported - U16U32");
 }
 
+template <CacheHint mHint> class CacheHintWrap {
+  template <CacheHint...> class is_one_of_t;
+  template <CacheHint Last>
+  struct is_one_of_t<Last>
+      : std::conditional<Last == mHint, std::true_type, std::false_type>::type {
+  };
+  template <CacheHint Head, CacheHint... Tail>
+  struct is_one_of_t<Head, Tail...>
+      : std::conditional<Head == mHint, std::true_type,
+                         is_one_of_t<Tail...>>::type {};
+
+public:
+  constexpr operator CacheHint() const { return mHint; }
+  template <CacheHint... Hints> constexpr bool is_one_of() const {
+    return is_one_of_t<Hints...>::value;
+  }
+};
+
+constexpr bool are_both(CacheHint First, CacheHint Second, CacheHint Val) {
+  return First == Val && Second == Val;
+}
+
+enum class LSCAction {
+  Prefetch,
+  Load,
+  Store,
+  Atomic
+};
+
+template <LSCAction Act, CacheHint L1, CacheHint L3>
+constexpr bool lsc_check_cache_hint() {
+  constexpr auto L1H = CacheHintWrap<L1>{};
+  constexpr auto L3H = CacheHintWrap<L3>{};
+  switch (Act) {
+  case LSCAction::Prefetch:
+    return L1H.template is_one_of<CacheHint::Cached, CacheHint::Uncached,
+                         CacheHint::Streaming>() &&
+               L3H.template is_one_of<CacheHint::Cached, CacheHint::Uncached>() &&
+               !are_both(L1H, L3H, CacheHint::Uncached)
+        ;
+  case LSCAction::Load:
+    return are_both(L1H, L3H, CacheHint::Default) ||
+           (L1H.template is_one_of<CacheHint::Uncached, CacheHint::Cached,
+                          CacheHint::Streaming>() &&
+            L3H.template is_one_of<CacheHint::Uncached, CacheHint::Cached>())
+#ifdef CM_HAS_LSC_LOAD_L1RI_L3CA_HINT
+           || (L1H == CacheHint::ReadInvalidate && L3H == CacheHint::Cached)
+#endif // CM_HAS_LSC_LOAD_L1RI_L3CA_HINT
+        ;
+  case LSCAction::Store:
+    return are_both(L1H, L3H, CacheHint::Default) ||
+           are_both(L1H, L3H, CacheHint::WriteBack) ||
+           (L1H.template is_one_of<CacheHint::Uncached, CacheHint::WriteThrough,
+                          CacheHint::Streaming>() &&
+            L3H.template is_one_of<CacheHint::Uncached, CacheHint::WriteBack>());
+
+  case LSCAction::Atomic:
+    return are_both(L1H, L3H, CacheHint::Default) ||
+           (L1H == CacheHint::Uncached &&
+            L3H.template is_one_of<CacheHint::Uncached, CacheHint::WriteBack>());
+  }
+  return false;
+}
+
 enum class msgField : short
 {
   OP,VNNI, ADDRSIZE, DATASIZE, VECTSIZE, TRANSPOSE, CACHE, DSTLEN, SRC0LEN, ADDRTYPE
@@ -409,6 +473,7 @@ void cm_prefetch(SurfaceIndex Idx, vector<unsigned, N> Offset,
                  vector<ushort, N> Pred = 1)
 {
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Prefetch, L1H, L3H>(), "unsupported cache hint");
   // NOP for emulation
   return;
 }
@@ -421,6 +486,7 @@ template <unsigned NElts,
 CM_INLINE
 void cm_prefetch(SurfaceIndex Idx, unsigned Offset)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Prefetch, L1H, L3H>(), "unsupported cache hint");
   // NOP for emulation
   return;
 }
@@ -435,6 +501,7 @@ template <VectorSize VS,
 CM_INLINE
 void cm_prefetch(SurfaceIndex Idx, unsigned Offset)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Prefetch, L1H, L3H>(), "unsupported cache hint");
   // NOP for emulation
   return;
 }
@@ -448,6 +515,7 @@ template <VectorSize VS = VectorSize::N1, DataSize DS = DataSize::U32,
 CM_INLINE
     void cm_ptr_prefetch(const unsigned* const Ptr, vector<unsigned, N> Offset,
         vector<ushort, N> Pred = 1) {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Prefetch, L1H, L3H>(), "unsupported cache hint");
     // NOP for emulation
     return;
 }
@@ -458,6 +526,7 @@ template <VectorSize VS, DataSize DS = DataSize::U32,
     CacheHint L3H = CacheHint::Default>
 CM_INLINE
     void cm_ptr_prefetch(const unsigned* const Ptr, unsigned Offset) {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Prefetch, L1H, L3H>(), "unsupported cache hint");
     // NOP for emulation
     return;
 }
@@ -579,6 +648,7 @@ auto cm_load(SurfaceIndex Idx,
 {
 
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();
 
   return cm_emu_load<T, VS, N, MASK, EmuBufferType::UGM>(Idx,
@@ -599,6 +669,7 @@ auto cm_load(SurfaceIndex Idx,
 {
 
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();
 
   return cm_emu_load<T, VS, N, MASK, EmuBufferType::UGM>(Idx,
@@ -614,6 +685,7 @@ template <typename T,
 CM_INLINE
 auto cm_load(SurfaceIndex Idx, unsigned Offset)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
   vector<unsigned, 1> _offsets = Offset;
   vector<short, 1> _pred = 1;
 
@@ -632,6 +704,7 @@ template <typename T,
 CM_INLINE
 auto cm_load(SurfaceIndex Idx, unsigned Offset)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
   constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
 
   vector<unsigned, 1> _offsets = Offset;
@@ -757,6 +830,7 @@ CM_INLINE
     auto cm_ptr_load(T* Ptr, vector<unsigned, N> Offset,
         vector<ushort, N> Pred = 1) {
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();
 
     return cm_emu_ptr_load<T, VS, N, MASK>(Ptr,
@@ -771,6 +845,7 @@ CM_INLINE
     auto cm_ptr_load(T *Ptr, vector<unsigned, N> Offset,
         vector<ushort, N> Pred = 1) {
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
     constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();
     return cm_emu_ptr_load<T, VS, N, MASK>(Ptr, Offset, Pred);
@@ -782,6 +857,7 @@ template <typename T, unsigned NElts,
 CM_INLINE
 auto cm_ptr_load(T* Ptr, unsigned Offset)
 {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
     constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, 1>();
 
@@ -796,6 +872,7 @@ template <typename T, VectorSize VS, DataSize DS = details::lsc_data_size<T, Dat
     CacheHint L3H = CacheHint::Default>
     CM_INLINE
     auto cm_ptr_load(T* Ptr, unsigned Offset) {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Load, L1H, L3H>(), "unsupported cache hint");
     vector<unsigned, 1> _offsets = Offset;
     vector<short, 1> _pred = 1;
 
@@ -921,6 +998,7 @@ void cm_emu_store(SurfaceIndex Idx,
                 vector<ushort, N> Pred = 1)                            \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                  \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();  \
     cm_emu_store<T, VS, N, MASK, EmuBufferType::UGM>(Idx, Offset, Data, Pred); \
     return;                                                             \
@@ -942,6 +1020,7 @@ template <typename T,
 CM_INLINE
 void cm_store(SurfaceIndex Idx, unsigned int Offset, vector<T, NElts> Data)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint");
   constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
 
   vector<unsigned int, 1> _offsets = Offset;
@@ -964,6 +1043,7 @@ template <typename T,
 CM_INLINE
 void cm_store(SurfaceIndex Idx, unsigned int Offset, vector_ref<T, NElts> Data)
 {
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint");
   constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
 
   vector<unsigned int, 1> _offsets = Offset;
@@ -1092,6 +1172,7 @@ template <typename T,
                 vector<ushort, N> Pred = 1)                            \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                  \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, N>();  \
     cm_emu_ptr_store<T, VS, N, MASK>(Ptr, Offset, Data, Pred);          \
     return;                                                             \
@@ -1110,6 +1191,7 @@ template <typename T, unsigned NElts, DataSize DS = DataSize::Default,
     CacheHint L3H = CacheHint::Default>
     CM_INLINE
     void cm_ptr_store(T* ptr, unsigned Offset, vector<T, NElts> Data) {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint");
     constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
 
     vector<unsigned int, 1> _offsets = Offset;
@@ -1129,6 +1211,7 @@ template <typename T, unsigned NElts, DataSize DS = DataSize::Default,
     CacheHint L3H = CacheHint::Default>
     CM_INLINE
     void cm_ptr_store(T* Ptr, unsigned Offset, vector_ref<T, NElts> Data) {
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Store, L1H, L3H>(), "unsupported cache hint");
     constexpr VectorSize VS = details::lsc_vector_size_enum<NElts>();
 
     vector<unsigned int, 1> _offsets = Offset;
@@ -1697,6 +1780,7 @@ template <AtomicOp Op, typename T, VectorSize VS = VectorSize::N1,
     typename std::enable_if<details::lsc_atomic_nsrcs<Op>() == 0,
     decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type {
       static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+      static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
       constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>();
 
       std::unique_lock<std::mutex> lock(atomicMutex);
@@ -1714,6 +1798,7 @@ template <AtomicOp Op, typename T, VectorSize VS = VectorSize::N1,
     typename std::enable_if<details::lsc_atomic_nsrcs<Op>() == 0,
     decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type {
       static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+      static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
       constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>();
 
       std::unique_lock<std::mutex> lock(atomicMutex);
@@ -1734,6 +1819,7 @@ template <AtomicOp Op, typename T, VectorSize VS = VectorSize::N1,
       decltype(Src0)>::type                                                  \
       {                                                                      \
         static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");     \
+        static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
         constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>(); \
         std::unique_lock<std::mutex> lock(atomicMutex);                      \
         return cm_emu_ptr_atomic_single_src<Op, T, VS, N, MASK, EmuBufferType::UGM>(Ptr, Offset, Src0, Pred); \
@@ -1760,6 +1846,7 @@ template <AtomicOp Op, typename T, VectorSize VS = VectorSize::N1,         \
     decltype(Src0)>::type                                                  \
     {                                                                      \
       static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");   \
+      static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
       constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>(); \
       std::unique_lock<std::mutex> lock(atomicMutex);                     \
       return cm_emu_ptr_atomic_binary_src<Op, T, VS, N, MASK, EmuBufferType::UGM>(Ptr, Offset, Src0, Src1, Pred); \
@@ -2224,6 +2311,7 @@ cm_atomic(SurfaceIndex Idx, vector<unsigned, N> Offset, vector<ushort, N> Pred =
                                decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type
 {
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>();
 
   std::unique_lock<std::mutex> lock(atomicMutex);
@@ -2241,6 +2329,7 @@ cm_atomic(SurfaceIndex Idx, vector_ref<unsigned, N> Offset, vector<ushort, N> Pr
                                decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type
 {
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>();
 
   std::unique_lock<std::mutex> lock(atomicMutex);
@@ -2261,6 +2350,7 @@ cm_atomic(SurfaceIndex Idx, vector_ref<unsigned, N> Offset, vector<ushort, N> Pr
                                  decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                  \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>(); \
     std::unique_lock<std::mutex> lock(atomicMutex);                     \
     return cm_emu_atomic_single_src<Op, T, VS, N, MASK, EmuBufferType::UGM>(Idx, Offset, Src0, Pred); \
@@ -2287,6 +2377,7 @@ CM_ATOMIC_SINGLE_SRC_TMPL(vector_ref, vector_ref)
                                  decltype(Src0)>::type                  \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                  \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::UGM>(); \
     std::unique_lock<std::mutex> lock(atomicMutex);                     \
     return cm_emu_atomic_binary_src<Op, T, VS, N, MASK, EmuBufferType::UGM>(Idx, Offset, Src0, Src1, Pred); \
@@ -2313,6 +2404,7 @@ cm_atomic_slm(vector<unsigned, N> Offset, vector<ushort, N> Pred = 1)
                                decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type
 {
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::SLM>();
 
   std::unique_lock<std::mutex> lock(atomicMutex);
@@ -2330,6 +2422,7 @@ cm_atomic_slm(vector_ref<unsigned, N> Offset, vector<ushort, N> Pred = 1)
                                decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type
 {
   static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");
+  static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint");
   constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::SLM>();
 
   std::unique_lock<std::mutex> lock(atomicMutex);
@@ -2350,6 +2443,7 @@ cm_atomic_slm(vector_ref<unsigned, N> Offset, vector<ushort, N> Pred = 1)
                                  decltype(vector<T, N * details::lsc_vector_size<VS>()>())>::type \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                  \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::SLM>(); \
     std::unique_lock<std::mutex> lock(atomicMutex);                     \
     return cm_emu_atomic_single_src<Op, T, VS, N, MASK, EmuBufferType::SLM>(SLM_SURFACE_IDX, \
@@ -2377,6 +2471,7 @@ CM_ATOMIC_SLM_SINGLE_SRC_TMPL(vector_ref, vector_ref)
                                  decltype(Src0)>::type                  \
   {                                                                     \
     static_assert(details::lsc_check_simt<N>(), "unexpected number of channels");                 \
+    static_assert(details::lsc_check_cache_hint<details::LSCAction::Atomic, L1H, L3H>(), "unsupported cache hint"); \
     constexpr uint MASK = details::atomicAlignMask<Op, T, VS, DS, N, EmuBufferType::SLM>(); \
     std::unique_lock<std::mutex> lock(atomicMutex);                     \
     return cm_emu_atomic_binary_src<Op, T, VS, N, MASK, EmuBufferType::SLM>(SLM_SURFACE_IDX, Offset, Src0, Src1, Pred); \

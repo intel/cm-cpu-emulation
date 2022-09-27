@@ -18,6 +18,8 @@ set(LIBCM_SOURCE
   ${COMMON_SRC_PATH}/emu_log.cpp
   ${COMMON_SRC_PATH}/emu_kernel_support.cpp
   ${COMMON_SRC_PATH}/emu_kernel_support_types.cpp
+  ${COMMON_SRC_PATH}/emu_dbgsymb.cpp
+  ${COMMON_OS_SRC_PATH}/emu_dbgsymb_os.cpp
 
   ${COMMON_SRC_PATH}/os_utils.cpp
   ${COMMON_SRC_PATH}/kernel_utils.cpp
@@ -32,6 +34,7 @@ set(LIBCM_SOURCE
 set(LIBCM_HEADERS
   ${COMMON_HEADERS}
   cm.h
+  cm_lsc.h
   cm_color.h
   libcm_common.h
   libcm_def.h

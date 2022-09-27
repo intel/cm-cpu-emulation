@@ -39,6 +39,7 @@ set(COMMON_HEADERS
   ${COMMON_HEADERS_PATH}/os_utils.h
   
   ${COMMON_HEADERS_PATH}/emu_dbgsymb_types.h
+  ${COMMON_OS_HEADERS_PATH}/emu_dbgsymb_os.h
   ${COMMON_HEADERS_PATH}/emu_kernel_support.h
   ${COMMON_HEADERS_PATH}/emu_kernel_support_types.h
 
@@ -123,6 +124,7 @@ set(COMMON_HEADERS
 
 ####################################################
 
+include(${CMAKE_CURRENT_LIST_DIR}/debug_symbols_access.cmake)
 
 ####################################################
 
