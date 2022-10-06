@@ -57,6 +57,8 @@ SPDX-License-Identifier: MIT
 #include "cm_intrin.h"
 #include "cm_internal.h"
 
+#include "cm_lsc.h"
+
 // Dummy CM_SW_BARRIER as it is not supported under emulation
 #define CM_SW_BARRIER
 
