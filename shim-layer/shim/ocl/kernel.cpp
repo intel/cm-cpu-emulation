@@ -163,11 +163,12 @@ SHIM_CALL(clSetKernelArg)(cl_kernel kernel, cl_uint arg_index, size_t arg_size,
       return CL_INVALID_ARG_SIZE;
     }
 
-    void *ptr = nullptr;
     const void *parg = arg_value;
 
-    if (arg_size == sizeof(void *)) { // It may be svmptr_t
-      void *ptr = nullptr;
+    // The argument may be svmptr_t
+    void *ptr = nullptr;
+
+    if (arg_size == sizeof(void *)) {
       std::memcpy(&ptr, arg_value, sizeof(ptr));
 
       if (shim::cl::Memory *mem = static_cast<shim::cl::Memory *>(ptr);

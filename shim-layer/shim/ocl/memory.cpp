@@ -46,8 +46,7 @@ CL_API_ENTRY cl_mem CL_API_CALL SHIM_CALL(clCreateBuffer)(
       new (std::nothrow) shim::cl::Memory(ctx, ptr);
 
   if (!mem) {
-    SHIM_CALL(clSVMFree)
-    (context, ptr);
+    SHIM_CALL(clSVMFree)(context, ptr);
     ERRCODE(CL_OUT_OF_HOST_MEMORY);
     return nullptr;
   }
