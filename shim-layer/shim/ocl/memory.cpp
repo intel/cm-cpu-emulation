@@ -16,6 +16,11 @@ static CM_SURFACE_FORMAT ImageFormatToCmFormat(const cl_image_format *format) {
   static const FmtMap cl2cm = {
       {{CL_UNORM_INT8, CL_RGBA}, CM_SURFACE_FORMAT_A8R8G8B8},
       {{CL_UNORM_INT8, CL_ARGB}, CM_SURFACE_FORMAT_A8R8G8B8},
+
+      {{CL_UNORM_INT8, CL_A}, CM_SURFACE_FORMAT_A8},
+      {{CL_FLOAT, CL_R}, CM_SURFACE_FORMAT_R32F},
+      {{CL_YUYV_INTEL, -1}, CM_SURFACE_FORMAT_YUY2},
+      {{CL_SNORM_INT8, CL_RG}, CM_SURFACE_FORMAT_V8U8},
   };
 
   if (auto result = cl2cm.find(

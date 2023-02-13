@@ -53,8 +53,9 @@ CFG_PARAM( Platform,
         p.set(GfxEmu::Utils::toLower(p.getStr ()));
         const auto it = GfxEmu::Platform::StaticData_nameToInt ().find(GfxEmu::Utils::toUpper(p.getStr ()));
         if(it == GfxEmu::Platform::StaticData_nameToInt ().end ()) {
-            p.setSubValue(GfxEmu::Platform::UNDEFINED);
-            return false;
+            GFX_EMU_FAIL_WITH_MESSAGE(fCfg, "platform \"%s\" is not known.\n",
+                p.getStr().c_str()
+            );
         }
         p.setSubValue(it->second);
         return true;
@@ -118,8 +119,20 @@ CFG_PARAM( RetainTmpFiles,
 );
 
 CFG_PARAM( BacktraceOnTermination,
-    "always print backtrace on error termination",
-    "always print backtrace on error termination",
+    "Print backtrace on error termination",
+    "",
     {"EMU_BACKTRACE_ON_TERMINATION", ""},
     false
+);
+
+CFG_PARAM( CatchTerminatingSignals,
+    "Catch terminating signals",
+    "",
+    {"EMU_CATCH_TERMINATING_SIGNALS", ""},
+    false,
+    [](auto& p){
+        if(p.getBool())
+            GfxEmu::Cfg::BacktraceOnTermination().set(true);
+        return true;
+    }
 );

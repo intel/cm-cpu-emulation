@@ -199,6 +199,9 @@ void SigHandler_(int signum)
 struct HandleAborts_ {
     HandleAborts_ ()
     {
+        if(!GfxEmu::Cfg::CatchTerminatingSignals ())
+            return;
+
 #ifndef _WIN32
         struct sigaction sa;
         sa.sa_flags = SA_SIGINFO;

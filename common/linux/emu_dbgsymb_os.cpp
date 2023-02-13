@@ -168,16 +168,14 @@ static inline int dwarfCallback_fillFunctionDesc (
 
     auto name = dwarf_diename(die);
 
+    if (strcmp(name, funcName) != 0) {
+        return DWARF_CB_OK; // Look further...
+    }
+
     Dwarf_Addr dwarf_epc {0};
     dwarf_entrypc(die, &dwarf_epc);
 
     const auto hasChildren = dwarf_haschildren(die);
-
-    if (!hasChildren ||
-        strcmp(name, funcName) != 0
-    ) {
-        return DWARF_CB_OK; // Look further...
-    }
 
     Dwarf_Attribute linkageNameAttr;
     if(dwarf_attr_integrate(die,DW_AT_linkage_name,&linkageNameAttr)) {
@@ -194,6 +192,11 @@ static inline int dwarfCallback_fillFunctionDesc (
     GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fDetail, "function name: %s\n", name);
     GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fDetail, "die has children: %u\n", hasChildren);
     GFX_EMU_DEBUG_MESSAGE(fDbgSymb | fDetail, "dwarf entry pc: %p\n", dwarf_epc);
+
+    if (!hasChildren) {
+        params->isFound = true;
+        return DWARF_CB_ABORT;
+    }
 
     Dwarf_Die paramSearchDie;
     dwarf_child(die, &paramSearchDie);

@@ -33,7 +33,12 @@ namespace shim {
 namespace cl {
 
 struct Platform : public _cl_platform_id {
-  Platform(cl_icd_dispatch *dispatch) { this->dispatch = dispatch; }
+  Platform(cl_icd_dispatch *);
+
+  std::vector<cl_name_version> extensions;
+  std::string extensions_str;
+
+  std::vector<size_t> subgroup_sizes;
 };
 
 } // namespace cl

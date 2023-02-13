@@ -367,8 +367,9 @@ struct iobuffer {
     int pitch;
 };
 CMRT_LIBCM_API extern cm_list<iobuffer> iobuffers;
-CM_API cm_list<CmEmulSys::iobuffer>::iterator search_buffer(int id);
-extern cm_list<CmEmulSys::iobuffer>::iterator search_buffer(void *src, CmBufferType bclass);
+extern CM_API cm_list<CmEmulSys::iobuffer>::iterator search_buffer(int id);
+extern CM_API cm_list<CmEmulSys::iobuffer>::iterator search_buffer(void *src, CmBufferType bclass);
+extern CM_API cm_list<CmEmulSys::iobuffer>::iterator search_buffer(void *src);
 }
 
 /*

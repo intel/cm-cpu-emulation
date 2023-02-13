@@ -66,6 +66,21 @@ CmEmulSys::search_buffer(void *src, CmBufferType bclass)
     return it;
 }
 
+extern cm_list<CmEmulSys::iobuffer>::iterator
+CmEmulSys::search_buffer(void *src)
+{
+    cm_list<CmEmulSys::iobuffer>::iterator it;
+
+    CmEmulSys::enter_dataport_cs();
+    for (it = CmEmulSys::iobuffers.begin(); it != CmEmulSys::iobuffers.end(); ++it) {
+        if (it->p == src) {
+            break;
+        }
+    }
+    CmEmulSys::leave_dataport_cs();
+    return it;
+}
+
 CM_API void initialize_global_surface_index()
 {
     for (int i = 0; i < GLOBAL_SURFACE_INDEX_NUMBER; i ++)

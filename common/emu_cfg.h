@@ -177,7 +177,7 @@ private:
             }
         }
 
-        if constexpr (setDefaults) actualV = defaultV;
+        if (isSettingDefaults_) actualV = defaultV;
 
         if constexpr (!fromCallback) {
             if(!valueCallback(*this)) {

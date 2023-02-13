@@ -382,16 +382,16 @@ constexpr bool lsc_check_cache_hint() {
 
 enum class msgField : short
 {
-  OP,VNNI, ADDRSIZE, DATASIZE, VECTSIZE, TRANSPOSE, CACHE, DSTLEN, SRC0LEN, ADDRTYPE
+  OP,VNNI, AddrSize, DataSize, VectSize, Transpose, Cache, DstLen, Src0Len, AddrType
 };
 
 enum class msgOp : short
 {
-  DP_LOAD = 0x0, //scatter/vector load
-  LOAD_2D = 0x3,
-  DP_STORE = 0x4, // scatter/vector store
-  STORE_2D = 0x7,
-  OP_MAX = 0x3F
+  DpLoad = 0x0, //scatter/vector load
+  Load2d = 0x3,
+  DpStore = 0x4, // scatter/vector store
+  Store2d = 0x7,
+  OpMax = 0x3F
 };
 
 typedef struct _bitfields_
@@ -405,13 +405,13 @@ const bitfields BIT_FIELDS[10] =
   {0,  0x3F}, // OP / 6 bits
   {7,  0x1}, // VNNI -> LOAD only
   {7,  0x3}, // Address size
-  {9,  0x7}, // DATASIZE
-  {12, 0x7}, // VECTSIZE
-  {15, 0x1}, // TRANSPOSE -> LOAD only
-  {17, 0x7}, // CACHE
-  {20, 0x1F}, // DSTLEN
-  {25, 0xF}, // SRC0LEN,
-  {29, 0x3}  // ADDRTYPE
+  {9,  0x7}, // DataSize
+  {12, 0x7}, // VectSize
+  {15, 0x1}, // Transpose -> LOAD only
+  {17, 0x7}, // Cache
+  {20, 0x1F}, // DstLen
+  {25, 0xF}, // Src0Len,
+  {29, 0x3}  // AddrType
 };
 
 uint32_t inline getMsgField(uint32_t msg, msgField field)
@@ -867,6 +867,11 @@ auto cm_ptr_load(T* Ptr, unsigned Offset)
     return cm_emu_ptr_load<T, VS, 1, MASK>(Ptr, _offsets, _pred);
 }
 
+#if ( defined(_MSC_VER) && _MSC_VER >= 1933 ) || !defined(_MSC_VER)
+// Template overload for int (or enum class) vs enum class doesn't
+// work correctly for MSVC before v.19.33 resulting in unresolved
+// ambiguity. For older MSVC versions leaving only int template
+// parameter variant.
 template <typename T, VectorSize VS, DataSize DS = details::lsc_data_size<T, DataSize::Default>(),
     CacheHint L1H = CacheHint::Default,
     CacheHint L3H = CacheHint::Default>
@@ -876,11 +881,11 @@ template <typename T, VectorSize VS, DataSize DS = details::lsc_data_size<T, Dat
     vector<unsigned, 1> _offsets = Offset;
     vector<short, 1> _pred = 1;
 
-    //constexpr DataSize DS = details::lsc_data_size<T, DataSize::Default>();
     constexpr uint MASK = details::loadstoreAlignMask<T, VS, DS, 1>();
 
     return cm_emu_ptr_load<T, VS, 1, MASK>(Ptr, _offsets, _pred);
 }
+#endif // ( defined(_MSC_VER) && _MSC_VER >= 1933 ) || !defined(_MSC_VER)
 
 template <typename T,
           VectorSize VS,
@@ -1430,6 +1435,25 @@ cm_emu_ptr_atomic_zero_src(T* Ptr,
 
   constexpr int sizeofT = sizeof(T);
 
+  if constexpr(BFT == EmuBufferType::UGM)
+  {
+    cm_list<CmEmulSys::iobuffer>::iterator buff_iter =
+        CmEmulSys::search_buffer(buff);
+    assert(buff_iter->height == 1);
+    bufByteWidth = buff_iter->width;
+  }
+  else if constexpr (BFT == EmuBufferType::SLM)
+  {
+    assert(buff == __cm_emu_get_slm());
+    bufByteWidth = (int)__cm_emu_get_slm_size();
+  }
+  else
+  {
+    printf("%s:%d - Unsupported Emulation buffer type!!\n",
+           __FUNCTION__, __LINE__);
+    exit(EXIT_FAILURE);
+  }
+
   for (int offsetIdx = 0; offsetIdx < N; offsetIdx += 1)
   {
     if (Pred(offsetIdx) == 0)
@@ -1508,6 +1532,25 @@ cm_emu_ptr_atomic_single_src(T* Ptr,
   vector<T, N * elemCount> _Output = 0;
 
   constexpr int sizeofT = sizeof(T);
+
+  if constexpr(BFT == EmuBufferType::UGM)
+  {
+    cm_list<CmEmulSys::iobuffer>::iterator buff_iter =
+        CmEmulSys::search_buffer(buff);
+    assert(buff_iter->height == 1);
+    bufByteWidth = buff_iter->width;
+  }
+  else if constexpr (BFT == EmuBufferType::SLM)
+  {
+    assert(buff == __cm_emu_get_slm());
+    bufByteWidth = (int)__cm_emu_get_slm_size();
+  }
+  else
+  {
+    printf("%s:%d - Unsupported Emulation buffer type!!\n",
+           __FUNCTION__, __LINE__);
+    exit(EXIT_FAILURE);
+  }
 
   for (int offsetIdx = 0; offsetIdx < N; offsetIdx += 1)
   {
@@ -2646,21 +2689,21 @@ void cm_raw_send_helper(MatTy1<T1, N1, N2> rspVar,
 {
   auto op = details::getMsgOp(msgDesc);
 
-  if (op == details::msgOp::DP_LOAD)
+  if (op == details::msgOp::DpLoad)
   {
       //static_assert(N1 == 1, "Wrong Reference for 2D-load!! (N1 != 1)");
       assert(sfid == 0xF); // UGM type only
 
       unsigned transpose = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::TRANSPOSE);
+          details::msgField::Transpose);
       unsigned address_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::ADDRSIZE);
+          details::msgField::AddrSize);
       unsigned address_type = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::ADDRTYPE);
+          details::msgField::AddrType);
       unsigned data_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::DATASIZE);
+          details::msgField::DataSize);
       unsigned vect_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::VECTSIZE);
+          details::msgField::VectSize);
       uint64_t surfaceBase = 0;
       uint64_t Addr0 = 0;
       vector<unsigned, N> _offset = 0;
@@ -2698,19 +2741,19 @@ void cm_raw_send_helper(MatTy1<T1, N1, N2> rspVar,
       cm_emu_ptr_load_core((T1*)surfaceBase, _offset, _pred, _RetRef, NElts[vect_size], MASK);
 
   }
-  else  if (op == details::msgOp::DP_STORE)
+  else  if (op == details::msgOp::DpStore)
   {
       assert(sfid == 0xF); // UGM type only
       uint32_t transpose = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::TRANSPOSE);
+          details::msgField::Transpose);
       uint32_t address_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::ADDRSIZE);
+          details::msgField::AddrSize);
       uint32_t address_type = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::ADDRTYPE);
+          details::msgField::AddrType);
       uint32_t data_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::DATASIZE);
+          details::msgField::DataSize);
       uint32_t vect_size = details::getMsgField((uint32_t)msgDesc,
-          details::msgField::VECTSIZE);
+          details::msgField::VectSize);
       uint64_t surfaceBase = 0;
       uint64_t Addr0 = 0;
       vector<unsigned, N> _offset = 0;
@@ -2777,7 +2820,7 @@ void cm_raw_send(MsgTy1<T1, N1, N2> rspVar,
   // Argument sanity check. Add handled operation cases in following
   // assert accordingly
   assert(
-          op == details::msgOp::DP_LOAD);
+          op == details::msgOp::DpLoad);
 
   matrix_ref<T1, N1, N2> dummy_ref = rspVar;
   cm_raw_send_helper(rspVar,
@@ -2811,7 +2854,7 @@ void cm_raw_send(void *dummy,
   // Argument sanity check. Add handled operation cases in following
   // assert accordingly
   assert(
-          op == details::msgOp::DP_STORE);
+          op == details::msgOp::DpStore);
 
   matrix_ref<T3, N5, N6> dummy_ref = msgVar2;
   cm_raw_send_helper(dummy_ref,
@@ -2844,10 +2887,10 @@ void cm_raw_send(void *dummy,
   // Argument sanity check. Add handled operation cases in following
   // assert accordingly
   assert(
-          op == details::msgOp::DP_LOAD);
+          op == details::msgOp::DpLoad);
 
   if (
-          op == details::msgOp::DP_LOAD)
+          op == details::msgOp::DpLoad)
   {
     return;
   }
@@ -2901,7 +2944,7 @@ cm_raw_send(
 {
   auto op = details::getMsgOp(msgDesc);
   assert(
-          op == details::msgOp::DP_STORE);
+          op == details::msgOp::DpStore);
 
   cm_raw_send_helper(msgVar2.template format<U3, 1, N3>(),
                      msgVar.template format<U2, 1, N2>(),
@@ -2927,7 +2970,7 @@ cm_raw_send(MsgTy1<U1, N1> rspVar,
 {
   auto op = details::getMsgOp(msgDesc);
   assert(
-          op == details::msgOp::DP_LOAD);
+          op == details::msgOp::DpLoad);
 
   cm_raw_send_helper(rspVar.template format<U1, 1, N1>(),
                      msgVar.template format<U2, 1, N2>(),

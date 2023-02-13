@@ -30,7 +30,7 @@ enum Id {
     RKL = 90,
     ADLN = 91,
     ADLP = 92,
-    ADLS = 93
+    ADLS = 93,
 };
 
 inline std::map<std::string, int64_t>& StaticData_nameToInt() {

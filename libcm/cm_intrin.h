@@ -5162,7 +5162,7 @@ cm_ptr_block_read_unaligned(const T *const addr, // pointer
 // and write it back to the destination vector 'v_Dst'
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_read64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
                     vector_ref<T, N> v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5174,7 +5174,7 @@ cm_svm_scatter_read64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_read64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const vector<uint64_t, N> &v_Addr, // vector of SVM pointers
                     vector_ref<T, N> v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5186,7 +5186,7 @@ cm_svm_scatter_read64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_read64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
                     vector<T, N> &v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5198,7 +5198,7 @@ cm_svm_scatter_read64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_read64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const vector<uint64_t, N> &v_Addr, // vector of SVM pointers
                     vector<T, N> &v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5210,7 +5210,7 @@ cm_svm_scatter_read64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_read64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
                     matrix_ref<T, R, C> v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5223,7 +5223,7 @@ cm_svm_scatter_read64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointe
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_read64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
                     matrix_ref<T, R, C> v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5236,7 +5236,7 @@ cm_svm_scatter_read64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_read64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
                     matrix<T, R, C> &v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5249,7 +5249,7 @@ cm_svm_scatter_read64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointe
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_read64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
+cm_svm_scatter_read64(const matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
                     matrix<T, R, C> &v_Dst   // Data vector to be written from SVM
             )
 {
@@ -5373,8 +5373,8 @@ cm_ptr_block_write(T *const addr, // pointer
 // from the source vector 'v_Src'
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_write64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
-                     vector<T, N> &v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
+                     const vector<T, N> &v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != N; i++) {
@@ -5385,8 +5385,8 @@ cm_svm_scatter_write64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_write64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
-                     vector<T, N> &v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const vector<uint64_t, N> &v_Addr, // vector of SVM pointers
+                     const vector<T, N> &v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != N; i++) {
@@ -5397,8 +5397,8 @@ cm_svm_scatter_write64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_write64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
-                     vector_ref<T, N> v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
+                     const vector_ref<T, N> v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != N; i++) {
@@ -5409,8 +5409,8 @@ cm_svm_scatter_write64(vector_ref<uint64_t, N> v_Addr, // vector of SVM pointers
 
 template <typename T, uint N>
 CM_API void
-cm_svm_scatter_write64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
-                     vector_ref<T, N> v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const vector<uint64_t, N> &v_Addr, // vector of SVM pointers
+                     const vector_ref<T, N> v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != N; i++) {
@@ -5421,8 +5421,8 @@ cm_svm_scatter_write64(vector<uint64_t, N> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_write64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
-                     matrix<T, R, C> &v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
+                     const matrix<T, R, C> &v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != R; i++)
@@ -5434,8 +5434,8 @@ cm_svm_scatter_write64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM point
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_write64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
-                     matrix<T, R, C> &v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
+                     const matrix<T, R, C> &v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != R; i++)
@@ -5447,8 +5447,8 @@ cm_svm_scatter_write64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_write64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
-                     matrix_ref<T, R, C> v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM pointers
+                     const matrix_ref<T, R, C> v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != R; i++)
@@ -5460,8 +5460,8 @@ cm_svm_scatter_write64(matrix_ref<uint64_t, R, C> v_Addr, // vector of SVM point
 
 template <typename T, uint R, uint C>
 CM_API void
-cm_svm_scatter_write64(matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
-                     matrix_ref<T, R, C> v_Src   // Data vector to write64 into SVM
+cm_svm_scatter_write64(const matrix<uint64_t, R, C> &v_Addr, // vector of SVM pointers
+                     const matrix_ref<T, R, C> v_Src   // Data vector to write64 into SVM
             )
 {
     for (int i = 0; i != R; i++)
@@ -5512,6 +5512,42 @@ template <typename T, uint R, uint C> _GENX_ inline void cm_svm_scatter_write(ma
 template <typename T, uint R, uint C> _GENX_ inline void cm_svm_scatter_write(matrix<svmptr_t, R, C> v_Addr, matrix<T, R, C> &v_Dst)
 {   matrix<uint64_t, R, C> v_Addr64(v_Addr);
     cm_svm_scatter_write64(v_Addr64, v_Dst);
+}
+
+template <typename T0, uint N, template <typename T2, uint N2> typename OffsetTy,
+         template <typename T3, uint N3> typename DstTy>
+inline void cm_ptr_scatter_read(T0 const *p, const OffsetTy<ptrdiff_t, N> offset, DstTy<T0, N>& dst)
+{
+  uintptr_t base = reinterpret_cast<uintptr_t>(p);
+  vector<uintptr_t, N> vAddr = base + offset;
+  cm_svm_scatter_read64(vAddr, dst);
+}
+
+template <typename T0, uint N, uint M, template <typename T2, uint N2, uint M2> typename OffsetTy,
+         template <typename T3, uint N3, uint M3> typename DstTy>
+inline void cm_ptr_scatter_read(T0 *const p, const OffsetTy<ptrdiff_t, N, M> offset, DstTy<T0, N, M>& dst)
+{
+  uintptr_t base = reinterpret_cast<uintptr_t>(p);
+  matrix<uintptr_t, N, M> vAddr = base + offset;
+  cm_svm_scatter_read64(vAddr, dst);
+}
+
+template <typename T0, uint N, template <typename T2, uint N2> typename OffsetTy,
+         template <typename T3, uint N3> typename SrcTy>
+inline void cm_ptr_scatter_write(T0 const *p, const OffsetTy<ptrdiff_t, N> offset, const SrcTy<T0, N> src)
+{
+  uintptr_t base = reinterpret_cast<uintptr_t>(p);
+  vector<uintptr_t, N> vAddr = base + offset;
+  cm_svm_scatter_write64(vAddr, src);
+}
+
+template <typename T0, uint N, uint M, template <typename T2, uint N2, uint M2> typename OffsetTy,
+         template <typename T3, uint N3, uint M3> typename SrcTy>
+inline void cm_ptr_scatter_write(T0 *const p, const OffsetTy<ptrdiff_t, N, M> offset, const SrcTy<T0, N, M> src)
+{
+  uintptr_t base = reinterpret_cast<uintptr_t>(p);
+  matrix<uintptr_t, N, M> vAddr = base + offset;
+  cm_svm_scatter_write64(vAddr, src);
 }
 
 //------------------------------------------------------------------------------

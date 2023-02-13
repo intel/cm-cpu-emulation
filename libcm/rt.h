@@ -262,10 +262,10 @@ class CmEmuMt_Thread
 public:
     enum class State
     {
-        UNSPAWNED,
-        RUNNING,
-        SUSPENDED,
-        COMPLETED
+        Unspawned,
+        Running,
+        Suspended,
+        Completed
     };
 
 private:
@@ -277,7 +277,7 @@ private:
     CmEmuMt_Kernel*        m_kernel;
     CmEmuMt_ThreadBell     m_bell;
     std::unique_ptr<std::thread>  m_os_thread_ptr;
-    std::atomic<State>     m_state {State::RUNNING};
+    std::atomic<State>     m_state {State::Running};
 
 public:
     CmEmuMt_Thread(
@@ -298,9 +298,9 @@ public:
     void        resume();
     void        complete();
 
-    bool                unspawned() const { return m_state.load() == State::UNSPAWNED; }
-    bool                suspended() const { return m_state.load() == State::SUSPENDED; }
-    bool                running() const { return m_state.load() == State::RUNNING; }
+    bool                unspawned() const { return m_state.load() == State::Unspawned; }
+    bool                suspended() const { return m_state.load() == State::Suspended; }
+    bool                running() const { return m_state.load() == State::Running; }
     bool                completed();
     void                state(State state) { m_state.store(state); }
     CmEmuMt_ThreadBell *bell() { return &m_bell; }

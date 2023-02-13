@@ -1,21 +1,35 @@
 
 # Configuration information.
 
-# Table of contents
-
 - [Configuration information.](#configuration-information)
+  - [Abnormal termination handling configuration.](#abnormal-termination-handling-configuration)
+      - [ENV: EMU\_CATCH\_TERMINATING\_SIGNALS](#env-emu_catch_terminating_signals)
+      - [ENV: EMU\_BACKTRACE\_ON\_TERMINATION](#env-emu_backtrace_on_termination)
     - [Logging configuration.](#logging-configuration)
-      - [ENV: EMU_LOG_FILE](#env-emu_log_file)
-      - [ENV: EMU_LOG_CHANNELS](#env-emu_log_channels)
-      - [ENV: EMU_LOG_LEVEL](#env-emu_log_level)
+      - [ENV: EMU\_LOG\_FILE](#env-emu_log_file)
+      - [ENV: EMU\_LOG\_CHANNELS](#env-emu_log_channels)
+      - [ENV: EMU\_LOG\_LEVEL](#env-emu_log_level)
     - [HW configuration choice.](#hw-configuration-choice)
-      - [ENV: CM_RT_PLATFORM (string)](#env-cm_rt_platform-string)
-      - [ENV: CM_RT_SKU (string)](#env-cm_rt_sku-string)
+      - [ENV: CM\_RT\_PLATFORM (string)](#env-cm_rt_platform-string)
+      - [ENV: CM\_RT\_SKU (string)](#env-cm_rt_sku-string)
   - [Controls for kernel threads scheduling modes.](#controls-for-kernel-threads-scheduling-modes)
-    - [Kernel threads as operating system threads mode.](#kernel-threads-as-operating-system-threads-mode)
-      - [ENV: CM_RT_PARALLEL_THREADS](#env-cm_rt_parallel_threads)
-      - [ENV: CM_RT_RESIDENT_GROUPS](#env-cm_rt_resident_groups)
+  - [Kernel threads as operating system threads mode.](#kernel-threads-as-operating-system-threads-mode)
+      - [ENV: CM\_RT\_PARALLEL\_THREADS        // OS-threads mode semantics](#env-cm_rt_parallel_threads---------os-threads-mode-semantics)
+      - [ENV: CM\_RT\_RESIDENT\_GROUPS         // OS-threads mode semantics](#env-cm_rt_resident_groups----------os-threads-mode-semantics)
 
+### Abnormal termination handling configuration.
+
+#### ENV: EMU_CATCH_TERMINATING_SIGNALS
+
+(bool, detault: false)
+
+Catch terminating signals. If enabled also sets EMU_BACKTRACE_ON_TERMINATION=true
+
+#### ENV: EMU_BACKTRACE_ON_TERMINATION
+
+(bool, detault: false)
+
+Print backtrace on termination in case of an error.
 
 ### Logging configuration.
 

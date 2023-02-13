@@ -256,7 +256,7 @@ CmEmuMt_Thread::CmEmuMt_Thread(uint32_t local_idx, uint32_t group_idx,
       m_kernel_launcher(launcher),
       m_kernel(kernel)
 {
-    state(CmEmuMt_Thread::State::UNSPAWNED);
+    state(CmEmuMt_Thread::State::Unspawned);
 }
 
 std::atomic<uint32_t> g_stat_current_os_threads = 0, g_stat_max_os_threads = 0;
@@ -271,7 +271,7 @@ void CmEmuMt_Thread::suspend() {
 void CmEmuMt_Thread::resume() {
     GFX_EMU_DEBUG_MESSAGE(fSched | fDetail, "resuming thread with local idx %u\n", local_idx());
 
-        if(m_state.load() == State::UNSPAWNED) {
+        if(m_state.load() == State::Unspawned) {
             m_os_thread_ptr.reset(new std::thread(&CmEmuMt_Thread::wrapper, this));
             m_os_thread_ptr->detach ();
 
@@ -301,14 +301,14 @@ bool CmEmuMt_Thread::next_group() {
 void CmEmuMt_Thread::complete() {
     GFX_EMU_MESSAGE(fSched | fDetail,
         "completing thread with local idx %u\n", local_idx());
-    m_state.store(CmEmuMt_Thread::State::COMPLETED);
+    m_state.store(CmEmuMt_Thread::State::Completed);
     g_stat_current_os_threads.fetch_sub(1, std::memory_order_relaxed);
     kernel()->complete_thread(this);
 }
 
 //-----------------------------------------------------------------------------
 bool CmEmuMt_Thread::completed() {
-    return m_state.load() == State::COMPLETED;
+    return m_state.load() == State::Completed;
 }
 
 //-----------------------------------------------------------------------------
@@ -388,14 +388,14 @@ void CmEmuMt_Kernel::suspend_thread(CmEmuMt_Thread* thread) {
     if(!thread->suspended () && !thread->unspawned())
         m_running_threads_count.fetch_sub(1);
 
-    thread->state(CmEmuMt_Thread::State::SUSPENDED);
+    thread->state(CmEmuMt_Thread::State::Suspended);
     thread->bell()->wait_for_ring();
 }
 
 //-----------------------------------------------------------------------------
 void CmEmuMt_Kernel::resume_thread(CmEmuMt_Thread * thread) {
     if (thread->suspended () || thread->unspawned()) {
-        thread->state(CmEmuMt_Thread::State::RUNNING);
+        thread->state(CmEmuMt_Thread::State::Running);
         m_running_threads_count.fetch_add(1);
         thread->bell()->ring();
     } else {

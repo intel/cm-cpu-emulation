@@ -37,14 +37,14 @@ SPDX-License-Identifier: MIT
 #endif
 
 #define CONCAT__(X,Y) X##Y
-#define CONCAT(X,Y) CONCAT__(X,Y)
+#define MSG_CONCAT(X,Y) CONCAT__(X,Y)
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
 
 #define GFX_EMU_MESSAGE_SCOPE_PREFIX(v) \
-    GfxEmu::Log::MessagePrefixGuard CONCAT(msgGuard,__LINE__) {v}
+    GfxEmu::Log::MessagePrefixGuard MSG_CONCAT(msgGuard,__LINE__) {v}
 
 #ifdef GFX_EMU_DEBUG_ENABLED
 

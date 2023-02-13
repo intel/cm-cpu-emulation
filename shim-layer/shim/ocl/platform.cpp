@@ -8,9 +8,42 @@ SPDX-License-Identifier: MIT
 
 #include <array>
 #include <cassert>
+#include <numeric>
+
+#include "emu_cfg.h"
 
 #include "platform.h"
 #include "runtime.h"
+
+shim::cl::Platform::Platform(cl_icd_dispatch *dispatch_) {
+  dispatch = dispatch_;
+
+  const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
+  const auto sku = GfxEmu::Cfg::Sku().getInt<GfxEmu::Platform::Sku::Id>();
+  const auto &cfg = GfxEmu::Cfg::getPlatformConfig(platform);
+
+  extensions.push_back(cl_name_version{CL_MAKE_VERSION_KHR(1, 0, 0),
+                                       "cl_khr_extended_versioning"});
+  extensions.push_back(
+      cl_name_version{CL_MAKE_VERSION_KHR(1, 0, 0), "cl_khr_fp16"});
+
+  if (cfg.flags & GfxEmu::Cfg::PlatformFlags::Fp64)
+    extensions.push_back(
+        cl_name_version{CL_MAKE_VERSION_KHR(1, 0, 0), "cl_khr_fp64"});
+
+  extensions.push_back(
+      cl_name_version{CL_MAKE_VERSION_KHR(1, 0, 0), "cl_khr_icd"});
+  extensions.push_back(cl_name_version{CL_MAKE_VERSION_KHR(3, 0, 0),
+                                       "cl_intel_required_subgroup_size"});
+
+  extensions_str = std::accumulate(
+      std::begin(extensions), std::end(extensions), std::string{},
+      [](const auto &acc, const auto &ext) { return acc + ' ' + ext.name; });
+
+  for (auto simd = cfg.hwSimd; simd <= 32; simd *= 2) {
+    subgroup_sizes.push_back(simd);
+  }
+}
 
 extern "C" {
 CL_API_ENTRY cl_int CL_API_CALL
@@ -41,8 +74,8 @@ CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetPlatformInfo)(
     return SetResult("OpenCL 3.0 C-for-Metal CPU emulation"sv, param_value_size,
                      param_value, param_value_size_ret);
   case CL_PLATFORM_NUMERIC_VERSION:
-    return SetResult(cl_version(300), param_value_size, param_value,
-                     param_value_size_ret);
+    return SetResult(CL_MAKE_VERSION_KHR(3, 0, 0), param_value_size,
+                     param_value, param_value_size_ret);
   case CL_PLATFORM_NAME:
     return SetResult("Intel(R) OpenCL C-for-Metal CPU emulation"sv,
                      param_value_size, param_value, param_value_size_ret);
@@ -50,17 +83,11 @@ CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetPlatformInfo)(
     return SetResult("Intel(R) Corporation"sv, param_value_size, param_value,
                      param_value_size_ret);
   case CL_PLATFORM_EXTENSIONS:
-    return SetResult("cl_khr_icd cl_khr_fp16 cl_khr_fp64"sv, param_value_size,
-                     param_value, param_value_size_ret);
+    return SetResult(std::string_view(rt.platform.extensions_str),
+                     param_value_size, param_value, param_value_size_ret);
   case CL_PLATFORM_EXTENSIONS_WITH_VERSION: {
-    static const std::array<cl_name_version, 3> extensions = {{
-        {300, "cl_khr_icd"},
-        {300, "cl_khr_fp16"},
-        {300, "cl_khr_fp64"},
-    }};
-
-    return SetResult(extensions, param_value_size, param_value,
-                     param_value_size_ret);
+    return SetResult<cl_name_version>(rt.platform.extensions, param_value_size,
+                                      param_value, param_value_size_ret);
   }
   case CL_PLATFORM_HOST_TIMER_RESOLUTION:
     return SetResult(cl_ulong(0), param_value_size, param_value,

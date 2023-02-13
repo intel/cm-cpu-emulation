@@ -171,7 +171,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeDeviceGetComputeProperties)(
   pComputeProperties->maxGroupCountZ = group_count;
   pComputeProperties->maxSharedLocalMemory = 1u << 16;
 
-  size_t i = pComputeProperties->numSubGroupSizes = 0;
+  uint32_t &i = pComputeProperties->numSubGroupSizes = 0;
 
   for (auto simd = cfg.hwSimd; simd <= 32; simd *= 2) {
     pComputeProperties->subGroupSizes[i++] = simd;

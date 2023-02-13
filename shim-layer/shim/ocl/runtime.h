@@ -86,6 +86,27 @@ cl_int SetResult(const std::array<T, N> &value, size_t buffer_size,
   return CL_SUCCESS;
 }
 
+template <typename T>
+cl_int SetResult(const std::vector<T> &value, size_t buffer_size, void *buffer,
+                 size_t *buffer_size_ret) {
+  if (!buffer && !buffer_size_ret) {
+    return CL_INVALID_VALUE;
+  }
+  if (buffer && buffer_size < sizeof(T) * value.size()) {
+    return CL_INVALID_VALUE;
+  }
+
+  if (buffer) {
+    std::copy(std::begin(value), std::end(value), static_cast<T *>(buffer));
+  }
+
+  if (buffer_size_ret) {
+    *buffer_size_ret = sizeof(T) * value.size();
+  }
+
+  return CL_SUCCESS;
+}
+
 cl_int SetResult(std::string_view value, size_t buffer_size, void *buffer,
                  size_t *buffer_size_ret);
 

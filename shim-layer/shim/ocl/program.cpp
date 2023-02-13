@@ -217,11 +217,25 @@ CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clCompileProgram)(
 
   std::string compiler = dev.CompilerCommand();
 
-  std::string_view user_flags(options ? options : ""sv);
-  if (user_flags.find("-cmc"sv) == 0) {
-    user_flags.remove_prefix(4);
+  if (!options) {
+    return CL_COMPILE_PROGRAM_FAILURE;
+  }
+
+  std::cerr << "options: " << options << std::endl;
+
+  std::string user_flags(options);
+  if (user_flags.find("-cmc") == 0) {
+    user_flags.erase(0, 4);
   } else {
     return CL_COMPILE_PROGRAM_FAILURE;
+  }
+
+  // filtering out CMC specific options: -Qxcm* -mCM* -fcm* -vc*
+  for (const auto& o : { "-Qxcm", "-mCM", "-fcm", "-vc" }) {
+    const auto found = user_flags.find(o);
+    if (found != std::string::npos) {
+      user_flags.erase(found, user_flags.find(' ', found));
+    }
   }
 
   unsigned char dummy = '\0';

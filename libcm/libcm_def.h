@@ -49,6 +49,9 @@ enum class CmPrecisionType {
 #define CM_PRECISION_HF CmPrecisionType::CM_Precision_FP16
 #define CM_PRECISION_TF32 CmPrecisionType::CM_Precision_TF32
 
+#define _GENX_ROUNDING_MODE_(x)
+#define _GENX_FLOAT_CONTROL_(x)
+
 typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;

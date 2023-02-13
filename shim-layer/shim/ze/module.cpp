@@ -436,7 +436,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL SHIM_CALL(zeKernelSetArgumentValue)(
       return ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE;
     }
   } else { // pointer, scalar, vector or matrix
-    if (argdesc.size != 0 && argdesc.size != argSize) {
+    if ((argdesc.isPointer && sizeof(void*) != argSize) ||
+        (!argdesc.isPointer && argdesc.size != 0 && argdesc.size != argSize)) {
       return ZE_RESULT_ERROR_INVALID_KERNEL_ARGUMENT_SIZE;
     }
 

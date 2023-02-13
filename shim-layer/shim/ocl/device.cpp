@@ -22,6 +22,7 @@ namespace fs = std::experimental::filesystem;
 #endif // !defined(_WIN32)
 
 #include "device.h"
+#include "emu_cfg.h"
 #include "platform.h"
 #include "runtime.h"
 
@@ -100,20 +101,9 @@ int Device::Id() const {
 }
 
 std::string_view Device::Name() const {
-  using namespace std::literals;
-#define P(x)                                                                   \
-  { PLATFORM_INTEL_##x, #x##sv }
-  static const std::unordered_map<int, std::string_view> platforms = {
-      P(SKL), P(KBL), P(ICLLP), P(TGLLP), P(XEHP_SDV), P(DG1),
-  };
-#undef P
-
-  auto it = platforms.find(Id());
-  if (it == platforms.end()) {
-    return "Unknown platform"sv;
-  }
-
-  return it->second;
+  const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
+  const auto& cfg = GfxEmu::Cfg::getPlatformConfig(platform);
+  return cfg.name;
 }
 
 std::string Device::CompilerCommand() const {
@@ -121,32 +111,22 @@ std::string Device::CompilerCommand() const {
   assert(!"Online compilation is not implemented on Windows");
   return {};
 #else // defined(_WIN32)
-  using namespace std::literals;
-#define P(platform, flags)                                                     \
-  { PLATFORM_INTEL_##platform, flags }
-  static const std::unordered_map<int, std::string_view> platforms = {
-      P(SKL, "-DCM_GEN9 -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
-      P(KBL, "-DCM_GEN9 -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
-      P(ICLLP, "-DCM_GEN11 -DHAS_LONG_LONG"sv),
-      P(TGLLP, "-DCM_GEN12 -DHAS_LONG_LONG"sv),
-      P(XEHP_SDV, "-DCM_XEHP -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
-      P(DG1, "-DCM_GEN12 -DHAS_LONG_LONG"sv),
-      P(DG2, "-DCM_XEHPG -DHAS_LONG_LONG"sv),
-      P(PVC, "-DCM_XEHPC -DHAS_LONG_LONG -DHAS_DOUBLE"sv),
-  };
-#undef P
+
+  const auto platform = GfxEmu::Cfg::Platform().getInt<GfxEmu::Platform::Id>();
+  const auto& cfg = GfxEmu::Cfg::getPlatformConfig(platform);
   std::string result =
       "g++ -c -g2 -fPIC -rdynamic -x c++ -std=c++17 -Wno-attributes -DCMRT_EMU";
 
+  result += " -DCM_GENX=";
+  result += std::to_string(cfg.archid);
+
   for (auto &inc : IncludePath()) {
-    result += " -isystem "sv;
+    result += " -isystem ";
     result += inc;
   }
 
-  auto it = platforms.find(Id());
-  if (it != platforms.end()) {
-    result += " "sv;
-    result += it->second;
+  if (const char* extraopt = std::getenv("IGC_ExtraCMOptions")) {
+    result += " " + std::string(extraopt);
   }
 
   return result;
@@ -411,9 +391,13 @@ CL_API_ENTRY cl_int CL_API_CALL SHIM_CALL(clGetDeviceInfo)(
   case CL_DEVICE_LATEST_CONFORMANCE_VERSION_PASSED:
 #endif
     break;
+  case CL_DEVICE_SUB_GROUP_SIZES_INTEL: {
+    return SetResult<size_t>(rt.platform.subgroup_sizes, param_value_size,
+                             param_value, param_value_size_ret);
+  }
   }
 
-  // std::cerr << std::hex << "clGetDeviceInfo: 0x" << param_name << std::endl;
+  std::cerr << std::hex << "clGetDeviceInfo: 0x" << param_name << std::endl;
   return CL_INVALID_VALUE;
 }
 
